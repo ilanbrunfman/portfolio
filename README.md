@@ -1,4 +1,4 @@
-#list.html
+#Schedule
 
 This project is on local database.
 You need to add your 'List Items' and it will add to the data LIST array.
