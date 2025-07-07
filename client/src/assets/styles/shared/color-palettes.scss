@@ -1,0 +1,116 @@
+@use "variables" as var;
+
+.clr{
+    &-white{ color: #ffffff; }
+    &-black{ color: #000000; }
+    &-light{ color: var(--ligh); }
+    &-dark{ color: var(--dark); }
+    &-gray{
+        &-50{ color: #FAFAFA; }
+        &-100{ color: #F5F5F5; }
+        &-200{ color: #EEEEEE; }
+        &-300{ color: #E0E0E0; }
+        &-400{ color: #BDBDBD; }
+        &-500{ color: #9E9E9E; }
+        &-600{ color: #757575; }
+        &-700{ color: #616161; }
+        &-800{ color: #424242; }
+        &-900{ color: #212121; }
+    }
+    &-red{
+        &-50{ color: #FFEBEE; }
+        &-100{ color: #FFCDD2; }
+        &-200{ color: #EF9A9A; }
+        &-300{ color: #E57373; }
+        &-400{ color: #EF5350; }
+        &-500{ color: #F44336; }
+        &-600{ color: #E53935; }
+        &-700{ color: #D32F2F; }
+        &-800{ color: #C62828; }
+        &-900{ color: #B71C1C; }
+    }
+    &-pink{
+        &-50{ color: #F3E5F5; }
+        &-100{ color: #E1BEE7; }
+        &-200{ color: #CE93D8; }
+        &-300{ color: #BA68C8; }
+        &-400{ color: #AB47BC; }
+        &-500{ color: #9C27B0; }
+        &-600{ color: #8E24AA; }
+        &-700{ color: #7B1FA2; }
+        &-800{ color: #6A1B9A; }
+        &-900{ color: #4A148C; }
+    }
+    &-purple{
+        &-50{ color: #EDE7F6; }
+        &-100{ color: #D1C4E9; }
+        &-200{ color: #B39DDB; }
+        &-300{ color: #9575CD; }
+        &-400{ color: #7E57C2; }
+        &-500{ color: #673AB7; }
+        &-600{ color: #5E35B1; }
+        &-700{ color: #512DA8; }
+        &-800{ color: #4527A0; }
+        &-900{ color: #311B92; }
+    }
+    &-blue{
+        &-50{ color: #E3F2FD; }
+        &-100{ color: #BBDEFB; }
+        &-200{ color: #90CAF9; }
+        &-300{ color: #64B5F6; }
+        &-400{ color: #42A5F5; }
+        &-500{ color: #2196F3; }
+        &-600{ color: #1E88E5; }
+        &-700{ color: #1976D2; }
+        &-800{ color: #1565C0; }
+        &-900{ color: #0D47A1; }
+    }
+    &-teal{
+        &-50{ color: #E0F2F1; }
+        &-100{ color: #B2DFDB; }
+        &-200{ color: #80CBC4; }
+        &-300{ color: #4DB6AC; }
+        &-400{ color: #26A69A; }
+        &-500{ color: #009688; }
+        &-600{ color: #00897B; }
+        &-700{ color: #00796B; }
+        &-800{ color: #00695C; }
+        &-900{ color: #004D40; }
+    }
+    &-green{
+        &-50{ color: #E8F5E9; }
+        &-100{ color: #C8E6C9; }
+        &-200{ color: #A5D6A7; }
+        &-300{ color: #81C784; }
+        &-400{ color: #66BB6A; }
+        &-500{ color: #4CAF50; }
+        &-600{ color: #43A047; }
+        &-700{ color: #388E3C; }
+        &-800{ color: #2E7D32; }
+        &-900{ color: #1B5E20; }
+    }
+    &-yellow{
+        &-50{ color: #FFFDE7; }
+        &-100{ color: #FFF9C4; }
+        &-200{ color: #FFF59D; }
+        &-300{ color: #FFF176; }
+        &-400{ color: #FFEE58; }
+        &-500{ color: #FFEB3B; }
+        &-600{ color: #FDD835; }
+        &-700{ color: #FBC02D; }
+        &-800{ color: #F9A825; }
+        &-900{ color: #F57F17; }
+    }
+    &-orange{
+        &-50{ color: #FFF3E0; }
+        &-100{ color: #FFE0B2; }
+        &-200{ color: #FFCC80; }
+        &-300{ color: #FFB74D; }
+        &-400{ color: #FFA726; }
+        &-500{ color: #FF9800; }
+        &-600{ color: #FB8C00; }
+        &-700{ color: #F57C00; }
+        &-800{ color: #EF6C00; }
+        &-900{ color: #E65100; }
+    }
+}

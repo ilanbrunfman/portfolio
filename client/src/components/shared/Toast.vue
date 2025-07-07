@@ -1,0 +1,173 @@
+<script setup>
+import { computed } from 'vue'
+import { useStore } from '@/stores/index.js'
+
+import IconCheck from '@/components/icons/IconCheck.vue'
+import IconError from '@/components/icons/IconError.vue'
+import IconWarning from '@/components/icons/IconWarning.vue'
+import IconX from '@/components/icons/IconX.vue'
+
+const store = useStore()
+
+const toast = computed(() => {
+    switch (store.toast.type) {
+        case 'success':
+            return  { 
+                type: 'success',
+                title: store.toast.title ? store.toast.title : 'Success',
+                icon: IconCheck, 
+                message: store.toast.message ? store.toast.message : 'hello world' 
+            };
+        case 'error':
+            return { 
+                type: 'error',
+                title: store.toast.title ? store.toast.title :  'Error message', 
+                icon: IconError, 
+                message: store.toast.message ? store.toast.message : 'doing homework' 
+            };
+        default:
+            return { 
+                type: 'warning',
+                title: store.toast.title ? store.toast.title :  'Warning', 
+                icon: IconWarning, 
+                message: store.toast.message ? store.toast.message : 'good day' 
+            };
+    }
+})
+
+const closeToast = () => {
+    store.toast = false
+}
+
+</script>
+
+<template>
+    <transition name="slide-left" mode="out-in">
+        <div v-if="store.toast" :class="['toast',`toast-${toast.type}`]">
+            <div class="toast-icon">
+                <component :is="toast.icon"/>
+            </div>
+            <div class="toast-header">
+                <h3 class="toast-header-title">{{ toast.title }}</h3>
+                <p class="toast-header-message">{{ toast.message }}</p>
+            </div>
+            <IconX @click="closeToast" class="toast-exit"/>
+        </div>
+    </transition>
+</template>
+
+<style lang="scss" scoped>
+.toast{
+    position: fixed;
+    z-index: 9;
+    top: 20px;
+    right: 20px;
+
+    display: grid;
+    grid-template-columns: 48px 1fr 24px;
+    align-items: center;
+    gap: 10px;
+
+
+    width: 350px;
+    max-width: 100%;
+    font-size: 14px;
+    line-height: 1.0;
+    pointer-events: auto;
+    background-color: rgba(255, 255, 255, 1.0);
+    background-clip: padding-box;
+    border: 1px solid rgba(0, 0, 0, .1);
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+    border-radius: 6px;
+    padding: 8px 18px 10px 14px;
+
+    &-success{
+        background-color: #00b894;
+        color: #fff;
+        svg { fill: #fff !important; }
+    }
+    &-error{
+        background-color:   #d63031;
+        color: #fff;
+        svg{ fill: #fff; }
+    }
+    &-warning{
+        background-color: #fdcb6e;
+        color: #2c3e50;
+    }
+
+    &-icon{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 100%;
+        background-color: rgba(#fff, 0.075);
+
+        svg{
+            width: 24px;
+            height: 24px;
+        }
+    }
+
+    &-header{
+        &-title{
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        &-message{
+            font-size: 500;
+            line-height: 1.2;
+        }
+    }
+
+    &-exit{
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
+}
+
+// fade
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.5s ease-out;
+}
+
+.fade-enter,
+.fade-enter-active {
+    opacity: 0;
+}
+
+.fade-enter-to {
+    opacity: 1;
+    transition: opacity 0.5s ease-out;
+}
+
+.fade-leave-to {
+    opacity: 0;
+}
+
+// Slide left from bottom
+.slide-left-enter-active,
+.slide-left-leave-active {
+    transition: transform 0.5s ease-out;
+}
+
+.slide-left-enter,
+.slide-left-enter-active {
+    transform: translateX(100%);
+}
+
+.slide-left-enter-to {
+    transform: translateX(0);
+    transition: transform 0.5s ease-out;
+}
+
+.slide-left-leave-to {
+    transform: translateX(120%);
+}
+</style>
