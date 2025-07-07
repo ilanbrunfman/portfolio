@@ -1,0 +1,62 @@
+@use "@/assets/styles/shared/variables.scss" as var;
+
+.home{
+    .grid-template{
+        display: grid;
+        grid-template-columns: repeat(1, 1fr); 
+        gap: 2.0rem;
+
+        @media (min-width: 1000px) {
+            grid-template-columns: 3fr 400px;
+        }
+    }
+
+    .showcase{
+        &-header{
+            aspect-ratio: 16 / 9;
+            border-radius: var(--radius);
+            background-color: pink;
+            display: grid;
+            align-items: center;
+            justify-content: center;
+            padding: 2.0rem;
+        }
+        &-body{}
+        &-footer{}
+    }
+
+    .cards{
+        .card{
+            display: grid;
+            grid-template-columns: 168px 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+            cursor: pointer;
+
+            &-thumbnail{
+                aspect-ratio: 16 / 9;
+                border-radius: 10px;
+                background-color: var(--soft-background);
+                color: var(--dark);
+
+                display: grid;
+                align-items: center;
+                justify-content: center;
+            }
+            &-content{
+                .title{
+                    color: var(--dark);
+                    font-size: clamp(14px, -0.875rem + 2.333vw, 16px);
+                    font-weight: 500;
+                    line-height: 1.5;
+                }
+                .para{
+                    font-size: 12px;
+                    font-weight: 400;
+                    line-height: 1.5;
+                    color: var(--lightDark);
+                }
+            }
+        }
+    }
+}
