@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 
-import Wrapper from '@/components/shared/Wrapper.vue'
+import Wrapper from '@/components/shared/wrapper/Wrapper.vue'
 import IconArrowLeft from '@/components/icons/IconArrowLeft.vue'
 import IconUser from '@/components/icons/IconUser.vue'
 import CardExperience from '@/components/about/Cards/CardExperience.vue'

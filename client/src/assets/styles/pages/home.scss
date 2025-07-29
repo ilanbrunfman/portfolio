@@ -7,31 +7,45 @@
         gap: 2.0rem;
 
         @media (min-width: 1000px) {
-            grid-template-columns: 3fr 400px;
+            // grid-template-columns: 3fr 400px;
         }
     }
 
     .showcase{
-        &-header{
-            aspect-ratio: 16 / 9;
-            border-radius: var(--radius);
-            background-color: pink;
-            display: grid;
-            align-items: center;
-            justify-content: center;
-            padding: 2.0rem;
-        }
-        &-body{}
-        &-footer{}
+        position: relative;
+        padding-top: 12.0rem;
+        background-color: var(--soft-background);
+    }
+
+    .hero{
+        min-height: 440px;
+        padding-bottom: 6.0rem;
     }
 
     .cards{
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 30px;
+        
         .card{
-            display: grid;
-            grid-template-columns: 168px 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
+            padding: 10px;
+            border-radius: 10px;
+            border: solid 1px #eee;
             cursor: pointer;
+            transition: all 0.35s ease;
+            
+            // display: grid;
+            // grid-template-columns: 168px 1fr;
+            // gap: 10px;
+            // margin-bottom: 20px;
+
+            &:hover{
+                background-color: purple;
+                .title,
+                .para{
+                    color: #fff;
+                }
+            }
 
             &-thumbnail{
                 aspect-ratio: 16 / 9;

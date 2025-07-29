@@ -79,6 +79,10 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
+main{
+    position: relative;
+}
+
 button{
     background-color: transparent;
     outline: none;
@@ -135,9 +139,7 @@ a{
     &-sticky{ position: sticky;}
 }
 
-.pointer{
-    cursor: pointer; 
-}
+.pointer{ cursor: pointer; }
 
 .container{
     @media (min-width: var.$xsm) { 

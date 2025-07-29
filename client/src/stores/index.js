@@ -11,20 +11,24 @@ export const useStore = defineStore('store', {
                 title: 'Generate QR Barcode', 
                 para: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry.', 
             },
-            // { 
-            //     id: '4321', 
-            //     path: '/isa', 
-            //     title: 'School project',
-            //     para: 'Lorem Ipsum is simply dummy text typesetting industry.',
-            // },
             { 
                 id: 'abc3', 
                 path: '/generate-password', 
                 title: 'Generate Password', 
                 para: 'Lorem Ipsum is simply dummy text.', 
             },
+            { 
+                id: '4321', 
+                path: '/isa', 
+                title: 'Interactive Sales Aid',
+                para: 'Closed Loop Marketing',
+            },
         ],
         toast: false,
+        modalInstances: [],
+        activeModal: false,
+        modalArray: [],
+        modal: {},
         password: [],
     }),
     // methods
@@ -41,6 +45,33 @@ export const useStore = defineStore('store', {
         setToast(toast) {
             this.toast = toast
             setTimeout(() => {this.toast = false}, 3000);
+        },
+
+        ADD_MODAL(state) {
+            const existingIndex = this.modalArray.findIndex(modal => modal.id === state.id)
+
+            if (existingIndex !== -1) {
+                // Modal with the same ID already exists — remove it (toggle off)
+                this.modalArray.splice(existingIndex, 1)
+                return
+            }
+
+            // Only allow one modal at a time — remove the current one
+            if (this.modalArray.length > 0) {
+                this.modalArray.pop()
+            }
+
+            // Add the new modal with a generated or given ID
+            this.modalArray.push({
+                id: state.id || this.generateId(),
+                active: true,
+                ...state,
+            })
+        },
+
+        REMOVE_MODAL() {
+            console.log('REMOVE_MODAL',  this.modalArray)
+            this.modalArray.pop()
         },
 
         generateId() {

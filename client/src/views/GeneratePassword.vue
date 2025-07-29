@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useStore } from '@/stores/index.js'
 
+import Wrapper from '@/components/shared/wrapper/Wrapper.vue'
 import IconCopy from '@/components/icons/IconCopy.vue'
 import IconArrowsClockwise from '@/components/icons/IconArrowsClockwise.vue'
 import IconTrash from '@/components/icons/IconTrash.vue'
@@ -113,113 +114,120 @@ const deletePassword = (list) => {
 </script>
 
 <template>
-    <div class="generate-password">
-        <div class="generate-password-container mb-2">
-            <div class="row">
-                <div class="col-12">
-                    <h2 class="sub-title fw-600 lh-1-0 clr-dark mb-2">Generate Password</h2>
-                </div>
-            </div>
+    <Wrapper wrapperClass="">
+        <template #main>
+            <div class="generate-password pt-6">
+                <div class="generate-password-container mb-2">
+                    <div class="row">
+                        <div class="col-12">
+                            <h2 class="sub-title fw-600 lh-1-0 clr-dark mb-2">Generate Password</h2>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12 d-flex justify-between align-items-center control mb-1">
+                            <h3 class="sub-title fw-500">{{ password }}</h3>
+                            <div class="d-flex gap-1">
+                                <button class="icon pointer" title="Copy" @click="copyPassword">
+                                    <IconCopy />
+                                </button>
+                                <button class="icon pointer" title="Generate" @click="generate()">
+                                    <IconArrowsClockwise :class="{ rotate: rotating }"/>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
             
-            <div class="row">
-                <div class="col-12 d-flex justify-between align-items-center control mb-1">
-                    <h3 class="sub-title fw-500">{{ password }}</h3>
-                    <div class="d-flex gap-1">
-                        <button class="icon pointer" title="Copy" @click="copyPassword">
-                            <IconCopy />
-                        </button>
-                        <button class="icon pointer" title="Generate" @click="generate()">
-                            <IconArrowsClockwise :class="{ rotate: rotating }"/>
-                        </button>
+                    <div class="row">
+                        <div class="col-12 mb-2">
+                            <div class="strength-meter mb-1">
+                                <div class="bar" :style="{ width: (strengthLevel * 20) + '%', backgroundColor: strengthColor }"></div>
+                            </div>
+                            <p class="strength-label" :style="{ color: strengthColor }">{{ strengthLabel }} password</p>
+                        </div>
                     </div>
-                </div>
-            </div>
-    
-            <div class="row">
-                <div class="col-12 mb-2">
-                    <div class="strength-meter mb-1">
-                        <div class="bar" :style="{ width: (strengthLevel * 20) + '%', backgroundColor: strengthColor }"></div>
-                    </div>
-                    <p class="strength-label" :style="{ color: strengthColor }">{{ strengthLabel }} password</p>
-                </div>
-            </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <h4 class="para fw-600 mb-1">Customize your password:</h4>
+                        </div>
             
-            <div class="row">
-                <div class="col-12">
-                    <h4 class="para fw-600 mb-1">Customize your password:</h4>
-                </div>
-    
-                <div class="form d-flex gap-2 gap-lg-3 mb-2">
-                    <div class="form-field">
-                        <label class="d-flex para fw-600 mb-1">Length: {{ length }}<br/></label>
-                        <input type="range" min="4" max="16" v-model="length" @input="generatePassword" />
+                        <div class="form d-flex gap-2 gap-lg-3 mb-2">
+                            <div class="form-field">
+                                <label class="d-flex para fw-600 mb-1">Length: {{ length }}<br/></label>
+                                <input type="range" min="4" max="16" v-model="length" @input="generatePassword" />
+                            </div>
+            
+                            <div class="form-field">
+                                <h4 class="para fw-600 mb-1">Type:</h4>
+                                <label class="d-flex gap-1 mb-0-5"><input type="checkbox" v-model="useUppercase" @change="generatePassword" /> Uppercase</label>
+                                <label class="d-flex gap-1 mb-0-5"><input type="checkbox" v-model="useLowercase" @change="generatePassword" /> Lowercase</label>
+                                <label class="d-flex gap-1 mb-0-5"><input type="checkbox" v-model="useNumbers" @change="generatePassword" /> Numbers</label>
+                                <label class="d-flex gap-1 mb-0"><input type="checkbox" v-model="useSymbols" @change="generatePassword" /> Symbols</label>
+                            </div>
+                        </div>
                     </div>
-    
-                    <div class="form-field">
-                        <h4 class="para fw-600 mb-1">Type:</h4>
-                        <label class="d-flex gap-1 mb-0-5"><input type="checkbox" v-model="useUppercase" @change="generatePassword" /> Uppercase</label>
-                        <label class="d-flex gap-1 mb-0-5"><input type="checkbox" v-model="useLowercase" @change="generatePassword" /> Lowercase</label>
-                        <label class="d-flex gap-1 mb-0-5"><input type="checkbox" v-model="useNumbers" @change="generatePassword" /> Numbers</label>
-                        <label class="d-flex gap-1 mb-0"><input type="checkbox" v-model="useSymbols" @change="generatePassword" /> Symbols</label>
-                    </div>
-                </div>
-            </div>
-    
-            <div class="row">
-                <div class="col-12 d-flex gap-1 gap-lg-1">
-                    <button class="btn btn-primary  mx-auto px-1 w-100 justify-center align-items-center gap-1" @click="copyPassword">
-                        <IconCopy />
-                        <span class="para fw-600">Copy Password</span>
-                    </button>
-                    <button class="btn btn-defualt mx-auto px-1 w-100 justify-center align-items-center gap-1" @click="generate">
-                        <IconArrowsClockwise :class="{ rotate: rotating }"/>
-                        <span class="para fw-600">Generate Password</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <transition name="fade">
-            <div  v-if="store.password.length > 0">
-                <div class="row">
-                    <div class="col-12">
-                        <p class="para fw-600 mb-2">Copied {{ store.password.length > 1 ? 'passwords': 'password'}} list:</p>
+            
+                    <div class="row">
+                        <div class="col-12 d-flex gap-1 gap-lg-1">
+                            <button class="btn btn-primary  mx-auto px-1 w-100 justify-center align-items-center gap-1" @click="copyPassword">
+                                <IconCopy />
+                                <span class="para fw-600">Copy Password</span>
+                            </button>
+                            <button class="btn btn-defualt mx-auto px-1 w-100 justify-center align-items-center gap-1" @click="generate">
+                                <IconArrowsClockwise :class="{ rotate: rotating }"/>
+                                <span class="para fw-600">Generate Password</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
-    
-                <div class="row mb-6">
-                    <table class="col-12">
-                        <thead>
-                            <tr>
-                                <th width="40" class="para fw-600 text-center"></th>
-                                <th class="para fw-600 text-left">Password</th>
-                                <th width="240" class="para fw-600 text-center">Level</th>
-                                <th width="40" class="para fw-600"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="(list, index) in [...store.password].reverse()" :key="index">
-                                <td class="text-center">{{ index+1 }}</td>
-                                <td>{{ list.text }}</td>
-                                <td :class="['fw-600', list.level <= 2 ? 'weak' : list.level === 3 || list.level === 4 ? 'moderate' : 'strong']">{{ list.level <= 2 ? 'Weak' : list.level === 3 || list.level === 4 ? 'Moderate' : 'Strong' }}</td>
-                                <td class="text-right pointer" @click="deletePassword(list)"><IconTrash class="icon"/></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            
+                <transition name="fade">
+                    <div  v-if="store.password.length > 0">
+                        <div class="row">
+                            <div class="col-12">
+                                <p class="para fw-600 mb-2">Copied {{ store.password.length > 1 ? 'passwords': 'password'}} list:</p>
+                            </div>
+                        </div>
+            
+                        <div class="row mb-6">
+                            <table class="container mx-auto col-12">
+                                <thead>
+                                    <tr>
+                                        <th width="40" class="para fw-600 text-center"></th>
+                                        <th class="para fw-600 text-left">Password</th>
+                                        <th width="240" class="para fw-600 text-center">Level</th>
+                                        <th width="40" class="para fw-600"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(list, index) in [...store.password].reverse()" :key="index">
+                                        <td class="text-center">{{ index+1 }}</td>
+                                        <td>{{ list.text }}</td>
+                                        <td :class="['fw-600', list.level <= 2 ? 'weak' : list.level === 3 || list.level === 4 ? 'moderate' : 'strong']">{{ list.level <= 2 ? 'Weak' : list.level === 3 || list.level === 4 ? 'Moderate' : 'Strong' }}</td>
+                                        <td class="text-right pointer" @click="deletePassword(list)"><IconTrash class="icon"/></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </transition>
             </div>
-        </transition>
-    </div>
+        </template>
+    </Wrapper>
 </template>
 
 <style lang="scss" scoped>
 .generate-password{
+    max-width: 767px;
+    margin-inline: auto;
 
     &-container{
         padding: 2.0rem;
         background-color: var(--soft-background);
         border-radius: var(--radius);
         min-height: 400px;
+       
     }
     
     .control{

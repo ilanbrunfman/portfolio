@@ -1,0 +1,45 @@
+// @use "@/assets/styles/shared/variables" as var;
+
+.header{
+    position: fixed;
+    z-index: 9;
+    width: 100%;
+    backdrop-filter: blur(10px);
+
+    .container{
+        min-height: 4.0rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        .icon{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border-radius: 100%;
+            // background-color: var(--light);
+
+            svg {
+                width: 28px;
+                height: 28px;
+                fill: var(--dark);
+
+                path{
+                    
+                }
+
+            }
+
+            &-back{
+                background-color: transparent;
+            }
+
+            &-cards{
+                background-color: transparent;
+            }
+        }
+        
+    }
+}
