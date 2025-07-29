@@ -1,0 +1,101 @@
+.footer-isa{
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    min-height: 36px;
+    // background-color: #fff;
+    
+
+    .main-nav{
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 36px;
+        padding-inline: 20px;
+        margin-bottom: 10px;
+        // background-color: #fff;
+
+        .router-link{
+            display: flex;
+            align-items: center;
+            height: 36px;
+            padding-inline: 20px;
+            color: #071d49;
+
+
+            &-active{
+                color: #fff;
+                background-color: #071d49; // #F1F3FF;
+                border-radius: 20px;
+            }
+
+            &-home{
+                svg{
+                     width: 20px;
+                }
+
+                &.router-link-active{
+                    padding-inline: 14px;
+                    // border-radius: 20px;
+                }
+            }
+
+            & span{
+                font-size: 14px;
+                font-weight: 500;
+                line-height: 1.0;
+            }
+        }
+    }
+
+    .sub-nav{
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 36px;
+        margin-bottom: 10px;
+        // background-color: pink;
+
+        &-container{
+            width: auto;
+            display: flex;
+            border-radius: 20px;
+            background-color: #a6b5e0; // var(--light);
+        }
+
+        .router-link{
+            display: flex;
+            align-items: center;
+            height: 36px;
+            padding-inline: 20px;
+            color: rgba(#071d49, 0.75);
+            border-left: none;
+
+            &-active{
+                color: var(--light);
+                background-color: #071d49;
+                border-radius: 20px;
+            }
+
+            &:first-child{ 
+                border-top-left-radius: 20px; 
+                border-bottom-left-radius: 20px; 
+            }
+            &:last-child{ 
+                border-top-right-radius: 20px; 
+                border-bottom-right-radius: 20px; 
+            }
+
+            & span{
+                font-size: 14px;
+                font-weight: 500;
+                line-height: 1.0;
+            }
+        }
+    }
+}

@@ -1,0 +1,36 @@
+.header-isa{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    min-height: 35px;
+    background-color: #071d49;
+    border-bottom: solid 1px ;
+    color: #fff;
+
+    .container{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 35px;
+        padding-left: 160px;
+
+        .nav{
+            min-height: 35px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1.0;
+
+            &-link{
+
+            }
+
+            &-btn{
+                color: inherit;
+            //    text-decoration: underline;
+            }
+        }
+    }
+}

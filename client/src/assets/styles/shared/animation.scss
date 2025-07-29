@@ -1,0 +1,121 @@
+// fade
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.5s ease-out;
+}
+
+.fade-enter,
+.fade-enter-active {
+    opacity: 0;
+}
+
+.fade-enter-to {
+    opacity: 1;
+    transition: opacity 0.5s ease-out;
+}
+
+.fade-leave-to {
+    opacity: 0;
+}
+
+// Slide up from bottom
+.slide-up-enter-active,
+.slide-up-leave-active {
+    transition: transform 0.35s ease-out;
+}
+
+.slide-up-enter,
+.slide-up-enter-active {
+    transform: translateY(100%);
+}
+
+.slide-up-enter-to {
+    transform: translateY(0);
+    transition: transform 0.35s ease-out;
+}
+
+.slide-up-leave-to {
+    transform: translateY(100%);
+}
+
+// slide-down from top
+.slide-down-enter-active, 
+.slide-down-leave-active {
+  transition: all 300ms ease;
+  // overflow: hidden;
+}
+.slide-down-enter,
+.slide-down-enter-active {
+  transform: translateY(-100%);
+  // opacity: 0;
+}
+.slide-down-enter-to {
+  transform: translateY(0);
+  opacity: 1;
+}
+.slide-down-leave-from {
+  transform: translateY(0);
+  opacity: 1;
+}
+.slide-down-leave-to {
+  transform: translateY(-100%);
+  // opacity: 0;
+}
+
+// nested
+.nested-enter-active, 
+.nested-leave-active {
+	transition: all 0.5s ease-in-out; // the whole time duration
+}
+/* delay leave of parent element */
+.nested-leave-active {
+  transition-delay: 0.25s;
+}
+
+.nested-enter-from,
+.nested-leave-to {
+//   transform: translateY(30px);
+  opacity: 0;
+}
+
+/* we can also transition nested elements using nested selectors */
+.nested-enter-active .inner,
+.nested-leave-active .inner { 
+  transition: all 0.25s ease-in-out;
+}
+
+/* delay enter of nested element */
+.nested-enter-active .inner {
+	transition-delay: 0.25s;
+}
+
+.nested-enter-from .inner,
+.nested-leave-to .inner {
+  transform: 
+    translateY(0px)
+    scale(0.95);
+
+  /*
+  	Hack around a Chrome 96 bug in handling nested opacity transitions.
+    This is not needed in other browsers or Chrome 99+ where the bug
+    has been fixed.
+  */
+  opacity: 0.001;
+}
+
+// accordion
+.accordion-enter-active,
+.accordion-leave-active {
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  overflow: hidden;
+}
+.accordion-enter-from,
+.accordion-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+.accordion-enter-to,
+.accordion-leave-from {
+  max-height: 1000px;
+  opacity: 1;
+}
