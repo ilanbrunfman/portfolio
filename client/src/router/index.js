@@ -103,16 +103,19 @@ export const router = createRouter({
             path: '/qr-barcode',
             name: 'qr Barcode',
             component: () => import('@/views/GenerateQRBarcode.vue'),
-            // children: [
-            //     { path: '', name: 'form', component: () => import('@/components/qr-bar-code/Form.vue'), },
-            //     { path: 'output', name: 'output', component: () => import('@/components/qr-bar-code/Output.vue'), }
-            // ]
+            meta: {
+                title: 'Generate QR Code',
+                favicon: '/favicons/IconIB.svg'
+            }
         },
         {
             path: '/generate-password',
             name: 'generate password',
             component: () => import('@/views/GeneratePassword.vue'),
-            children: []
+            meta: {
+                title: 'Generate Password',
+                favicon: '/favicons/IconIB.svg'
+            }
         },
         {
             path: '/isa',
@@ -127,55 +130,88 @@ export const router = createRouter({
                     path: '/isa/overview',
                     name: 'Overview',
                     title: 'Overview',
-                    component: () => import('@/components/isa/Overview.vue'),
+                    component: () => import('@/components/isa/pages/overview/Overview.vue'),
                     meta: {
-                        name: 'ilan'
+                        title: 'ISA - Overview',
                     },
                 },
                 {
+                    path: '/isa/patient',
+                    name: 'Patient',
+                    title: 'Patient Profile',
+                    component: () => import('@/components/isa/pages/patient/Patient.vue'),
+                    meta: {
+                        title: 'ISA - Patient',
+                    }
+                },
+                {
                     path: '/isa/support',
-                    component: () => import('@/components/isa/Support.vue'),
+                    component: () => import('@/components/isa/pages/support/Support.vue'),
                     title: 'Support',
                     children: [
                         {
                             path: '',
                             name: 'Support',
-                            redirect: '/isa/support/dosing',
+                            redirect: '/isa/support/approved-email',
                         },
                         {
-                            path: '/isa/support/dosing',
-                            name: 'Dosing',
+                            path: '/isa/support/approved-email',
+                            name: 'Approved Email',
                             title: 'Approved Email',
-                            component: () => import('@/components/isa/Dosing.vue'),
+                            component: () => import('@/components/isa/pages/support/children/ApprovedEmail.vue'),
+                            meta: {
+                                title: 'ISA - Support/Approved Email',
+                            },
                         },
                         {
-                            path: '/isa/support/moa',
-                            name: 'MOA',
+                            path: '/isa/support/medical-inquiry',
+                            name: 'Medical Inquiry',
                             title: 'Medical Inquiry',
-                            component: () => import('@/components/isa/MOA.vue'),
+                            component: () => import('@/components/isa/pages/support/children/MedicalInquiry.vue'),
+                            meta: {
+                                title: 'ISA - Support/Medical Inquiry',
+                            },
                         },
                         {
                             path: '/isa/support/efficacy',
                             name: 'Efficacy',
                             title: 'Order',
-                            component: () => import('@/components/isa/Efficacy.vue'),
+                            component: () => import('@/components/isa/pages/support/children/Order.vue'),
+                            meta: {
+                                title: 'ISA - Support/Order',
+                            },
                         },
                     ],
+                },
+                {
+                    path: '/isa/dosing',
+                    name: 'Dosing',
+                    title: 'Dosing Calculator',
+                    component: () => import('@/components/isa/pages/dosing/Dosing.vue'),
+                    meta: {
+                        title: 'ISA - Dosing',
+                    }
                 },
                 {
                     path: '/isa/summary',
                     name: 'Summary',
                     title: 'Summary',
-                    component: () => import('@/components/isa/Summary.vue'),
+                    component: () => import('@/components/isa/pages/summary/Summary.vue'),
+                    meta: {
+                        title: 'ISA - Summary',
+                    }
                 }
-            ]
+            ],
+            meta: {
+                favicon: '/favicons/abbvie_icon.png'
+            },
         },
         {
             path: '/about',
             name: 'about',
             component: () => import('@/views/AboutView.vue'),
             meta: {
-                title: 'About Us',
+                title: 'About',
                 favicon: '/favicons/IconIB.svg'
             }
         },

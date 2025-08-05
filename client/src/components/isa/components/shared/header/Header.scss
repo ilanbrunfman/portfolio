@@ -5,7 +5,7 @@
     width: 100%;
     min-height: 35px;
     background-color: #071d49;
-    border-bottom: solid 1px ;
+    // border-bottom: solid 1px ;
     color: #fff;
 
     .container{
@@ -13,7 +13,17 @@
         align-items: center;
         justify-content: space-between;
         min-height: 35px;
-        padding-left: 160px;
+        padding-left: 15px;
+
+        .icon{
+            &-ellipse{
+                display: flex;
+                align-items: center;
+                margin-right: 100px;
+                color: #fff;
+                cursor: pointer;
+            }
+        }
 
         .nav{
             min-height: 35px;

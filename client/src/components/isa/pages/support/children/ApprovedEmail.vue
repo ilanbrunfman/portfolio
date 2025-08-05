@@ -4,7 +4,7 @@
     <div class="container">
         <div class="row">
             <div class="col-12 pt-4">
-                <h1>ISA - MOA</h1>
+                <h1>ISA - Approved Email</h1>
             </div>
         </div>
     </div>
