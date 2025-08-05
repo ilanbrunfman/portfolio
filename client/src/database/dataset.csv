@@ -2,4 +2,6 @@ name,age,city,gender,category
 Alice,30,New York,female,sales
 Bob,25,Los Angeles,male,service
 John,43,Kansas City,male,sales
-Anna,30,Chicago,female,marketing
+Anna,28,Chicago,female,marketing
+Kayla,32,Florida,female,sales
+Claire,26,Alabama,female,sales

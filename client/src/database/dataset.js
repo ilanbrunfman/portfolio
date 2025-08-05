@@ -22,9 +22,23 @@ export const dataset = [
   },
   {
     "name": "Anna",
-    "age": "30",
+    "age": "28",
     "city": "Chicago",
     "gender": "female",
     "category": "marketing"
+  },
+  {
+    "name": "Kayla",
+    "age": "32",
+    "city": "Florida",
+    "gender": "female",
+    "category": "sales"
+  },
+  {
+    "name": "Claire",
+    "age": "26",
+    "city": "Alabama",
+    "gender": "female",
+    "category": "sales"
   }
 ];

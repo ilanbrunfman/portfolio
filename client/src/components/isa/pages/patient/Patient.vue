@@ -15,6 +15,10 @@ const groups = ref({
         { label: 'marketing', selected: false }
     ],
 })
+// Computed: check if gender and catgory are selected then active .card-item
+const isCardItemActive = computed(() => {
+  return !!selectedGroupsMap.value.gender && !!selectedGroupsMap.value.category
+})
 
 // Computed: check if gender is selected
 const isGenderSelected = computed(() => {
@@ -149,7 +153,7 @@ const filteredDataset = computed(() => {
                             </div>
                             <div class="row">
                                 <div class="col-12 d-grid grid-3 gap-1" v-if="filteredDataset.length > 0">
-                                    <div v-for="(item, index) in filteredDataset" :key="index" :class="['card card-item',]">
+                                    <div v-for="(item, index) in filteredDataset" :key="index" :class="['card card-item', isCardItemActive ? 'show' : 'hide']">
                                         <div class="row">
                                             <div class="col-12 d-flex gap-0-5">
                                                 <div class="d-flex gap-0-5 mb-0-5">

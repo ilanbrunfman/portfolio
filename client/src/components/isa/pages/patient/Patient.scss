@@ -81,9 +81,23 @@
         }
 
         &-item{
-            &:hover{
-                background-color: #eee;
+            cursor: pointer;
+            // transition: all 0.35s ease;
+            
+            &.hide{ 
+                background-color: #ccc;
+                color: #fff;  
+                user-select: none;
+                -webkit-tab-highlight-color: rgba(0,0,0,0);
+                -webkit-tab-highlight-color: transparent;
             }
+            &.show{ 
+                &:hover{
+                    background-color: #007bff;
+                    color: #fff;
+                }
+            }
+
         }
     }
 }
