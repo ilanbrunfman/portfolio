@@ -1,7 +1,7 @@
 /* 
   1. npm install xlsx
   2. create .xlsx file: 'src/database/filename.excel'
-  3. run node src/javascript/convert-excel-to-js.js 
+  3. run: node src/javascript/convert-excel-to-js.js 
 */
 
 import fs from 'fs';
@@ -20,18 +20,49 @@ XLSX.set_fs(fs);
 const inputPath = path.resolve(process.cwd(), 'src/database/datasetExcel.xlsx');
 const outputPath = path.resolve(process.cwd(), 'src/database/datasetExcel.js');
 
+// Generate unique random ID
+const generatedIds = new Set();
+
+function generateUniqueId() {
+  let id;
+  let attempts = 0;
+  do {
+    id = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    attempts++;
+    if (attempts > 10000) throw new Error('⚠️ Could not generate a unique ID');
+  } while (generatedIds.has(id));
+  generatedIds.add(id);
+  return id;
+}
+
 // Read workbook
 const workbook = XLSX.readFile(inputPath);
 
-// Get first sheet name
+// Get first sheet
 const sheetName = workbook.SheetNames[0];
 const worksheet = workbook.Sheets[sheetName];
 
 // Convert to JSON
-const jsonData = XLSX.utils.sheet_to_json(worksheet);
+const rawData = XLSX.utils.sheet_to_json(worksheet);
 
-// Save as JS file (named export)
-const jsContent = `export const dataset = ${JSON.stringify(jsonData, null, 2)};`;
+// ✅ Filter invalid rows (require name, gender, category)
+const filtered = rawData.filter(row =>
+  row.name && row.gender && row.category
+);
+
+// ✅ Sort alphabetically by name
+const sorted = filtered.sort((a, b) =>
+  a.name.localeCompare(b.name)
+);
+
+// ✅ Add unique ID to each row
+const dataset = sorted.map(item => ({
+  id: generateUniqueId(),
+  ...item
+}));
+
+// Write JS file with named export
+const jsContent = `export const dataset = ${JSON.stringify(dataset, null, 2)};`;
 fs.writeFileSync(outputPath, jsContent, 'utf8');
 
-console.log(`✅ dataset.js created with ${jsonData.length} records from ${sheetName}`);
+console.log(`✅ datasetExcel.js created with ${dataset.length} valid records from sheet: ${sheetName}`);

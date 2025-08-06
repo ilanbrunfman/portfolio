@@ -102,7 +102,7 @@ const filteredDataset = computed(() => {
                                 <div class="col-12 ">
                                     <form class="d-grid grid-2 gap-1">
                                         <div class="col">
-                                            <div class="card card-filter">
+                                            <div :class="['card card-filter',]">
                                                 <div class="row">
                                                     <div class="col-12 mb-1">
                                                         <label class="label fs-14 fw-bold">Gender:</label>
@@ -117,7 +117,7 @@ const filteredDataset = computed(() => {
                                             </div>
                                         </div>
                                         <div class="col">
-                                            <div class="card card-filter">
+                                            <div :class="['card card-filter', !isGenderSelected ? 'disabled' : '']">
                                                 <div class="row">
                                                     <div class="col-12 mb-1">
                                                         <label class="label fs-14 fw-bold">Category:</label>
