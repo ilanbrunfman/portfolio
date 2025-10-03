@@ -140,6 +140,8 @@ a{
 }
 
 .pointer{ cursor: pointer; }
+.nowrap{ white-space: nowrap; }
+
 
 .container{
     @media (min-width: var.$xsm) { 
@@ -244,6 +246,7 @@ a{
         &-underline{ text-decoration: underline;}
         &-uppercase{ text-transform: uppercase ;}
         &-capitalize{ text-transform: capitalize ;}
+        &-wrap{ white-space: pre; }
     }
     @media (min-width: var.$xsm) { @include text-align }
     @media (min-width: var.$sm) { &-sm { @include text-align } }
@@ -394,6 +397,11 @@ a{
 }
 
 .flex{
+    &-direction{
+        &-column{
+            flex-direction: column;
+        }
+    }
     &-wrap{
         flex-wrap: wrap;
     }

@@ -1,5 +1,5 @@
 <script setup>
-import ModalISA from '@/components/isa/components/shared/modal/ModalISA.vue';
+import ModalISA from '@/components/isa/components/modal/ModalISA.vue';
 </script>
 
 <template>

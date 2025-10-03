@@ -3,8 +3,8 @@ import { computed } from 'vue'
 import { useStore } from '@/stores/isa.js'
 import './Wrapper.scss'
 
-import Header from '@/components/isa/components/shared/header/Header.vue'
-import Footer from '@/components/isa/components/shared/footer/Footer.vue'
+import Header from '@/components/isa/components/header/Header.vue'
+import Footer from '@/components/isa/components/footer/Footer.vue'
 // import Modal from '@/components/isa/shared/modal/Modal.vue'
 
 const storeISA = useStore()

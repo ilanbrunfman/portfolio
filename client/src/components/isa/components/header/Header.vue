@@ -5,9 +5,9 @@ import './Header.scss'
 
 // components
 import IconEllipse from '@/components/icons/IconEllipse.vue'
-import ModalISI from '@/components/isa/components/shared/modal/ModalISI.vue'
-import ModalPI from '@/components/isa/components/shared/modal/ModalPI.vue'
-import ModalReference from '@/components/isa/components/shared/modal/ModalReference.vue'
+import ModalISI from '@/components/isa/components/modal/ModalISI.vue'
+import ModalPI from '@/components/isa/components/modal/ModalPI.vue'
+import ModalReference from '@/components/isa/components/modal/ModalReference.vue'
 
 const storeISA = useStore()
 

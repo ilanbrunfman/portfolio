@@ -9,7 +9,7 @@ import path from 'path';
 import csv from 'csv-parser';
 
 // Paths
-const inputPath = path.join(process.cwd(), 'src/database/dataset.csv');
+const inputPath = path.join(process.cwd(), 'src/database/dataset_v2.csv');
 const outputPath = path.join(process.cwd(), 'src/database/dataset.js');
 
 
@@ -37,14 +37,17 @@ fs.createReadStream(inputPath)
   .pipe(csv())
   .on('data', (data) => results.push(data))
   .on('end', () => {
-    // ✅ Filter out invalid rows
+    
+    /* // ✅ Filter out invalid rows
     const filtered = results.filter(row =>
-      row.name && row.gender && row.category
-    );
+      // row.name && row.gender && row.category
+      row.group_value
+    ); */
 
-    // ✅ Sort alphabetically by name
-    const sorted = filtered.sort((a, b) =>
-      a.name.localeCompare(b.name)
+    // ✅ Sort alphabetically by group's name 
+    // const sorted = filtered.sort((a, b) =>
+    const sorted = results.sort((a, b) =>
+      a.group_value.localeCompare(b.group_value)
     );
 
     // ✅ Add unique random ID to each item

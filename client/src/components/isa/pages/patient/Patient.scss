@@ -1,10 +1,11 @@
 .patient{
     .card{
         border-radius: 10px;
-        padding: 20px;
+        padding: 20px 20px;
         background-color: #ffffff;
         box-shadow: 0px 0px 0px 1px #eee;
-        max-width: 320px;
+        min-height: 460px;
+        // max-width: 320px;
 
         &-filter{
 
@@ -12,101 +13,142 @@
                 pointer-events: none;
                 opacity: 0.5;
                 cursor: not-allowed;
+                background-color: rgba(red, 0.125) !important;
             }
 
 
             .btn{
-                background-color: #eee;
-                cursor: pointer;
-                padding: 1.0rem 1.25rem;
-                border: none;
-                border-radius: 5px;
-                user-select: none;
-                font-weight: 600;
-                color: #666;
-                transition: all 0.35s ease;
-
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                text-transform: capitalize;
-                margin-bottom: 1.0rem;
-
-                &:last-child{
-                    margin-bottom: 0px;
-                }
-
-                // &.disabled {
-                //     pointer-events: none;
-                //     opacity: 0.5;
-                //     cursor: not-allowed;
-                // }
-
-                input[type="radio"] {
-                    /* Hide the default radio circle */
-                    appearance: none;       /* Most modern browsers */
-                    -webkit-appearance: none; /* Safari and Chrome */
-                    -moz-appearance: none;  /* Firefox */
-
-                    /* Remove any default styling */
-                    outline: none;
+                &-radio{
+                    background-color: #eee;
+                    cursor: pointer;
+                    padding: 1.0rem 1.25rem;
                     border: none;
-                    width: 0;
-                    height: 0;
-                    margin: 0;
-                    padding: 0;
-                    position: absolute;  /* Optional: take out of flow */
-                    opacity: 0;          /* Make it invisible */
+                    border-radius: 5px;
+                    user-select: none;
+                    font-weight: 600;
+                    color: #666;
+                    // transition: all 0.35s ease;
 
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    // text-transform: uppercase; // capitalize;
+                    margin-bottom: 1.0rem;
+
+                    &:last-child{
+                        margin-bottom: 0px;
+                    }
+
+                    // &.disabled {
+                    //     pointer-events: none;
+                    //     opacity: 0.5;
+                    //     cursor: not-allowed;
+                    // }
+
+                    input[type="radio"] {
+                        /* Hide the default radio circle */
+                        appearance: none;       /* Most modern browsers */
+                        -webkit-appearance: none; /* Safari and Chrome */
+                        -moz-appearance: none;  /* Firefox */
+
+                        /* Remove any default styling */
+                        outline: none;
+                        border: none;
+                        width: 0;
+                        height: 0;
+                        margin: 0;
+                        padding: 0;
+                        position: absolute;  /* Optional: take out of flow */
+                        opacity: 0;          /* Make it invisible */
+
+                    }
                     
-                }
+                    span{
+                        line-height: 1.2;
+                    }
+                    // input[type="radio"]:focus,
+                    // label:focus,
+                    // label:focus-visible {
+                    //     outline: none !important;
+                    //     box-shadow: none !important;
+                    // }
 
-                // input[type="radio"]:focus,
-                // label:focus,
-                // label:focus-visible {
-                //     outline: none !important;
-                //     box-shadow: none !important;
-                // }
+                    &:hover {
+                        border-color: #888;
+                        // color: #333;
+                    }
 
-                &:hover {
-                    border-color: #888;
-                    color: #333;
-                }
+                    &:focus{
+                        border: none;
+                        outline: none;
+                    }
 
-                &:focus{
-                    border: none;
-                    outline: none;
-                }
-
-                &.active {
-                    background-color: #007bff;
-                    border-color: #007bff;
-                    color: white;
+                    &.active {
+                        background-color: #007bff;
+                        border-color: #007bff;
+                        color: white;
+                        &:hover{ background-color: rgba(#0070d9, 0.8); }
+                    }
                 }
             }
         }
 
         &-item{
-            
-            // transition: all 0.35s ease;
+            color: #606060;  
+            padding-inline: 10px;
 
             &.hide{ 
                 background-color: #fff;
                 opacity: 0.5;
-                color: #606060;  
                 user-select: none;
                 -webkit-tab-highlight-color: rgba(0,0,0,0);
                 -webkit-tab-highlight-color: transparent;
             }
             &.show{ 
                 cursor: pointer;
-
-                &:hover{
-                    background-color: #007bff;
-                    color: #fff;
-                }
+                
+                // &:hover{
+                //     background-color: #eee;
+                //     color: #606060;  
+                // }
             }
 
+            &-selected{
+                background-color: #007bff;
+                color: #fff;
+            }
+
+        }
+    }
+
+    .btn{
+        &-item{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 5px;
+            background-color: #eee;
+            color: #606060;  
+            // min-height: 56px;
+
+            h3{
+                line-height: 1.2;
+               
+            }
+
+            &.hide{ 
+                background-color: #fff;
+                opacity: 0.5;
+                user-select: none;
+                -webkit-tab-highlight-color: rgba(0,0,0,0);
+                -webkit-tab-highlight-color: transparent;
+            }
+
+            &-selected{
+                background-color: #007bff;
+                color: #fff;
+                &:hover{ background-color: rgba(#0070d9, 0.8); }
+            }
         }
     }
 }

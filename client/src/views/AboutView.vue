@@ -128,7 +128,7 @@ const toggleAccordion = (array, item) => {
                     <div class="row">
                         <div class="col pb-5">
                             <h1 class="title fw-600 lh-1-0 mb-1">Ilan Brunfman</h1>
-                            <h4 class="para fw-400 lh-1-0">Software Engineer <!--Senior Frontend Feveloper--> | <a href="https://www.eversanaintouch.com/" target="_blank" class="z">Eversana Intouch</a></h4>
+                            <h4 class="para fw-400 lh-1-0">Software Engineer <!--Senior Frontend Feveloper--> | <a href="https://www.eversanaintouch.com/" target="_blank" class="text-underline">Eversana Intouch</a></h4>
                         </div>
                     </div>
                 </div>
