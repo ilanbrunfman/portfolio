@@ -128,7 +128,7 @@ export const router = createRouter({
                 },
                 {
                     path: '/isa/overview',
-                    name: 'Overview',
+                    name: 'ISAOverview',
                     title: 'Overview',
                     component: () => import('@/components/isa/pages/overview/Overview.vue'),
                     meta: {
@@ -207,11 +207,41 @@ export const router = createRouter({
             },
         },
         {
+            path: '/crud',
+            // name: 'isa',
+            component: () => import('@/views/CRUD.vue'),
+            children: [
+                { path: '', redirect: '/crud/overview', },
+                {
+                    path: '/crud/overview',
+                    name: 'CRUDOverview',
+                    title: 'Overview',
+                    component: () => import('@/components/crud/pages/overview/Overview.vue'),
+                    meta: {
+                        title: 'CRUD - Overview',
+                    },
+                },
+            ],
+            meta: {
+                title: 'CRUD Programming',
+                favicon: '/favicons/IconIB.svg'
+            }
+        },
+        {
             path: '/about',
             name: 'about',
             component: () => import('@/views/AboutView.vue'),
             meta: {
                 title: 'About',
+                favicon: '/favicons/IconIB.svg'
+            }
+        },
+        {
+            path: '/landing-page',
+            name: 'landing-page',
+            component: () => import('@/views/LandingPageView.vue'),
+            meta: {
+                title: 'Landing Page',
                 favicon: '/favicons/IconIB.svg'
             }
         },

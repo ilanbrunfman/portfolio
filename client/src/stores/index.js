@@ -35,7 +35,7 @@ export const useStore = defineStore('store', {
             },
             { 
                 id: 'crud-programming', 
-                path: '/crud-programming', 
+                path: '/crud', 
                 icon: 'IconStack',
                 title: 'CRUD Programming',
                 para: 'Create, Read, Update, and Delete',
