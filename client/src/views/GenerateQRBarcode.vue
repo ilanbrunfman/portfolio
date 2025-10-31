@@ -280,20 +280,6 @@ const reset = () => {
                         </section>
                     </transition>
         
-        
-        
-        
-                    <!-- <div class="row">
-                                <div class="col-12 col-lg-9 mx-auto">
-                                    <div class="showcase-qrcode mb-2" id="rhombus" v-html="qrCodeImage"></div>
-                                    <h3 class="para fw-600 lh-1-4 text-center mb-2" style="word-wrap: break-word; overflow-wrap: break-word; word-break: break-all;">{{ displayUrl }}</h3>
-                                </div>
-                            </div> -->
-        
-                            
-        
-                    
-        
                 </div>
             </div>
         </template>
@@ -312,15 +298,8 @@ const reset = () => {
     padding: 4.0rem 2.0rem;
 
     .container{
-        // display: flex;
-        // align-items: center;
-        // justify-content: center;
         max-width: 512px;
         margin-inline: auto;
-
-        
-        
-        // border: solid 2px var(--soft-background);
         aspect-ratio: 16 / 9 ;
     }
 
@@ -368,8 +347,6 @@ const reset = () => {
 
             }
             input:is(:-webkit-autofill, :autofill) {
-                // border: 1px solid var(--copy);
-                // -webkit-text-fill-color: var(--white);
                 -webkit-box-shadow: 0 0 0px 1000px rgba(#000,0) inset;
                 transition: background-color 5000s ease-in-out 0s;
             }
@@ -460,9 +437,7 @@ const reset = () => {
             border-radius: 10px;
             background-color: var(--background);
             color: var(--dark);
-            // border: solid 1px rgba(#000, 0.125);
             box-shadow: 0px 0px 0px 1px rgba(var(--darkRGB), 0.125);
-            // background-color: #fafbfc;
             
             &-selected{
                 box-shadow: 0px 0px 0px 2px rgba(#0070d9, 1.0);
@@ -498,9 +473,6 @@ const reset = () => {
 
             &:hover{
                 box-shadow: 0px 0px 0px 2px rgba(#0070d9, 1.0);
-                // box-shadow: 
-                //     0px 0px 0px 1px rgba(var(--darkRGB), 0.25),
-                //     // 0px 0px 24px -4px rgba(#000, 0.125);
             }
 
             .icon{

@@ -5,6 +5,7 @@ import p from './p/P.vue'
 import href from './href/href.vue'
 import button from './button/Button.vue'
 import image from './image/Image.vue'
+import icon from './icon/Icon.vue'
 import list from './list/List.vue'
 
 const props = defineProps({
@@ -18,6 +19,7 @@ const registry = {
   href: href,
   button: button,
   img: image,
+  icon: icon,
   ul: list,
 }
 

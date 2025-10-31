@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useStore } from '@/stores/index.js'
 
 import Wrapper from '@/components/shared/wrapper/Wrapper.vue'
+import Element from '@/components/shared/element/Element.vue'
 
 const store = useStore()
 
@@ -28,11 +29,11 @@ const data = computed(() => store.data)
                 <div class="container mx-auto px-3">
                     <div class="row">
                         <div class="col-12 cards pt-5">
-                            <router-link :to="card.path" v-for="card in data" :key="card.id" class="card">
-                                <!-- <div class="card-thumbnail">
-                                    <p>Thumbnail</p>
-                                </div> -->
-                                <div class="card-content">
+                            <router-link :to="card.path" v-for="card in data" :key="card.id" :class="['card', `card-${card.id}`]">
+                                <div class="card-header">
+                                    <Element :prop="{ component: 'icon', class: '', html: card.icon }" />
+                                </div>
+                                <div class="card-body">
                                     <h3 class="title">{{ card.title }}</h3>
                                     <p class="para">{{ card.para }}</p>
                                 </div>
