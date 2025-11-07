@@ -3,6 +3,7 @@
     
     --white             : #202124; 
     --whiteRGB          : 40, 40, 40;
+    --gray              : #212121;
     --black             : #202124;
     --blackRGB          : 255, 255, 255;
     --primaryColor      : #4880FF;
@@ -12,10 +13,11 @@
         --white             : #fafbfc;
         --whiteRGB          : 250, 251, 252;
         --pureWhite         : #ffffff;
+        --gray              : #eeeeee;
         --black             : #213547;
         --blackRGB          : 32, 33, 36;
-        --copy             : #5d5d5d; // #213547;
-        --copyRGB          : 93, 93, 93; // 32, 33, 36;
+        --copy              : #5d5d5d; // #213547;
+        --copyRGB           : 93, 93, 93; // 32, 33, 36;
         --red               : red;
     }
 }

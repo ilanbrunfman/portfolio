@@ -221,6 +221,15 @@ export const router = createRouter({
                         title: 'CRUD - Overview',
                     },
                 },
+                {
+                    path: '/crud/schema',
+                    name: 'Schema',
+                    title: 'Schema',
+                    component: () => import('@/components/crud/pages/schema/Schema.vue'),
+                    meta: {
+                        title: 'ISA - Patient',
+                    }
+                },
             ],
             meta: {
                 title: 'CRUD Programming',
