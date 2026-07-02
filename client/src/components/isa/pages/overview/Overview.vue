@@ -4,6 +4,8 @@ import Wrapper from '@/components/isa/components/wrapper/Wrapper.vue'
 import abbvieLogo from '@/assets/images/abbvie-logo.svg'
 import Element from '@/components/shared/element/Element.vue'
 
+import './Overview.scss'
+
 const toggle = (item) => {
     console.log('toggle has been clicked', item.html)
 }

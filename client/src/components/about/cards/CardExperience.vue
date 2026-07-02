@@ -12,7 +12,12 @@ const props = defineProps({
 
 <template>
 <div class="card">
-    <div v-for="(item, index) in array" :key="index" :class="['card-item card-item-divider d-flex align-items-start gap-1 pointer', item.active ? 'active' : '']" @click="toggleAccordion(array, item, index)">
+    <div 
+        v-for="(item, index) in array" 
+        :key="index" 
+        :class="['card-item card-item-divider d-flex align-items-start gap-1 pointer', item.active ? 'active' : '']" 
+        @click="toggleAccordion(array, item, index)"
+    >
         <img :src="getImagePath(item.logo)"
             alt="experience logo"
             class="item-logo"

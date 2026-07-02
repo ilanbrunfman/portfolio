@@ -23,57 +23,55 @@ const items = ref([
         active: false,
         title: 'Montes pharetra malesuada; magna porttitor et nisi.',
         para: `Lacinia accumsan lobortis vehicula facilisis facilisi. Elit vestibulum molestie congue; tellus elementum molestie penatibus ante.`,
+        btn: { label: 'Call to action', cta: () => { console.log('shortcut!')} }
     },
     {
         id: 2,
         active: false,
         title: 'Montes pharetra malesuada; magna porttitor et nisi.',
         para: `Lacinia accumsan lobortis vehicula facilisis facilisi. Elit vestibulum molestie congue; tellus elementum molestie penatibus ante.`,
+        btn: { label: 'Call to action', cta: () => { console.log('shortcut!')} }
     },
 ])
 
-// let tweens = [] // will store GSAP animations per accordion
+const toggleAccordion = async (item) => {
 
-// onMounted(() => {
-//     const accordions = gsap.utils.toArray('.accordion')
-
-//     tweens = accordions.map((accordion) => {
-//         const body = accordion.querySelector('.accordion-body')
-//         gsap.set(body, { height: 0, overflow: 'hidden' })
-
-//         // Define animation for opening
-//         return gsap.to(body, { height: 'auto', duration: 0.5, ease: 'power2.out', paused: true, })
-//     })
-// })
-
-// onBeforeUnmount(() => {
-//   tweens.forEach((t) => t.kill())
-// })
-
-const toggleAccordion = async (item, index) => {
-    // console.log('toggleAccordion', item.id)
-
-    await nextTick()
-
-    items.value.map((obj) => {
-        if(obj.id === item.id){
-            obj.active = true
-            // gsap.to('.accordion.active .accordion-body', { height: 'auto', duration: 0.5, ease: 'power2.out', paused: true, })
-        } else {
-            obj.active = false
-            // gsap.to('.accordion .accordion-body', { height: 0, overflow: 'hidden' })
+    items.value.map((obj) => { 
+        if(obj.id === item.id && !item.active) {
+            item.active = true
+        } else if(obj.id === item.id && item.active) {
+             item.active = false
         }
     })
+    // items.value = items.value.map((obj) => ({ 
+    //     ...obj, 
+    //     active: obj.id === item.id ? true : false, 
+    // }))
 
-    // Wait for DOM update
-    
+    await nextTick() // Wait for DOM to update before animating
 
-    // items.value.map((obj) => {
-    //     obj.id === index ? 
-    //          :
-    //         gsap.to('.accordion .accordion-body', { height: 0, overflow: 'hidden' })
+    // Collapse all inactive accordions
+    // gsap.utils.toArray('.accordion').forEach((acc) => {
+    //     const body = acc.querySelector('.accordion-body')
+    //     if (!acc.classList.contains('active')) {
+    //         gsap.to(body, { height: 0, opacity: 0, duration: 0.4, ease: 'power2.inOut', })
+    //     }
     // })
 
+    // // Animate the active accordion
+    // const activeAccordion = document.querySelector(`.accordion-${item.id}.active`)
+    // if (activeAccordion && !item.active) {
+    //     const body = activeAccordion.querySelector('.accordion-body')
+    //     const fullHeight = body.scrollHeight
+    //     gsap.fromTo(body, 
+    //         { height: 0, opacity: 0 }, 
+    //         { height: fullHeight, opacity: 1, duration: 0.5, ease: 'power2.out', onComplete: () => ( body.style.height = 'auto' ), 
+    //     })
+    //     // gsap.to(body, 
+    //     //     // { height: 0, opacity: 0 }, 
+    //     //     { height: fullHeight, opacity: 1, duration: 0.5, ease: 'power2.out', onComplete: () => ( body.style.height = 'auto' ), 
+    //     // })
+    // }
 }
 
 
@@ -123,26 +121,28 @@ const toggleAccordion = async (item, index) => {
                 <section data-animate>
                     <div class="container mx-auto">
                         <div class="row">
-                            <div class="col-12 d-grid grid-1 grid-lg-7-5 gap-3 align-items-center pb-6">
+                            <div class="col-12 d-grid grid-1 grid-lg-7-5 gap-3 align-items-center pb-6" style="height: 1000px;">
                                 <div class="col col-lg-9" data-animate>
 
-                                    <div v-for="(item, index) in items" :key="index" :class="['accordion', item.active ? 'active' : '']">
+                                    <div v-for="(item, index) in items" :key="index" :class="[`accordion accordion-${item.id}`, item.active ? 'active' : '']">
                                         <div @click="toggleAccordion(item, index)" class="accordion-header">
                                             <h2 class="sub-title fw-600 lh-1-3 mb-1" v-html="item.title"></h2>
                                         </div>
-                                        <div class="accordion-body">
-                                            <p class="para lh-1-3 mb-1" v-html="item.para"></p>
-                                            <button v-if="item.btn" class="btn btn-primary mb-2" v-html="item.btn.label" @click="item.btn.cta"></button>
-                                            <div class="d-flex d-lg-none align-items-center justify-center image squre"  v-html="index"></div>
-                                        </div>
+                                        <!-- <transition name="accordion" appear mode="out-in"> -->
+                                            <div class="accordion-body">
+                                                <p class="para lh-1-3 mb-1" v-html="item.para"></p>
+                                                <button v-if="item.btn" class="btn btn-primary mb-2" v-html="item.btn.label" @click="item.btn.cta"></button>
+                                                <div class="d-flex d-lg-none align-items-center justify-center image squre"  v-html="index"></div>
+                                            </div>
+                                        <!-- </transition> -->
                                     </div>
 
                                 </div>
                                 <div class="col d-none d-lg-block" data-animate>
                                     <template v-for="(item, index) in items" :key="index">
-                                        <div v-if="item.active" class="image squre d-flex align-items-center justify-center">
+                                        <!-- <div v-if="item.active" class="image squre d-flex align-items-center justify-center">
                                             <h1 v-html="index"></h1>
-                                        </div>
+                                        </div> -->
                                     </template>
                                 </div>
                             </div>
@@ -219,23 +219,22 @@ const toggleAccordion = async (item, index) => {
         }
         &-body {
             // background-color: red;
-            max-height: 0;
+            // max-height: 0;
+            min-height: 0px;
+            height: 0;
             overflow: hidden;
-            // transition: all 1.0s ease-out;
+            transition: height 0.5s ease-out;
         }
 
         &.active {
             .accordion-body {
-                // background-color: pink;
-                max-height: 1000px; // should be taller than your tallest section
+                height: auto;
+                // background-color: lightgreen;
+                // max-height: 1000px; // should be taller than your tallest section
             }
         }
 
         // &:last-child{ margin-bottom: 0; }
-    }
-
-    .overflow-hidden{
-
     }
 }
 </style>
