@@ -1,0 +1,39 @@
+@use "@/assets/styles/shared/variables" as var;
+
+.navbar{
+    --height: 64px;
+    position: relative;
+    background-color: var(--color-backgroun);
+    
+    &-container{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: var.$container-xl;
+        margin-inline: auto;
+
+        padding-inline: 1.5rem;
+
+        @include var.sm { 
+            padding-inline: 2.0rem;
+        }
+
+        @include var.md { 
+            padding-inline: 3.0rem;
+        }
+    }
+
+    &-column{
+        min-height: var(--height);
+        display: flex;
+        align-items: center;
+    }
+
+    &-logo{
+        font-size: 24px;
+        font-weight: bold;
+        line-height: 1.0;
+        color: var(--text-h);
+    }
+
+}
