@@ -9,7 +9,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        max-width: var.$container-xl;
+        max-width: var.$container-2xl;
         margin-inline: auto;
 
         padding-inline: 1.5rem;
@@ -30,10 +30,78 @@
     }
 
     &-logo{
+        display: inline-flex;
+        align-items: center;
         font-size: 24px;
         font-weight: bold;
         line-height: 1.0;
         color: var(--text-h);
+        text-decoration: none;
+        cursor: pointer;
+        transition: color 0.15s ease;
+
+        &:hover {
+            color: var(--accent);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent-border);
+            outline-offset: 4px;
+            border-radius: 4px;
+        }
     }
 
+}
+
+.theme-toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--code-bg);
+
+    &__indicator {
+        position: absolute;
+        top: 3px;
+        bottom: 3px;
+        left: 0;
+        width: 0; // GSAP sets the real width once it measures the active button
+        background: var(--accent-bg);
+        border: 1px solid var(--accent-border);
+        border-radius: 5px;
+        pointer-events: none;
+        will-change: transform, width;
+    }
+
+    &__option {
+        position: relative;
+        z-index: 1; // sits above the indicator so its text/background are visible
+        appearance: none;
+        border: none;
+        background: transparent;
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 14px;
+        line-height: 1;
+        padding: 6px 12px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: color 0.15s ease;
+
+        &:hover {
+            color: var(--text-h);
+        }
+
+        &.is-active {
+            color: var(--accent);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent-border);
+            outline-offset: 2px;
+        }
+    }
 }

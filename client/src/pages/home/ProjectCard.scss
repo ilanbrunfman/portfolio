@@ -1,0 +1,116 @@
+.project-tile {
+    display: block;
+    position: relative;
+    width: 100%;
+    padding: 0;
+    margin: 0 0 24px;
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--code-bg);
+    cursor: pointer;
+    break-inside: avoid;
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+    }
+
+    &__image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        filter: grayscale(0.7) brightness(0.92);
+        transform: scale(1);
+        transition: filter 0.4s ease, transform 0.4s ease;
+    }
+
+    &__video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0;
+        transition: opacity 0.25s ease;
+        pointer-events: none;
+    }
+
+    &__overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        gap: 2px;
+        padding: 14px 16px;
+        text-align: left;
+        background: linear-gradient(
+            to top,
+            rgba(0, 0, 0, 0.72) 0%,
+            rgba(0, 0, 0, 0.32) 45%,
+            rgba(0, 0, 0, 0) 75%
+        );
+        opacity: 0;
+        transform: translateY(6px);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    &__title {
+        margin: 0;
+        font-family: var(--heading);
+        font-size: 0.98rem;
+        font-weight: 600;
+        color: #fff;
+    }
+
+    &__stack {
+        margin: 0;
+        font-family: var(--mono);
+        font-size: 0.74rem;
+        color: rgba(255, 255, 255, 0.82);
+    }
+
+    &:hover,
+    &:focus-visible {
+        .project-tile__image {
+            filter: none;
+            transform: scale(1.045);
+        }
+
+        .project-tile__video {
+            opacity: 1;
+        }
+
+        .project-tile__overlay {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        &__image,
+        &__overlay {
+            transition: none;
+        }
+    }
+}
+
+// Touch devices have no hover — keep the overlay visible but lighter,
+// so titles are still readable without requiring a tap-to-reveal step.
+@media (hover: none) {
+    .project-tile__overlay {
+        opacity: 1;
+        transform: none;
+        background: linear-gradient(
+            to top,
+            rgba(0, 0, 0, 0.68) 0%,
+            rgba(0, 0, 0, 0) 65%
+        );
+    }
+
+    .project-tile__image {
+        filter: none;
+    }
+}

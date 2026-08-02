@@ -1,84 +1,161 @@
-.card {
-    background-color: #ffffff;
-    border-radius: 1rem;
-    overflow: hidden;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+@use "@/assets/styles/shared/variables" as var;
 
-    &:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+.home {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    padding: 64px 0 96px;
 
-        .portfolio-card__image img {
-            transform: scale(1.05);
-        }
+    // ---- showcase section: title, subtitle, search ----
+    &__showcase {
+        margin-bottom: 8px;
     }
 
-    &__image {
-        width: 100%;
-        height: 220px;
-        overflow: hidden;
-        background-color: #f5f5f5;
-
-        img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.4s ease;
-        }
-    }
-
-    &__content {
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
+    &__eyebrow {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        color: var(--accent);
+        margin-bottom: 14px;
     }
 
     &__title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin-bottom: 0.75rem;
-        color: #111827;
+        font-family: var(--heading);
+        font-size: clamp(2rem, 4vw, 2.75rem);
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--text-h);
+        margin: 0 0 12px;
     }
 
-    &__description {
-        font-size: 0.95rem;
+    &__subtitle {
+        font-size: 0.98rem;
         line-height: 1.6;
-        color: #6b7280;
-        margin-bottom: 1.25rem;
-        flex-grow: 1;
+        color: var(--text);
+        margin: 0 0 24px;
+        max-width: 620px;
     }
 
-    &__tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
+    &__search {
+        position: relative;
+        width: 100%;
+        max-width: 280px;
 
-        span {
-            background-color: #f3f4f6;
-            color: #374151;
-            font-size: 0.8rem;
-            font-weight: 500;
-            padding: 0.35rem 0.75rem;
-            border-radius: 999px;
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            appearance: none;
+            border: 1px solid var(--border);
+            background: var(--code-bg);
+            color: var(--text-h);
+            font-family: var(--sans);
+            font-size: 0.9rem;
+            padding: 8px 32px 8px 14px;
+            border-radius: 8px;
+            transition: border-color 0.15s ease;
+
+            &::placeholder {
+                color: var(--text);
+            }
+
+            &:focus-visible {
+                outline: none;
+                border-color: var(--accent-border);
+            }
         }
     }
 
-    &__link {
-        margin-top: 1.5rem;
-        display: inline-flex;
+    &__search-clear {
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        transform: translateY(-50%);
+        appearance: none;
+        border: none;
+        background: none;
+        color: var(--text);
+        font-size: 1.1rem;
+        line-height: 1;
+        width: 20px;
+        height: 20px;
+        display: flex;
         align-items: center;
-        gap: 0.5rem;
-        color: #2563eb;
-        font-weight: 600;
-        text-decoration: none;
+        justify-content: center;
+        cursor: pointer;
+        border-radius: 4px;
 
         &:hover {
-            text-decoration: underline;
+            color: var(--text-h);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent-border);
+            outline-offset: 1px;
+        }
+    }
+
+    // ---- toolbar section: filter pills ----
+    &__toolbar {
+        margin-bottom: 24px;
+    }
+
+    &__filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    &__filter {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: var(--code-bg);
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 0.85rem;
+        line-height: 1;
+        padding: 7px 14px;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+        &:hover {
+            color: var(--text-h);
+            border-color: var(--accent-border);
+        }
+
+        &.is-active {
+            background: var(--accent-bg);
+            border-color: var(--accent-border);
+            color: var(--accent);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent-border);
+            outline-offset: 2px;
+        }
+    }
+
+    // ---- portfolio section: masonry grid ----
+    &__empty {
+        font-size: 0.95rem;
+        color: var(--text);
+        padding: 24px 0;
+    }
+
+    // CSS multi-column: each .project-tile's own aspect-ratio drives its
+    // height, so tiles naturally stack unevenly like a photo grid instead
+    // of lining up in strict rows.
+    &__grid {
+        column-count: 1;
+        column-gap: 16px;
+
+        @include var.md {
+            column-count: 2;
+        }
+
+        @include var.lg {
+            column-count: 3;
         }
     }
 }

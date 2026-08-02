@@ -1,18 +1,20 @@
+import Logo from './Logo'
+import ThemeToggle from './ThemeToggle'
 import './Header.scss'
 
 const Header = () => {
-    return(
+    return (
         <header className='navbar'>
             <div className="navbar-container">
                 <div className="navbar-column">
-                    <h3 className='navbar-logo'>Brunfman</h3>
+                    <Logo />
                 </div>
                 <div className="navbar-column">
-                    <h2>Toggle</h2>
+                    <ThemeToggle />
                 </div>
             </div>
         </header>
     )
 }
 
-export default Header;
+export default Header
