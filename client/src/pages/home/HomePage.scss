@@ -40,19 +40,19 @@
     &__search {
         position: relative;
         width: 100%;
-        max-width: 280px;
+        max-width: 320px;
 
         input {
             width: 100%;
             box-sizing: border-box;
             appearance: none;
             border: 1px solid var(--border);
-            background: var(--code-bg);
+            background: var(--bg);
             color: var(--text-h);
             font-family: var(--sans);
             font-size: 0.9rem;
-            padding: 8px 32px 8px 14px;
-            border-radius: 8px;
+            padding: 10px 36px 10px 40px;
+            border-radius: 999px;
             transition: border-color 0.15s ease;
 
             &::placeholder {
@@ -64,6 +64,17 @@
                 border-color: var(--accent-border);
             }
         }
+    }
+
+    &__search-icon {
+        position: absolute;
+        top: 50%;
+        left: 14px;
+        transform: translateY(-50%);
+        width: 16px;
+        height: 16px;
+        color: var(--text);
+        pointer-events: none;
     }
 
     &__search-clear {
@@ -100,40 +111,68 @@
         margin-bottom: 24px;
     }
 
+    &__filters-card {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px;
+        background: var(--bg);
+    }
+
     &__filters {
         display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
+        flex-wrap: nowrap;
+        gap: 12px;
+        overflow-x: auto;
+        scrollbar-width: none; // Firefox
+
+        &::-webkit-scrollbar {
+            display: none; // Chrome/Safari/Edge
+        }
     }
 
     &__filter {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
         appearance: none;
         border: 1px solid var(--border);
-        background: var(--code-bg);
-        color: var(--text);
+        background: var(--bg);
         font-family: var(--sans);
-        font-size: 0.85rem;
-        line-height: 1;
-        padding: 7px 14px;
+        padding: 10px 16px;
         border-radius: 999px;
         cursor: pointer;
-        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+        transition: border-color 0.15s ease, background 0.15s ease;
+        white-space: nowrap;
 
         &:hover {
-            color: var(--text-h);
             border-color: var(--accent-border);
         }
 
         &.is-active {
             background: var(--accent-bg);
             border-color: var(--accent-border);
-            color: var(--accent);
         }
 
         &:focus-visible {
             outline: 2px solid var(--accent-border);
             outline-offset: 2px;
         }
+    }
+
+    &__filter-label {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-h);
+    }
+
+    &__filter.is-active &__filter-label {
+        color: var(--accent);
+    }
+
+    &__filter-count {
+        font-size: 0.82rem;
+        color: var(--text);
     }
 
     // ---- portfolio section: masonry grid ----

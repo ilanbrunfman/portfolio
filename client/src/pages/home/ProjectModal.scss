@@ -17,124 +17,136 @@
     &__panel {
         position: relative;
         width: 100%;
-        max-width: 640px;
+        max-width: 760px;
         max-height: 88vh;
         overflow-y: auto;
-        background: var(--code-bg);
+        background: var(--bg);
         border: 1px solid var(--border);
-        border-radius: 10px;
+        border-radius: 16px;
         box-shadow: var(--shadow);
         animation: modal-in 0.22s ease;
     }
 
-    &__tab {
-        position: sticky;
-        top: 0;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 14px;
-        background: color-mix(in srgb, var(--code-bg) 85%, var(--text-h) 15%);
-        border-bottom: 1px solid var(--border);
-        font-family: var(--mono);
-        font-size: 0.72rem;
-        color: var(--text);
-        z-index: 1;
-    }
-
-    &__dots {
-        display: inline-flex;
-        gap: 5px;
-
-        i {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--border);
-        }
-    }
-
-    &__close {
-        margin-left: auto;
-        background: none;
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        color: var(--text);
-        font-family: var(--mono);
-        font-size: 0.68rem;
-        padding: 3px 8px;
-        cursor: pointer;
-
-        &:hover {
-            border-color: var(--accent-border);
-            color: var(--accent);
-        }
-    }
-
+    // ---- media + floating close button ----
     &__media {
-        aspect-ratio: 16 / 9;
+        position: relative;
         overflow: hidden;
+        background: var(--code-bg); // fills the frame while the real ratio is still being measured
 
         img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
         }
     }
 
+    &__close {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border: none;
+        border-radius: 50%;
+        background: color-mix(in srgb, black 45%, transparent);
+        color: #fff;
+        cursor: pointer;
+        transition: background 0.15s ease;
+
+        svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        &:hover {
+            background: color-mix(in srgb, black 65%, transparent);
+        }
+
+        &:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 2px;
+        }
+    }
+
+    // ---- body ----
     &__body {
-        padding: 22px 24px 26px;
+        padding: 24px 26px 28px;
 
         h2 {
             font-family: var(--heading);
-            font-size: 1.3rem;
+            font-size: 1.4rem;
+            font-weight: 600;
             color: var(--text-h);
             margin: 0 0 10px;
         }
 
         p {
-            font-size: 0.92rem;
+            font-size: 0.95rem;
             line-height: 1.6;
             color: var(--text);
-            margin: 0 0 16px;
+            margin: 0 0 18px;
+            max-width: 62ch; // keeps line length readable even as the panel widens
         }
     }
 
+    // ---- tags: same rounded-full pill language as the filter row ----
     &__tags {
         display: flex;
         flex-wrap: wrap;
-        gap: 6px;
+        gap: 8px;
         list-style: none;
-        margin: 0 0 20px;
+        margin: 0;
         padding: 0;
 
         li {
-            font-family: var(--mono);
-            font-size: 0.7rem;
-            color: var(--accent);
-            background: var(--accent-bg);
-            border: 1px solid var(--accent-border);
-            border-radius: 4px;
-            padding: 3px 8px;
-
-            &::before {
-                content: '#';
-                opacity: 0.6;
-            }
+            font-family: var(--sans);
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-h);
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 6px 14px;
         }
     }
 
+    // ---- CTA: solid button instead of a text link ----
     &__link {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        font-family: var(--mono);
-        font-size: 0.85rem;
-        color: var(--accent);
+        gap: 8px;
+        margin-top: 22px;
+        background: var(--accent);
+        color: var(--bg);
+        font-family: var(--sans);
+        font-size: 0.92rem;
+        font-weight: 600;
         text-decoration: none;
+        padding: 11px 20px;
+        border-radius: 999px;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+
+        svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.2s ease;
+        }
 
         &:hover {
-            text-decoration: underline;
+            opacity: 0.9;
+
+            svg {
+                transform: translateX(3px);
+            }
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent-border);
+            outline-offset: 2px;
         }
     }
 }

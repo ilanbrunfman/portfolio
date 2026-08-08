@@ -93,6 +93,18 @@ const filterOptions = [
     }, [])
 ]
 
+// How many projects match each filter option — shown next to the label,
+// same idea as "Wallpaper 69K" in the reference.
+const filterCounts = portfolioProjects.reduce(
+    (counts, project) => {
+        project.tags.forEach((tag) => {
+            counts[tag] = (counts[tag] || 0) + 1
+        })
+        return counts
+    },
+    { All: portfolioProjects.length }
+)
+
 const searchableText = (project) =>
     [project.title, project.tags.join(' '), project.description].join(' ').toLowerCase()
 
@@ -171,12 +183,22 @@ const HomePage = () => {
                         <p className="home__subtitle">
                             {visibleProjects.length} of {shuffledProjects.length} projects. Click a tile to see the build.
                         </p>
-                    </div>
-                </div>
 
-                <div className="row">
-                    <div className="col-12 mb-2">
-                        <div className="home__search">
+                        <div className="home__search mb-1">
+                            <svg
+                                className="home__search-icon"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden="true"
+                            >
+                                <circle cx="11" cy="11" r="7" />
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+
                             <input
                                 type="text"
                                 value={searchQuery}
@@ -202,20 +224,23 @@ const HomePage = () => {
             {/* ---- toolbar: filter pills ---- */}
             <section className="home__toolbar container">
                 <div className="row">
-                    <div className="col-12 mb-2">
-                        <div className="home__filters" role="radiogroup" aria-label="Filter projects by stack">
-                            {filterOptions.map((option) => (
-                                <button
-                                    key={option}
-                                    type="button"
-                                    role="radio"
-                                    aria-checked={activeFilter === option}
-                                    className={`home__filter${activeFilter === option ? ' is-active' : ''}`}
-                                    onClick={() => handleFilterClick(option)}
-                                >
-                                    {option}
-                                </button>
-                            ))}
+                    <div className="col-12">
+                        <div className="home__filters-card">
+                            <div className="home__filters" role="radiogroup" aria-label="Filter projects by stack">
+                                {filterOptions.map((option) => (
+                                    <button
+                                        key={option}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={activeFilter === option}
+                                        className={`home__filter${activeFilter === option ? ' is-active' : ''}`}
+                                        onClick={() => handleFilterClick(option)}
+                                    >
+                                        <span className="home__filter-label">{option}</span>
+                                        <span className="home__filter-count">{filterCounts[option] ?? 0}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
