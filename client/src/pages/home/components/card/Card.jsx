@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
-import './ProjectCard.scss'
+import { Link } from 'react-router-dom'
+import './Card.scss'
 
 /**
  * Renders one project as a full-bleed image tile that plays a short
@@ -21,13 +22,21 @@ import './ProjectCard.scss'
  * their own once loaded, no JS play/pause control needed or possible.
  *
  * Touch devices have no hover, so the preview never triggers there —
- * tapping goes straight to onOpen, same as a plain image tile would.
+ * tapping goes straight to onOpen (or the route link) same as a plain
+ * image tile would.
  *
  * Tile height is still measured from the real poster image's natural
  * size (see the earlier discussion) — the preview media reuses that
  * same box via object-fit: cover, so it doesn't need its own ratio.
+ *
+ * Navigation vs modal: if `project.route` is set, the tile renders as
+ * a <Link> to that route (real URL, back-button support, SEO-crawlable
+ * detail page). If `project.route` is omitted, the tile renders as a
+ * <button> that calls `onOpen(project)` to open the ProjectModal
+ * instead. Hover/preview behavior is identical either way — only the
+ * outer wrapping element and click behavior change.
  */
-const ProjectCard = ({ project, onOpen }) => {
+const Card = ({ project, onOpen }) => {
     const [ratio, setRatio] = useState(4 / 3) // neutral placeholder until measured
     const [isHovering, setIsHovering] = useState(false)
     const videoRef = useRef(null)
@@ -71,20 +80,8 @@ const ProjectCard = ({ project, onOpen }) => {
         }
     }
 
-    return (
-        <button
-            type="button"
-            className="project-tile"
-            style={{ aspectRatio: ratio }}
-            onClick={() => onOpen(project)}
-            onMouseEnter={handleMouseEnter}
-            onMouseLeave={handleMouseLeave}
-            aria-label={`View ${project.title}`}
-            // --- Router alternative ---
-            // Swap the <button> above for:
-            // <Link to={project.link} className="project-tile" style={{ aspectRatio: ratio }}>
-            // and drop the onClick/onOpen prop entirely.
-        >
+    const tileContent = (
+        <>
             <img
                 className="project-tile__image"
                 src={project.preview?.type === 'gif' && isHovering ? project.preview.src : project.image}
@@ -110,8 +107,36 @@ const ProjectCard = ({ project, onOpen }) => {
                 <p className="project-tile__title">{project.title}</p>
                 <p className="project-tile__stack">{project.tags.join(' · ')}</p>
             </div>
+        </>
+    )
+
+    const sharedProps = {
+        className: 'project-tile',
+        style: { aspectRatio: ratio },
+        onMouseEnter: handleMouseEnter,
+        onMouseLeave: handleMouseLeave,
+    }
+
+    if (project.route) {
+        return (
+            <Link to={project.route} {...sharedProps} aria-label={`View ${project.title} project page`}>
+                {tileContent}
+            </Link>
+        )
+    }
+
+    console.log(project.title, '→ route:', project.route, '| rendering as:', project.route ? 'LINK' : 'BUTTON')
+
+    return (
+        <button
+            type="button"
+            {...sharedProps}
+            onClick={() => onOpen(project)}
+            aria-label={`Open ${project.title} details`}
+        >
+            {tileContent}
         </button>
     )
 }
 
-export default ProjectCard
+export default Card

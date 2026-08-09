@@ -1,9 +1,16 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
+import Icon from '@/components/ui/icon/Icon'
 import './ThemeToggle.scss'
 
 const STORAGE_KEY = 'theme'
 const THEMES = ['light', 'auto', 'dark']
+
+const THEME_META = {
+    light: { label: 'Light', icon: 'IconSun' },
+    auto: { label: 'Auto', icon: 'IconMonitor' },
+    dark: { label: 'Dark', icon: 'IconMoon' },
+}
 
 const applyTheme = (theme) => {
     if (theme === 'auto') {
@@ -72,9 +79,8 @@ const ThemeToggle = () => {
                     className={`theme-toggle__option${theme === option ? ' is-active' : ''}`}
                     onClick={() => selectTheme(option)}
                 >
-                    {option === 'light' && 'Light'}
-                    {option === 'dark' && 'Dark'}
-                    {option === 'auto' && 'Auto'}
+                    <Icon name={THEME_META[option].icon} size={16} className="theme-toggle__icon" />
+                    {/* <span className="theme-toggle__label">{THEME_META[option].label}</span> */}
                 </button>
             ))}
         </div>

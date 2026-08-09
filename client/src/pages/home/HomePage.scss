@@ -7,9 +7,9 @@
     font-family: var(--sans);
     padding: 64px 0 96px;
 
-    // ---- showcase section: title, subtitle, search ----
+    // ---- showcase section: title, subtitle ----
     &__showcase {
-        margin-bottom: 8px;
+        margin-bottom: 24px;
     }
 
     &__eyebrow {
@@ -33,13 +33,26 @@
         font-size: 0.98rem;
         line-height: 1.6;
         color: var(--text);
-        margin: 0 0 24px;
+        margin: 0;
         max-width: 620px;
+    }
+
+    // ---- toolbar section: search + filter, same row ----
+    &__toolbar {
+        margin-bottom: 24px;
+    }
+
+    &__controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
     }
 
     &__search {
         position: relative;
-        width: 100%;
+        flex: 1 1 260px;
+        min-width: 200px;
         max-width: 320px;
 
         input {
@@ -77,27 +90,26 @@
         pointer-events: none;
     }
 
-    &__search-clear {
+    // overrides Button's default padding/sizing (chained .btn selector
+    // wins on specificity over Button.scss's own .btn--ghost rules)
+    &__search-clear.btn {
         position: absolute;
         top: 50%;
         right: 8px;
         transform: translateY(-50%);
-        appearance: none;
-        border: none;
-        background: none;
-        color: var(--text);
-        font-size: 1.1rem;
-        line-height: 1;
         width: 20px;
         height: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
+        padding: 0;
         border-radius: 4px;
+        color: var(--text);
 
         &:hover {
             color: var(--text-h);
+            background: none;
+        }
+
+        &:active {
+            transform: translateY(-50%) scale(0.9); // preserves centering while still giving click feedback
         }
 
         &:focus-visible {
@@ -106,52 +118,24 @@
         }
     }
 
-    // ---- toolbar section: filter pills ----
-    &__toolbar {
-        margin-bottom: 24px;
-    }
-
-    &__filters-card {
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 20px;
-        background: var(--bg);
-    }
-
-    &__filters {
-        display: flex;
-        flex-wrap: nowrap;
-        gap: 12px;
-        overflow-x: auto;
-        scrollbar-width: none; // Firefox
-
-        &::-webkit-scrollbar {
-            display: none; // Chrome/Safari/Edge
-        }
-    }
-
-    &__filter {
+    &__filter-dropdown {
+        position: relative;
+        display: inline-block;
         flex-shrink: 0;
+    }
+
+    &__filter-trigger.btn {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        appearance: none;
+        gap: 10px;
         border: 1px solid var(--border);
         background: var(--bg);
-        font-family: var(--sans);
         padding: 10px 16px;
         border-radius: 999px;
-        cursor: pointer;
-        transition: border-color 0.15s ease, background 0.15s ease;
-        white-space: nowrap;
 
         &:hover {
             border-color: var(--accent-border);
-        }
-
-        &.is-active {
-            background: var(--accent-bg);
-            border-color: var(--accent-border);
+            background: var(--bg);
         }
 
         &:focus-visible {
@@ -160,18 +144,82 @@
         }
     }
 
-    &__filter-label {
+    &__filter-trigger-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    &__filter-trigger-label {
         font-size: 0.95rem;
         font-weight: 600;
         color: var(--text-h);
     }
 
-    &__filter.is-active &__filter-label {
+    &__filter-trigger-count {
+        font-size: 0.82rem;
+        color: var(--text);
+    }
+
+    &__filter-list {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        z-index: 10;
+        min-width: 220px;
+        margin: 0;
+        padding: 8px;
+        list-style: none;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    &__filter-option.btn {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: none;
+        background: none;
+        padding: 8px 12px;
+        border-radius: 8px;
+        text-align: left;
+
+        &:hover {
+            background: var(--accent-bg);
+        }
+
+        &.is-active {
+            background: var(--accent-bg);
+        }
+
+        & .btn__label{
+            width: 100%;
+        }
+    }
+
+    &__filter-option-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    &__filter-option-label {
+        font-size: 0.92rem;
+        font-weight: 500;
+        color: var(--text-h);
+    }
+
+    &__filter-option.is-active &__filter-option-label {
         color: var(--accent);
     }
 
-    &__filter-count {
-        font-size: 0.82rem;
+    &__filter-option-count {
+        font-size: 0.8rem;
         color: var(--text);
     }
 

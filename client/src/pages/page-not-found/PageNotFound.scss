@@ -13,6 +13,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        gap: 20px;
 
         .status{
             position: relative;
@@ -24,25 +25,41 @@
             
         }
 
-        .divider{
-            width: 1px;
-            height: 45px;
-            background-color: var(--text-h);
-            border: none;
-            outline: none;
-            margin-left: 1.25rem;
-            margin-right: 1.5rem;
-        }
+        
         .message{
+            overflow: hidden; // keeps the slide-in clean against the divider edge
+
+            &-wrapper{
+                position: relative;
+                overflow: hidden;
+                display: flex;
+                align-items: center;
+
+                // background-color: pink;
+                padding-left: 1.25rem;
+            }
+
             h1{
                 font-weight: 400;
                 font-size: 1.2rem;
                 height: 45px;
                 display: flex;
                 align-items: center;
-                // padding-left: 1.0em;
-                // margin-left: 1.0em;
+                font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+                letter-spacing: 0.1px;
             }
+        }
+
+        .divider{
+            position: absolute;
+            left: 0;
+            width: 1px;
+            height: 45px;
+            background-color: var(--text-h);
+            border: none;
+            outline: none;
+            // margin-left: 1.25rem;
+            // margin-right: 1.5rem;
         }
     }
 }

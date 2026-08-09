@@ -1,135 +1,28 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { gsap } from 'gsap'
-import { Flip } from 'gsap/Flip'
-import ProjectCard from './ProjectCard'
-import ProjectModal from './ProjectModal'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import ProjectCard from '@/pages/home/components/card/Card'
+import ProjectModal from '@/pages/home/components/modal/Modal'
+import Button from '@/components/ui/button/Button'
+import { useDebouncedSearch } from '@/pages/home/hooks/useDebouncedSearch'
+import { useFlipTransition } from '@/pages/home/hooks/useFlipTransition'
+import { shuffle } from '@/pages/home/utils/shuffle'
+import { portfolioProjects, filterOptions, filterCounts, searchableText } from '@/pages/home/data/projects'
 import './HomePage.scss'
-
-gsap.registerPlugin(Flip)
-
-// Fisher-Yates — unbiased shuffle, doesn't mutate the input array.
-const shuffle = (array) => {
-    const result = [...array]
-    for (let i = result.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1))
-        ;[result[i], result[j]] = [result[j], result[i]]
-    }
-    return result
-}
-
-// Heights vary in the URL on purpose (900, 1500, 800, 1050, 1600, 900) just
-// to demonstrate the masonry effect with Picsum's placeholder service.
-// No width/height fields here anymore — ProjectCard measures the real
-// image once it loads, so there's nothing to keep in sync by hand.
-//
-// `preview` is optional — add it once you have a short screen recording
-// or GIF for a project. Tiles without it just behave as static images.
-// Project 1 below points at a short (10s, 640x360, ~1MB) Big Buck Bunny
-// clip hosted on the Internet Archive — verified working.
-const portfolioProjects = [
-    {
-        id: 1,
-        title: 'Brunfman Properties',
-        description: 'Real estate management platform built with modern full-stack technologies.',
-        image: 'https://picsum.photos/1200/900?1',
-        preview: {
-            type: 'video',
-            src: 'https://archive.org/download/lkajsdasa/Big_Buck_Bunny_360_10s_1MB.ia.mp4'
-        },
-        tags: ['React', 'TypeScript', 'Node.js'],
-        link: '#'
-    },
-    {
-        id: 2,
-        title: 'Veeva CLM Platform',
-        description: 'Enterprise Closed Loop Marketing applications for life sciences.',
-        image: 'https://picsum.photos/1200/1500?2',
-        tags: ['Vue', 'JavaScript', 'SCSS'],
-        link: '#'
-    },
-    {
-        id: 3,
-        title: 'E-Commerce Store',
-        description: 'Responsive shopping experience with product browsing and checkout flow.',
-        image: 'https://picsum.photos/1200/800?3',
-        tags: ['React', 'Redux', 'API'],
-        link: '#'
-    },
-    {
-        id: 4,
-        title: 'Task Management App',
-        description: 'A productivity app for organizing projects and daily tasks.',
-        image: 'https://picsum.photos/1200/1050?4',
-        tags: ['React', 'Firebase', 'CSS'],
-        link: '#'
-    },
-    {
-        id: 5,
-        title: 'Weather Dashboard',
-        description: 'Weather application using external APIs with location search.',
-        image: 'https://picsum.photos/1200/1600?5',
-        tags: ['JavaScript', 'API', 'HTML'],
-        link: '#'
-    },
-    {
-        id: 6,
-        title: 'Portfolio Website',
-        description: 'Personal developer portfolio showcasing projects and experience.',
-        image: 'https://picsum.photos/1200/900?6',
-        tags: ['React', 'SCSS', 'Vite'],
-        link: '#'
-    }
-]
-
-// Unique tags across every project, in first-appearance order, with an
-// "All" option prepended.
-const filterOptions = [
-    'All',
-    ...portfolioProjects.reduce((tags, project) => {
-        project.tags.forEach((tag) => {
-            if (!tags.includes(tag)) tags.push(tag)
-        })
-        return tags
-    }, [])
-]
-
-// How many projects match each filter option — shown next to the label,
-// same idea as "Wallpaper 69K" in the reference.
-const filterCounts = portfolioProjects.reduce(
-    (counts, project) => {
-        project.tags.forEach((tag) => {
-            counts[tag] = (counts[tag] || 0) + 1
-        })
-        return counts
-    },
-    { All: portfolioProjects.length }
-)
-
-const searchableText = (project) =>
-    [project.title, project.tags.join(' '), project.description].join(' ').toLowerCase()
 
 const HomePage = () => {
     const [activeProject, setActiveProject] = useState(null)
     const [activeFilter, setActiveFilter] = useState('All')
     const [searchQuery, setSearchQuery] = useState('')
-    const [debouncedQuery, setDebouncedQuery] = useState('')
-
-    const gridRef = useRef(null)
-    const flipStateRef = useRef(null)
-    const isFirstRender = useRef(true)
+    const [isFilterOpen, setIsFilterOpen] = useState(false)
+    const filterRef = useRef(null)
 
     const shuffledProjects = useMemo(() => shuffle(portfolioProjects), [])
 
-    useEffect(() => {
-        const id = setTimeout(() => {
-            if (gridRef.current) {
-                flipStateRef.current = Flip.getState(gridRef.current.children)
-            }
-            setDebouncedQuery(searchQuery.trim().toLowerCase())
-        }, 250)
+    const { gridRef, captureFlipState } = useFlipTransition([
+        activeFilter,
+        searchQuery /* triggers via debouncedQuery below, kept for clarity */
+    ])
 
-        return () => clearTimeout(id)
-    }, [searchQuery])
+    const debouncedQuery = useDebouncedSearch(searchQuery, 250, captureFlipState)
 
     const visibleProjects = useMemo(() => {
         return shuffledProjects.filter((project) => {
@@ -140,41 +33,38 @@ const HomePage = () => {
     }, [shuffledProjects, activeFilter, debouncedQuery])
 
     const handleFilterClick = (option) => {
-        if (gridRef.current) {
-            flipStateRef.current = Flip.getState(gridRef.current.children)
-        }
+        captureFlipState()
         setActiveFilter(option)
     }
 
-    useLayoutEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false
-            return
+    const handleFilterSelect = (option) => {
+        handleFilterClick(option)
+        setIsFilterOpen(false)
+    }
+
+    // close dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (filterRef.current && !filterRef.current.contains(event.target)) {
+                setIsFilterOpen(false)
+            }
         }
-        if (!flipStateRef.current || !gridRef.current) return
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
 
-        Flip.from(flipStateRef.current, {
-            targets: gridRef.current.children,
-            duration: 0.5,
-            ease: 'power2.inOut',
-            stagger: 0.02,
-            absolute: true,
-            onEnter: (elements) =>
-                gsap.fromTo(
-                    elements,
-                    { opacity: 0, scale: 0.92 },
-                    { opacity: 1, scale: 1, duration: 0.4, stagger: 0.03 }
-                ),
-            onLeave: (elements) =>
-                gsap.to(elements, { opacity: 0, scale: 0.92, duration: 0.3 })
-        })
-
-        flipStateRef.current = null
-    }, [visibleProjects])
+    // close dropdown on Escape
+    useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') setIsFilterOpen(false)
+        }
+        document.addEventListener('keydown', handleEscape)
+        return () => document.removeEventListener('keydown', handleEscape)
+    }, [])
 
     return (
         <div className="home">
-            {/* ---- showcase: title, subtitle, search ---- */}
+            {/* ---- showcase: title, subtitle ---- */}
             <section className="home__showcase container">
                 <div className="row">
                     <div className="col-12">
@@ -183,63 +73,84 @@ const HomePage = () => {
                         <p className="home__subtitle">
                             {visibleProjects.length} of {shuffledProjects.length} projects. Click a tile to see the build.
                         </p>
-
-                        <div className="home__search mb-1">
-                            <svg
-                                className="home__search-icon"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden="true"
-                            >
-                                <circle cx="11" cy="11" r="7" />
-                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                            </svg>
-
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(event) => setSearchQuery(event.target.value)}
-                                placeholder="Search projects…"
-                                aria-label="Search projects"
-                            />
-                            {searchQuery && (
-                                <button
-                                    type="button"
-                                    className="home__search-clear"
-                                    onClick={() => setSearchQuery('')}
-                                    aria-label="Clear search"
-                                >
-                                    ×
-                                </button>
-                            )}
-                        </div>
                     </div>
                 </div>
             </section>
 
-            {/* ---- toolbar: filter pills ---- */}
+            {/* ---- toolbar: search + filter dropdown, same row ---- */}
             <section className="home__toolbar container">
                 <div className="row">
                     <div className="col-12">
-                        <div className="home__filters-card">
-                            <div className="home__filters" role="radiogroup" aria-label="Filter projects by stack">
-                                {filterOptions.map((option) => (
-                                    <button
-                                        key={option}
-                                        type="button"
-                                        role="radio"
-                                        aria-checked={activeFilter === option}
-                                        className={`home__filter${activeFilter === option ? ' is-active' : ''}`}
-                                        onClick={() => handleFilterClick(option)}
-                                    >
-                                        <span className="home__filter-label">{option}</span>
-                                        <span className="home__filter-count">{filterCounts[option] ?? 0}</span>
-                                    </button>
-                                ))}
+                        <div className="home__controls">
+                            <div className="home__search">
+                                <svg
+                                    className="home__search-icon"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    aria-hidden="true"
+                                >
+                                    <circle cx="11" cy="11" r="7" />
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
+
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(event) => setSearchQuery(event.target.value)}
+                                    placeholder="Search projects…"
+                                    aria-label="Search projects"
+                                />
+                                {searchQuery && (
+                                    <Button
+                                        icon="IconX"
+                                        variant="ghost"
+                                        className="home__search-clear"
+                                        onClick={() => setSearchQuery('')}
+                                        aria-label="Clear search"
+                                    />
+                                )}
+                            </div>
+
+                            <div className="home__filter-dropdown" ref={filterRef}>
+                                <Button
+                                    variant="ghost"
+                                    className="home__filter-trigger"
+                                    icon="IconChevronRight"
+                                    iconPosition="right"
+                                    onClick={() => setIsFilterOpen((prev) => !prev)}
+                                    aria-haspopup="listbox"
+                                    aria-expanded={isFilterOpen}
+                                >
+                                    <span className="home__filter-trigger-content">
+                                        <span className="home__filter-trigger-label">{activeFilter}</span>
+                                        <span className="home__filter-trigger-count">{filterCounts[activeFilter] ?? 0}</span>
+                                    </span>
+                                </Button>
+
+                                {isFilterOpen && (
+                                    <ul className="home__filter-list" role="listbox" aria-label="Filter projects by stack">
+                                        {filterOptions.map((option) => (
+                                            <li key={option}>
+                                                <Button
+                                                    variant="ghost"
+                                                    className={`home__filter-option${activeFilter === option ? ' is-active' : ''}`}
+                                                    onClick={() => handleFilterSelect(option)}
+                                                    role="option"
+                                                    aria-selected={activeFilter === option}
+                                                >
+                                                    <span className="home__filter-option-content">
+                                                        <span className="home__filter-option-label">{option}</span>
+                                                        <span className="home__filter-option-count">{filterCounts[option] ?? 0}</span>
+                                                    </span>
+                                                </Button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -252,11 +163,7 @@ const HomePage = () => {
                     <div className="col-12">
                         <div className="home__grid" ref={gridRef}>
                             {visibleProjects.map((project) => (
-                                <ProjectCard
-                                    key={project.id}
-                                    project={project}
-                                    onOpen={setActiveProject}
-                                />
+                                <ProjectCard key={project.id} project={project} onOpen={setActiveProject} />
                             ))}
                         </div>
 
@@ -269,9 +176,7 @@ const HomePage = () => {
                 </div>
             </section>
 
-            {activeProject && (
-                <ProjectModal project={activeProject} onClose={() => setActiveProject(null)} />
-            )}
+            {activeProject && <ProjectModal project={activeProject} onClose={() => setActiveProject(null)} />}
         </div>
     )
 }

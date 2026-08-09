@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import './ProjectModal.scss'
+import './Modal.scss'
 
-const ProjectModal = ({ project, onClose }) => {
+const Modal = ({ project, onClose }) => {
     const [ratio, setRatio] = useState(16 / 9) // neutral placeholder until measured
 
     // Close on Escape, lock scroll while open
@@ -81,4 +81,4 @@ const ProjectModal = ({ project, onClose }) => {
     )
 }
 
-export default ProjectModal
+export default Modal
