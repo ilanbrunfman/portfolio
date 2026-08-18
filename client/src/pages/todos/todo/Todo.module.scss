@@ -1,0 +1,109 @@
+@use "@/assets/styles/shared/variables" as var;
+
+.todo {
+    max-width: var.$container-md;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    &__back {
+        color: var(--accent);
+        text-decoration: none;
+        font-size: 0.875rem;
+        align-self: flex-start;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    &__title {
+        margin: 0;
+        color: var(--text-h);
+
+        &--completed {
+            text-decoration: line-through;
+            color: var(--text);
+            opacity: 0.6;
+        }
+    }
+
+    &__description {
+        color: var(--text);
+        white-space: pre-wrap;
+    }
+
+    &__meta {
+        font-size: 0.8rem;
+        color: var(--text);
+        opacity: 0.7;
+    }
+
+    &__notFound {
+        color: var(--text);
+    }
+
+    &__actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    &__toggle,
+    &__edit,
+    &__save {
+        border: 1px solid var(--accent-border);
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+        font-weight: 500;
+
+        &:hover {
+            opacity: 0.9;
+        }
+    }
+
+    &__cancel,
+    &__delete {
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        background: var(--bg);
+        color: var(--text-h);
+        cursor: pointer;
+        font-weight: 500;
+
+        &:hover {
+            background: var(--code-bg);
+        }
+    }
+
+    &__delete {
+        color: #e5484d;
+        border-color: #e5484d;
+    }
+
+    &__input,
+    &__textarea {
+        padding: 0.6rem 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--bg);
+        color: var(--text-h);
+        font: inherit;
+        resize: vertical;
+
+        &:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-bg);
+        }
+    }
+
+    &__editForm {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+}

@@ -41,7 +41,8 @@ export const portfolioProjects = [
         image: 'https://picsum.photos/1200/1050?4',
         tags: ['React', 'Firebase', 'CSS'],
         link: '#',
-        route: '/projects/task-management-app',
+        route: 'todos',
+        // route: '/projects/task-management-app',
     },
     {
         id: 5,

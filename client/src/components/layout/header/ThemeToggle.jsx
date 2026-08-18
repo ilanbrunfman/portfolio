@@ -1,10 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { gsap } from 'gsap'
 import Icon from '@/components/ui/icon/Icon'
+import { useTheme } from '@/context/ThemeContext'
 import './ThemeToggle.scss'
-
-const STORAGE_KEY = 'theme'
-const THEMES = ['light', 'auto', 'dark']
 
 const THEME_META = {
     light: { label: 'Light', icon: 'IconSun' },
@@ -12,31 +10,12 @@ const THEME_META = {
     dark: { label: 'Dark', icon: 'IconMoon' },
 }
 
-const applyTheme = (theme) => {
-    if (theme === 'auto') {
-        document.documentElement.removeAttribute('data-theme')
-    } else {
-        document.documentElement.setAttribute('data-theme', theme)
-    }
-}
-
 const ThemeToggle = () => {
-    // Read the stored preference synchronously, before first paint —
-    // avoids an extra render-then-correct cycle that would make the
-    // indicator visibly slide right after page load if the saved
-    // theme isn't "auto".
-    const [theme, setTheme] = useState(() => {
-        const stored = localStorage.getItem(STORAGE_KEY)
-        return THEMES.includes(stored) ? stored : 'auto'
-    })
+    const { theme, setTheme, THEMES } = useTheme()
 
     const indicatorRef = useRef(null)
     const buttonRefs = useRef({})
     const isFirstMove = useRef(true)
-
-    useEffect(() => {
-        applyTheme(theme)
-    }, [theme])
 
     // Slide the indicator behind whichever button is active. Snaps
     // instantly on first mount (no slide-in from nowhere), animates on
@@ -61,11 +40,6 @@ const ThemeToggle = () => {
         }
     }, [theme])
 
-    const selectTheme = (next) => {
-        setTheme(next)
-        localStorage.setItem(STORAGE_KEY, next)
-    }
-
     return (
         <div className="theme-toggle" role="radiogroup" aria-label="Theme">
             <span className="theme-toggle__indicator" ref={indicatorRef} aria-hidden="true" />
@@ -77,7 +51,7 @@ const ThemeToggle = () => {
                     aria-checked={theme === option}
                     ref={(el) => (buttonRefs.current[option] = el)}
                     className={`theme-toggle__option${theme === option ? ' is-active' : ''}`}
-                    onClick={() => selectTheme(option)}
+                    onClick={() => setTheme(option)}
                 >
                     <Icon name={THEME_META[option].icon} size={16} className="theme-toggle__icon" />
                     {/* <span className="theme-toggle__label">{THEME_META[option].label}</span> */}

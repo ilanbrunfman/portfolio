@@ -1,0 +1,110 @@
+.recent {
+    max-width: 480px;
+
+    &__heading {
+        margin-bottom: 2.0rem;
+    }
+
+    &__empty {
+        color: var(--text);
+    }
+
+    &__list {
+        position: relative;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        min-height: 600px;
+        // background-color: pink;
+    }
+
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.6rem 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--bg);
+        cursor: grab;
+        transition: border-color 0.15s ease, background 0.15s ease;
+
+        &--dragover {
+            border-color: var(--accent);
+            background: var(--accent-bg);
+        }
+
+        &--completed {
+            .recent__title {
+                text-decoration: line-through;
+                color: var(--text);
+                opacity: 0.6;
+            }
+        }
+    }
+
+    &__handle {
+        color: var(--text);
+        opacity: 0.5;
+        cursor: grab;
+    }
+
+    &__checkbox {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        flex-shrink: 0;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: transparent;
+        cursor: pointer;
+        position: relative;
+        transition: border-color 0.15s ease, background-color 0.15s ease;
+
+        &:hover {
+            border-color: var(--accent);
+        }
+
+        &:checked {
+            background: var(--accent);
+            border-color: var(--accent);
+
+            &::after {
+                content: '';
+                position: absolute;
+                left: 5px;
+                top: 1px;
+                width: 5px;
+                height: 9px;
+                border: solid #fff;
+                border-width: 0 2px 2px 0;
+                transform: rotate(45deg);
+            }
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--accent-bg);
+        }
+    }
+
+    &__title {
+        flex: 1;
+        text-decoration: none;
+        color: var(--text-h);
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    &__delete {
+        margin-left: auto;
+        padding-inline: 5px;
+    }
+}
