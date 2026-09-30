@@ -46,7 +46,7 @@ const Todo = () => {
      */
     const handleDelete = () => {
         deleteTodo(todo.id)
-        navigate('/todos/recent')
+        navigate('/todos')
     }
 
     return (
@@ -54,7 +54,7 @@ const Todo = () => {
             <div className="row">
                 <div className="col-12">
                     <Button
-                        to="/todos/recent"
+                        to="/todos"
                         variant="ghost"
                         size="sm"
                         icon="IconArrowLeft"

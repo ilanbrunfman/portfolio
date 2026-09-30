@@ -30,7 +30,7 @@ const New = () => {
         setDescription('')
         setError('')
 
-        navigate('/todos/recent')
+        navigate('/todos')
     }
 
     return (

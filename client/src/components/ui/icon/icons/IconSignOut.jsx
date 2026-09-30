@@ -1,4 +1,4 @@
-const IconUser = ({color, size, strokeWidth, className}) => {
+const IconSignOut = ({color, size, strokeWidth, className}) => {
 
     const clr = color ? color : 'currentColor';
     
@@ -10,4 +10,4 @@ const IconUser = ({color, size, strokeWidth, className}) => {
         </svg>
     )
 }
-export default IconUser
+export default IconSignOut

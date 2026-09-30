@@ -35,18 +35,9 @@ const router = createBrowserRouter([
             </TodoProvider>
         ),
         children: [
-            {
-                index: true,
-                element: <NewTodo />
-            },
-            {
-                path: 'recent',
-                element: <RecentTodo />
-            },
-            {
-                path: ':id',
-                element: <Todo />
-            }
+            { index: true, element: <RecentTodo /> },
+            { path: 'new', element: <NewTodo /> },
+            { path: ':id', element: <Todo /> }
         ]
     },
     {

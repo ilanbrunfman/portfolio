@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import gsap from 'gsap'
 import { Flip } from 'gsap/Flip'
 import { useTodos } from '@/pages/todos/context/TodoContext'
@@ -98,8 +98,11 @@ const Recent = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [todos])
 
+    // No todos to show - send the user to the "new todo" view instead of
+    // rendering an empty state here. `replace` avoids leaving this empty
+    // /todos view in browser history.
     if (!todos.length) {
-        return <p className={styles.recent__empty}>No todos yet. Add one to get started.</p>
+        return <Navigate to="/todos/new" replace />
     }
 
     return (
