@@ -50,11 +50,6 @@ const Card = ({ project, onOpen }) => {
 
     const handleMouseEnter = () => {
         setIsHovering(true)
-        // TEMPORARY DEBUG LOG — remove once this is confirmed working.
-        // Fires on every hover regardless of whether this tile has a
-        // preview, so you can see exactly which tile you're on and
-        // whether it's even supposed to have video.
-        console.log('hover:', project.title, '— has preview:', Boolean(project.preview))
 
         if (project.preview?.type === 'video' && videoRef.current) {
             // Belt-and-suspenders: browsers check the DOM `muted` *property*
@@ -124,8 +119,6 @@ const Card = ({ project, onOpen }) => {
             </Link>
         )
     }
-
-    console.log(project.title, '→ route:', project.route, '| rendering as:', project.route ? 'LINK' : 'BUTTON')
 
     return (
         <button
