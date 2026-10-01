@@ -1,18 +1,55 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './Modal.scss'
 
 const Modal = ({ project, onClose }) => {
     const [ratio, setRatio] = useState(16 / 9) // neutral placeholder until measured
+    const panelRef = useRef(null)
 
-    // Close on Escape, lock scroll while open
+    // Close on Escape, lock scroll, and manage focus while open: move focus
+    // into the dialog, trap Tab inside it, and restore focus to whatever was
+    // focused before (the tile) on close.
     useEffect(() => {
-        const handleKey = (e) => e.key === 'Escape' && onClose()
+        const previouslyFocused = document.activeElement
+
+        const getFocusable = () =>
+            panelRef.current
+                ? Array.from(
+                      panelRef.current.querySelectorAll(
+                          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                      )
+                  )
+                : []
+
+        // Focus the first focusable element in the panel (the close button).
+        getFocusable()[0]?.focus()
+
+        const handleKey = (e) => {
+            if (e.key === 'Escape') {
+                onClose()
+                return
+            }
+            if (e.key === 'Tab') {
+                const focusable = getFocusable()
+                if (focusable.length === 0) return
+                const first = focusable[0]
+                const last = focusable[focusable.length - 1]
+                if (e.shiftKey && document.activeElement === first) {
+                    e.preventDefault()
+                    last.focus()
+                } else if (!e.shiftKey && document.activeElement === last) {
+                    e.preventDefault()
+                    first.focus()
+                }
+            }
+        }
+
         document.addEventListener('keydown', handleKey)
         document.body.style.overflow = 'hidden'
 
         return () => {
             document.removeEventListener('keydown', handleKey)
             document.body.style.overflow = ''
+            previouslyFocused?.focus?.()
         }
     }, [onClose])
 
@@ -35,7 +72,7 @@ const Modal = ({ project, onClose }) => {
         <div className="project-modal" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
             <div className="project-modal__backdrop" onClick={onClose} />
 
-            <div className="project-modal__panel">
+            <div className="project-modal__panel" ref={panelRef}>
                 <div className="project-modal__media" style={{ aspectRatio: ratio }}>
                     <img src={project.image} alt={project.title} onLoad={handleImageLoad} />
 
