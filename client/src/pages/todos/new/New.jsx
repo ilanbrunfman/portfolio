@@ -69,7 +69,7 @@ const New = () => {
 
                         {error && <p className={styles.new__error}>{error}</p>}
 
-                        <Button type="submit" icon="plus" iconPosition="left">
+                        <Button type="submit" icon="IconPlus" iconPosition="left">
                             Add Todo
                         </Button>
                     </form>
