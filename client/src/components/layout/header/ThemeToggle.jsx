@@ -51,6 +51,7 @@ const ThemeToggle = () => {
                     aria-checked={theme === option}
                     ref={(el) => (buttonRefs.current[option] = el)}
                     className={`theme-toggle__option${theme === option ? ' is-active' : ''}`}
+                    aria-label={THEME_META[option].label}
                     onClick={() => setTheme(option)}
                 >
                     <Icon name={THEME_META[option].icon} size={16} className="theme-toggle__icon" />
