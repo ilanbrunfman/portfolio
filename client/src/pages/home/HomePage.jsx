@@ -175,7 +175,9 @@ const HomePage = () => {
                 </div>
             </section>
 
-            {activeProject && <ProjectModal project={activeProject} onClose={() => setActiveProject(null)} />}
+            {activeProject && (
+                <ProjectModal key={activeProject.id} project={activeProject} onClose={() => setActiveProject(null)} />
+            )}
         </div>
     )
 }

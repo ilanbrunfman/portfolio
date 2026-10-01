@@ -53,12 +53,6 @@ const Modal = ({ project, onClose }) => {
         }
     }, [onClose])
 
-    // Guard against a stale ratio from a previously-viewed project bleeding
-    // into the next one before the new image's onLoad has fired.
-    useEffect(() => {
-        setRatio(16 / 9)
-    }, [project?.id])
-
     if (!project) return null
 
     const handleImageLoad = (event) => {
