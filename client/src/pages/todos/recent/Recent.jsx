@@ -14,7 +14,6 @@ const Recent = () => {
     const dragIndex = useRef(null)
     const [dragOverId, setDragOverId] = useState(null)
 
-    const listRef = useRef(null)
     const itemRefs = useRef(new Map())
     const flipState = useRef(null)
 
@@ -83,6 +82,40 @@ const Recent = () => {
         deleteTodo(id)
     }
 
+    /**
+     * Move an item by one position, clamped to the list bounds. Shares the
+     * Flip pipeline with drag-reorder so the keyboard path animates too.
+     * @param {number} index
+     * @param {number} direction -1 to move up, +1 to move down
+     */
+    const moveItem = (index, direction) => {
+        const target = index + direction
+        if (target < 0 || target >= todos.length) return
+
+        flipState.current = Flip.getState(Array.from(itemRefs.current.values()))
+
+        const reordered = [...todos]
+        const [moved] = reordered.splice(index, 1)
+        reordered.splice(target, 0, moved)
+
+        reorderTodos(reordered)
+    }
+
+    /**
+     * Keyboard reordering from the drag handle: Arrow Up/Down move the item.
+     * @param {React.KeyboardEvent} e
+     * @param {number} index
+     */
+    const handleHandleKeyDown = (e, index) => {
+        if (e.key === 'ArrowUp') {
+            e.preventDefault()
+            moveItem(index, -1)
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault()
+            moveItem(index, 1)
+        }
+    }
+
     // After the list re-renders (reorder OR delete), play the Flip animation
     // from the captured "before" state to the new DOM positions.
     useLayoutEffect(() => {
@@ -95,7 +128,6 @@ const Recent = () => {
         })
 
         flipState.current = null
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [todos])
 
     // No todos to show - send the user to the "new todo" view instead of
@@ -112,7 +144,7 @@ const Recent = () => {
 
                     <h1 className={`${styles.recent__heading} mb-2`}>Recent Todos</h1>
 
-                    <ul className={styles.recent__list} ref={listRef}>
+                    <ul className={styles.recent__list}>
                         {todos.map((todo, index) => (
                             <li
                                 key={todo.id}
@@ -130,9 +162,14 @@ const Recent = () => {
                                 onDrop={() => handleDrop(index)}
                                 onDragEnd={() => setDragOverId(null)}
                             >
-                                <span className={styles.recent__handle} aria-hidden="true">
-                                    ⠿
-                                </span>
+                                <button
+                                    type="button"
+                                    className={styles.recent__handle}
+                                    onKeyDown={(e) => handleHandleKeyDown(e, index)}
+                                    aria-label={`Reorder ${todo.title}. Use the up and down arrow keys to move it.`}
+                                >
+                                    <span aria-hidden="true">⠿</span>
+                                </button>
 
                                 <input
                                     className={styles.recent__checkbox}
