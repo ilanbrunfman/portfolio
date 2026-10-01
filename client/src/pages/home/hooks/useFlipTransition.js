@@ -7,13 +7,18 @@ gsap.registerPlugin(Flip)
 // Wraps GSAP Flip so a grid can animate reflows (filtering, searching, etc.)
 // without the owning component managing refs/state for it directly.
 //
+// Call captureFlipState() right before the state update that changes the grid's
+// children — taking a snapshot is what arms the animation, which then plays on
+// the next commit. There's no dependency array to keep in sync with whatever
+// drives the list (raw vs debounced value, filter, …): any commit that follows
+// a capture animates, and every other commit is a cheap no-op.
+//
 // Usage:
-//   const { gridRef, captureFlipState } = useFlipTransition([visibleProjects])
-//   captureFlipState() // call right before the list-changing state update
-export const useFlipTransition = (dependencies) => {
+//   const { gridRef, captureFlipState } = useFlipTransition()
+//   captureFlipState() // right before the list-changing state update
+export const useFlipTransition = () => {
     const gridRef = useRef(null)
     const flipStateRef = useRef(null)
-    const isFirstRender = useRef(true)
 
     const captureFlipState = () => {
         if (gridRef.current) {
@@ -22,10 +27,6 @@ export const useFlipTransition = (dependencies) => {
     }
 
     useLayoutEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false
-            return
-        }
         if (!flipStateRef.current || !gridRef.current) return
 
         Flip.from(flipStateRef.current, {
@@ -45,8 +46,7 @@ export const useFlipTransition = (dependencies) => {
         })
 
         flipStateRef.current = null
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, dependencies)
+    })
 
     return { gridRef, captureFlipState }
 }

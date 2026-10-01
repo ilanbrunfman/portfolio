@@ -5,7 +5,7 @@ import Button from '@/components/ui/button/Button'
 import { useDebouncedSearch } from '@/pages/home/hooks/useDebouncedSearch'
 import { useFlipTransition } from '@/pages/home/hooks/useFlipTransition'
 import { shuffle } from '@/pages/home/utils/shuffle'
-import { portfolioProjects, filterOptions, filterCounts, searchableText } from '@/pages/home/data/projects'
+import { portfolioProjects, filterOptions, filterCounts, searchableText } from '@/pages/home/data/Projects'
 import './HomePage.scss'
 
 const HomePage = () => {
@@ -17,11 +17,10 @@ const HomePage = () => {
 
     const shuffledProjects = useMemo(() => shuffle(portfolioProjects), [])
 
-    const { gridRef, captureFlipState } = useFlipTransition([
-        activeFilter,
-        searchQuery /* triggers via debouncedQuery below, kept for clarity */
-    ])
+    const { gridRef, captureFlipState } = useFlipTransition()
 
+    // captureFlipState snapshots the grid right before the debounced search
+    // value commits, so the Flip animation plays on the resulting re-render.
     const debouncedQuery = useDebouncedSearch(searchQuery, 250, captureFlipState)
 
     const visibleProjects = useMemo(() => {
