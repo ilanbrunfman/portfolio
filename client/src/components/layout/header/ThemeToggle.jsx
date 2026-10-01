@@ -1,5 +1,4 @@
-import { useLayoutEffect, useRef } from 'react'
-import { gsap } from 'gsap'
+import { useEffect, useRef, useState } from 'react'
 import Icon from '@/components/ui/icon/Icon'
 import { useTheme } from '@/context/ThemeContext'
 import './ThemeToggle.scss'
@@ -12,52 +11,69 @@ const THEME_META = {
 
 const ThemeToggle = () => {
     const { theme, setTheme, THEMES } = useTheme()
+    const [isOpen, setIsOpen] = useState(false)
+    const rootRef = useRef(null)
 
-    const indicatorRef = useRef(null)
-    const buttonRefs = useRef({})
-    const isFirstMove = useRef(true)
-
-    // Slide the indicator behind whichever button is active. Snaps
-    // instantly on first mount (no slide-in from nowhere), animates on
-    // every change after that.
-    useLayoutEffect(() => {
-        const button = buttonRefs.current[theme]
-        const indicator = indicatorRef.current
-        if (!button || !indicator) return
-
-        const { offsetLeft, offsetWidth } = button
-
-        if (isFirstMove.current) {
-            gsap.set(indicator, { x: offsetLeft, width: offsetWidth })
-            isFirstMove.current = false
-        } else {
-            gsap.to(indicator, {
-                x: offsetLeft,
-                width: offsetWidth,
-                duration: 0.35,
-                ease: 'power3.out'
-            })
+    // Close the panel when clicking anywhere outside it — same pattern
+    // as the filter dropdown on the home page.
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (rootRef.current && !rootRef.current.contains(event.target)) {
+                setIsOpen(false)
+            }
         }
-    }, [theme])
+        document.addEventListener('mousedown', handleClickOutside)
+        return () => document.removeEventListener('mousedown', handleClickOutside)
+    }, [])
+
+    // Close on Escape.
+    useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') setIsOpen(false)
+        }
+        document.addEventListener('keydown', handleEscape)
+        return () => document.removeEventListener('keydown', handleEscape)
+    }, [])
+
+    const handleSelect = (option) => {
+        setTheme(option)
+        setIsOpen(false)
+    }
+
+    const active = THEME_META[theme]
 
     return (
-        <div className="theme-toggle" role="radiogroup" aria-label="Theme">
-            <span className="theme-toggle__indicator" ref={indicatorRef} aria-hidden="true" />
-            {THEMES.map((option) => (
-                <button
-                    key={option}
-                    type="button"
-                    role="radio"
-                    aria-checked={theme === option}
-                    ref={(el) => (buttonRefs.current[option] = el)}
-                    className={`theme-toggle__option${theme === option ? ' is-active' : ''}`}
-                    aria-label={THEME_META[option].label}
-                    onClick={() => setTheme(option)}
-                >
-                    <Icon name={THEME_META[option].icon} size={16} className="theme-toggle__icon" />
-                    {/* <span className="theme-toggle__label">{THEME_META[option].label}</span> */}
-                </button>
-            ))}
+        <div className={`theme-toggle${isOpen ? ' is-open' : ''}`} ref={rootRef}>
+            <button
+                type="button"
+                className="theme-toggle__trigger"
+                onClick={() => setIsOpen((prev) => !prev)}
+                aria-haspopup="menu"
+                aria-expanded={isOpen}
+                aria-label={`Display: ${active.label}`}
+            >
+                <Icon name={active.icon} size={18} className="theme-toggle__trigger-icon" />
+                <Icon name="IconChevronRight" size={14} className="theme-toggle__chevron" />
+            </button>
+
+            {isOpen && (
+                <div className="theme-toggle__panel" role="menu" aria-label="Display">
+                    <p className="theme-toggle__heading">Display</p>
+                    {THEMES.map((option) => (
+                        <button
+                            key={option}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={theme === option}
+                            className={`theme-toggle__option${theme === option ? ' is-active' : ''}`}
+                            onClick={() => handleSelect(option)}
+                        >
+                            <Icon name={THEME_META[option].icon} size={16} className="theme-toggle__option-icon" />
+                            <span className="theme-toggle__option-label">{THEME_META[option].label}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
     )
 }
