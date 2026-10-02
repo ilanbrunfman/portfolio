@@ -1,4 +1,4 @@
-import Logo from './Logo'
+import Logo from './logo/Logo'
 import SettingsMenu from './settings-menu/SettingsMenu'
 import './Header.scss'
 

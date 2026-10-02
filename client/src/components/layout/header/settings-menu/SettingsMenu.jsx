@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Icon from '@/components/ui/icon/Icon'
 import Accordion from '@/components/ui/accordion/Accordion'
-import ThemeToggle from './ThemeToggle'
+import ThemeToggle from './theme-toggle/ThemeToggle'
 import './SettingsMenu.scss'
 
 /**
