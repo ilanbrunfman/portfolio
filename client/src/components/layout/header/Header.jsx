@@ -1,5 +1,5 @@
 import Logo from './Logo'
-import ThemeToggle from './ThemeToggle'
+import SettingsMenu from './settings-menu/SettingsMenu'
 import './Header.scss'
 
 const Header = () => {
@@ -10,7 +10,7 @@ const Header = () => {
                     <Logo />
                 </div>
                 <div className="navbar-column">
-                    <ThemeToggle />
+                    <SettingsMenu />
                 </div>
             </div>
         </header>

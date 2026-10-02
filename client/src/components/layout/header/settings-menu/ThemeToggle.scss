@@ -1,0 +1,53 @@
+.theme-toggle {
+    display: flex;
+    gap: 4px;
+
+    &__option {
+        flex: 1 1 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        appearance: none;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 13px;
+        line-height: 1;
+        padding: 8px 6px;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+        // Hover drives the background; the active option is marked by accent
+        // color + border and keeps that color even while hovered.
+        &:hover {
+            color: var(--text-h);
+            background: var(--accent-bg);
+        }
+
+        &.is-active {
+            color: var(--accent);
+            border-color: var(--accent-border);
+        }
+
+        &.is-active:hover {
+            color: var(--accent);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent-border);
+            outline-offset: 2px;
+        }
+    }
+
+    &__option-icon {
+        flex-shrink: 0;
+        fill: currentColor;
+    }
+
+    &__option-label {
+        white-space: nowrap;
+    }
+}
