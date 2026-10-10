@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { gsap } from 'gsap'
 import { useTodos } from '@/pages/todos/context/TodoContext'
 import Button from '@/components/ui/button/Button'
 import styles from './Todo.module.scss'
@@ -14,6 +15,21 @@ const Todo = () => {
     const [isEditing, setIsEditing] = useState(false)
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
+    const [error, setError] = useState('')
+
+    const editCardRef = useRef(null)
+
+    // Subtle fade/rise when the edit card appears (skipped for reduced motion).
+    useLayoutEffect(() => {
+        if (!isEditing || !editCardRef.current) return
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+        gsap.fromTo(
+            editCardRef.current,
+            { opacity: 0, y: 10 },
+            { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' }
+        )
+    }, [isEditing])
 
     if (!todo) {
         return (
@@ -30,7 +46,12 @@ const Todo = () => {
      * Save edits to the current todo and exit edit mode.
      */
     const handleSave = () => {
+        if (!title.trim()) {
+            setError('Title is required')
+            return
+        }
         updateTodo(todo.id, { title: title.trim(), description: description.trim() })
+        setError('')
         setIsEditing(false)
     }
 
@@ -42,7 +63,16 @@ const Todo = () => {
     const handleEdit = () => {
         setTitle(todo.title)
         setDescription(todo.description)
+        setError('')
         setIsEditing(true)
+    }
+
+    /**
+     * Exit edit mode without saving, discarding any error.
+     */
+    const handleCancel = () => {
+        setError('')
+        setIsEditing(false)
     }
 
     /**
@@ -70,25 +100,49 @@ const Todo = () => {
             </div>
 
             {isEditing ? (
-                <div className={styles.todo__editForm}>
-                    <input
-                        className={styles.todo__input}
-                        type="text"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                    />
-                    <textarea
-                        className={styles.todo__textarea}
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        rows={5}
-                    />
-                    <div className={styles.todo__actions}>
-                        <Button variant="primary" onClick={handleSave}>
-                            Save
-                        </Button>
-                        <Button variant="ghost" onClick={() => setIsEditing(false)}>
+                <div className={styles.todo__editCard} ref={editCardRef}>
+                    <span className={styles.todo__editEyebrow}>Editing</span>
+
+                    <div className={styles.todo__field}>
+                        <label className={styles.todo__label} htmlFor="todo-title">
+                            Title
+                        </label>
+                        <input
+                            id="todo-title"
+                            className={`${styles.todo__input} ${styles['todo__input--title']}`}
+                            type="text"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="Todo title"
+                        />
+                    </div>
+
+                    <div className={styles.todo__field}>
+                        <label className={styles.todo__label} htmlFor="todo-description">
+                            Description
+                        </label>
+                        <textarea
+                            id="todo-description"
+                            className={styles.todo__textarea}
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Add more detail (optional)"
+                            rows={5}
+                        />
+                    </div>
+
+                    {error && (
+                        <p className={styles.todo__error} role="alert">
+                            {error}
+                        </p>
+                    )}
+
+                    <div className={styles.todo__editActions}>
+                        <Button variant="ghost" onClick={handleCancel}>
                             Cancel
+                        </Button>
+                        <Button variant="primary" onClick={handleSave}>
+                            Save changes
                         </Button>
                     </div>
                 </div>
