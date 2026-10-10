@@ -163,9 +163,18 @@ code {
         padding-inline: 2.0rem;
     }
 
-    @include var.md { 
+    @include var.md {
         padding-inline: 3.0rem;
     }
+}
+
+// Elevated card surface — shared by the todo forms and detail view.
+.surface{
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
 }
 
 .row{
@@ -261,6 +270,31 @@ code {
     @media (min-width: var.$md) { &-md { @include display } }
     @media (min-width: var.$lg) { &-lg { @include display } }
     @media (min-width: var.$xl) { &-xl { @include display } }
+}
+
+@mixin flex-direction{
+    &-row{ flex-direction: row; }
+    &-row-reverse{ flex-direction: row-reverse; }
+    &-column{ flex-direction: column; }
+    &-column-reverse{ flex-direction: column-reverse; }
+}
+
+.flex{
+    @media (min-width: var.$xsm) { @include flex-direction }
+    @media (min-width: var.$sm) { &-sm { @include flex-direction } }
+    @media (min-width: var.$md) { &-md { @include flex-direction } }
+    @media (min-width: var.$lg) { &-lg { @include flex-direction } }
+    @media (min-width: var.$xl) { &-xl { @include flex-direction } }
+}
+
+.flex-wrap{ flex-wrap: wrap; }
+.flex-nowrap{ flex-wrap: nowrap; }
+
+.align-self{
+    &-start{ align-self: flex-start; }
+    &-center{ align-self: center; }
+    &-end{ align-self: flex-end; }
+    &-stretch{ align-self: stretch; }
 }
 
 .justify{
