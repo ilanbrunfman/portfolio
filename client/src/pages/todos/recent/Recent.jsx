@@ -45,6 +45,9 @@ const Recent = () => {
      */
     const handleDragOver = (e, id) => {
         e.preventDefault()
+        // Don't highlight the item being dragged over itself.
+        const draggedId = dragIndex.current !== null ? todos[dragIndex.current]?.id : null
+        if (id === draggedId) return
         setDragOverId(id)
     }
 
@@ -64,9 +67,14 @@ const Recent = () => {
         // Capture "before" positions of all currently rendered items.
         flipState.current = Flip.getState(Array.from(itemRefs.current.values()))
 
+        // Insert before the drop target, consistently regardless of drag
+        // direction. Locating the target by id after removal avoids the
+        // off-by-one that a raw dropIndex causes when dragging downward.
+        const targetId = todos[dropIndex].id
         const reordered = [...todos]
         const [moved] = reordered.splice(startIndex, 1)
-        reordered.splice(dropIndex, 0, moved)
+        const targetPos = reordered.findIndex((item) => item.id === targetId)
+        reordered.splice(targetPos, 0, moved)
 
         reorderTodos(reordered)
     }
@@ -176,6 +184,7 @@ const Recent = () => {
                                     type="checkbox"
                                     checked={todo.completed}
                                     onChange={() => toggleComplete(todo.id)}
+                                    aria-label={`Mark ${todo.title} complete`}
                                 />
 
                                 <Link className={styles.recent__title} to={`/todos/${todo.id}`}>

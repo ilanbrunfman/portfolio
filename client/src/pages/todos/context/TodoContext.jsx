@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 
 const TodoContext = createContext(null)
 
@@ -85,8 +85,14 @@ export const TodoProvider = ({ children }) => {
      */
     const getTodoById = (id) => todos.find((todo) => todo.id === id)
 
+    // Sort once per todos change rather than on every render.
+    const sortedTodos = useMemo(
+        () => [...todos].sort((a, b) => a.order - b.order),
+        [todos]
+    )
+
     const value = {
-        todos: [...todos].sort((a, b) => a.order - b.order),
+        todos: sortedTodos,
         addTodo,
         updateTodo,
         deleteTodo,
