@@ -1,10 +1,19 @@
 @use "@/assets/styles/shared/variables" as var;
 
 .todo {
-    max-width: var.$container-md;
+    width: 100%;
+    max-width: 640px;
     display: flex;
     flex-direction: column;
     gap: 1rem;
+
+    @include var.lg {
+        max-width: 820px;
+    }
+
+    @include var.xl {
+        max-width: 960px;
+    }
 
     &__back {
         color: var(--accent);
@@ -17,8 +26,31 @@
         }
     }
 
+    // ---- detail view card (layout via utilities on the elements) ----
+    &__status {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text);
+
+        &::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        &[data-completed='true'] {
+            color: var(--accent);
+        }
+    }
+
     &__title {
         margin: 0;
+        font-size: clamp(1.4rem, 1rem + 2vw, 1.9rem);
+        line-height: 1.2;
         color: var(--text-h);
 
         &--completed {
@@ -29,11 +61,14 @@
     }
 
     &__description {
+        margin: 0;
         color: var(--text);
+        line-height: 1.6;
         white-space: pre-wrap;
     }
 
     &__meta {
+        margin: 0;
         font-size: 0.8rem;
         color: var(--text);
         opacity: 0.7;
@@ -43,155 +78,11 @@
         color: var(--text);
     }
 
-    &__error {
-        margin: 0;
-        padding: 0.6rem 0.8rem;
-        font-size: 0.85rem;
-        color: #e5484d;
-        background: rgba(229, 72, 77, 0.1);
-        border: 1px solid rgba(229, 72, 77, 0.3);
-        border-radius: 8px;
-    }
-
-    &__actions {
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    &__toggle,
-    &__edit,
-    &__save {
-        border: 1px solid var(--accent-border);
-        border-radius: 4px;
-        padding: 0.5rem 1rem;
-        background: var(--accent);
-        color: #fff;
-        cursor: pointer;
-        font-weight: 500;
-
-        &:hover {
-            opacity: 0.9;
-        }
-    }
-
-    &__cancel,
-    &__delete {
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        padding: 0.5rem 1rem;
-        background: var(--bg);
-        color: var(--text-h);
-        cursor: pointer;
-        font-weight: 500;
-
-        &:hover {
-            background: var(--code-bg);
-        }
-    }
-
     &__delete {
         color: #e5484d;
-        border-color: #e5484d;
-    }
 
-    &__input,
-    &__textarea {
-        width: 100%;
-        padding: 0.7rem 0.9rem;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        background: var(--bg);
-        color: var(--text-h);
-        font: inherit;
-        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-
-        &::placeholder {
-            color: var(--text);
-            opacity: 0.6;
-        }
-
-        &:hover:not(:focus) {
-            border-color: var(--accent-border);
-        }
-
-        &:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-bg);
-        }
-    }
-
-    &__input--title {
-        font-size: 1.15rem;
-        font-weight: 500;
-    }
-
-    &__textarea {
-        min-height: 120px;
-        line-height: 1.5;
-        resize: vertical;
-    }
-
-    // ---- modern edit card ----
-    &__editCard {
-        display: flex;
-        flex-direction: column;
-        gap: 1.1rem;
-        padding: 1.5rem;
-        background: var(--bg);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        box-shadow: var(--shadow);
-    }
-
-    &__editEyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        font-size: 0.72rem;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--accent);
-
-        &::before {
-            content: '';
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--accent);
-        }
-    }
-
-    &__field {
-        display: flex;
-        flex-direction: column;
-        gap: 0.4rem;
-
-        &:focus-within .todo__label {
-            color: var(--accent);
-        }
-    }
-
-    &__label {
-        font-size: 0.8rem;
-        font-weight: 500;
-        color: var(--text);
-        transition: color 0.15s ease;
-    }
-
-    &__editActions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 0.6rem;
-        margin-top: 0.25rem;
-
-        @media (max-width: 560px) {
-            flex-direction: column-reverse;
-
-            > * {
-                width: 100%;
-            }
+        &:hover:not(:disabled) {
+            background: rgba(229, 72, 77, 0.1);
         }
     }
 }

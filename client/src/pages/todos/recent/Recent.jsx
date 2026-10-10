@@ -152,12 +152,13 @@ const Recent = () => {
 
                     <h1 className={`${styles.recent__heading} mb-2`}>Recent Todos</h1>
 
-                    <ul className={styles.recent__list}>
+                    <ul className={`${styles.recent__list} d-flex flex-column gap-0-5`}>
                         {todos.map((todo, index) => (
                             <li
                                 key={todo.id}
                                 ref={(el) => setItemRef(todo.id, el)}
                                 className={[
+                                    'd-flex align-items-center gap-1',
                                     styles.recent__item,
                                     todo.completed ? styles['recent__item--completed'] : '',
                                     dragOverId === todo.id ? styles['recent__item--dragover'] : '',

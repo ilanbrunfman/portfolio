@@ -18,14 +18,16 @@ const Todo = () => {
     const [error, setError] = useState('')
 
     const editCardRef = useRef(null)
+    const viewCardRef = useRef(null)
 
-    // Subtle fade/rise when the edit card appears (skipped for reduced motion).
+    // Subtle fade/rise on whichever card is showing (skipped for reduced motion).
     useLayoutEffect(() => {
-        if (!isEditing || !editCardRef.current) return
+        const card = isEditing ? editCardRef.current : viewCardRef.current
+        if (!card) return
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
         gsap.fromTo(
-            editCardRef.current,
+            card,
             { opacity: 0, y: 10 },
             { opacity: 1, y: 0, duration: 0.3, ease: 'power2.out' }
         )
@@ -100,16 +102,16 @@ const Todo = () => {
             </div>
 
             {isEditing ? (
-                <div className={styles.todo__editCard} ref={editCardRef}>
-                    <span className={styles.todo__editEyebrow}>Editing</span>
+                <div className="surface d-flex flex-column gap-1" ref={editCardRef}>
+                    <span className="form__eyebrow">Editing</span>
 
-                    <div className={styles.todo__field}>
-                        <label className={styles.todo__label} htmlFor="todo-title">
+                    <div className="form__field d-flex flex-column gap-0-5">
+                        <label className="form__label" htmlFor="todo-title">
                             Title
                         </label>
                         <input
                             id="todo-title"
-                            className={`${styles.todo__input} ${styles['todo__input--title']}`}
+                            className="form__input form__input--title"
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
@@ -117,13 +119,13 @@ const Todo = () => {
                         />
                     </div>
 
-                    <div className={styles.todo__field}>
-                        <label className={styles.todo__label} htmlFor="todo-description">
+                    <div className="form__field d-flex flex-column gap-0-5">
+                        <label className="form__label" htmlFor="todo-description">
                             Description
                         </label>
                         <textarea
                             id="todo-description"
-                            className={styles.todo__textarea}
+                            className="form__textarea"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Add more detail (optional)"
@@ -132,12 +134,12 @@ const Todo = () => {
                     </div>
 
                     {error && (
-                        <p className={styles.todo__error} role="alert">
+                        <p className="form__error" role="alert">
                             {error}
                         </p>
                     )}
 
-                    <div className={styles.todo__editActions}>
+                    <div className="form__actions">
                         <Button variant="ghost" onClick={handleCancel}>
                             Cancel
                         </Button>
@@ -147,7 +149,14 @@ const Todo = () => {
                     </div>
                 </div>
             ) : (
-                <>
+                <div className="surface d-flex flex-column gap-1" ref={viewCardRef}>
+                    <span
+                        className={`${styles.todo__status} d-flex align-items-center gap-0-5 align-self-start`}
+                        data-completed={todo.completed}
+                    >
+                        {todo.completed ? 'Completed' : 'In progress'}
+                    </span>
+
                     <h1
                         className={[
                             styles.todo__title,
@@ -167,7 +176,7 @@ const Todo = () => {
                         Created {new Date(todo.createdAt).toLocaleString()}
                     </p>
 
-                    <div className={styles.todo__actions}>
+                    <div className="d-flex flex-wrap gap-0-5">
                         <Button variant="primary" size="sm" onClick={() => toggleComplete(todo.id)}>
                             {todo.completed ? 'Mark Incomplete' : 'Mark Complete'}
                         </Button>
@@ -184,7 +193,7 @@ const Todo = () => {
                             Delete
                         </Button>
                     </div>
-                </>
+                </div>
             )}
         </div>
     )

@@ -54,14 +54,18 @@ const New = () => {
             <div className="col-12">
                 <div className={`mx-auto ${styles.new}`}>
                     <h1 className={styles.new__heading}>New Todo</h1>
-                    <form className={styles.new__form} onSubmit={handleSubmit} ref={formRef}>
-                        <div className={styles.new__field}>
-                            <label className={styles.new__label} htmlFor="title">
+                    <form
+                        className="surface d-flex flex-column gap-1"
+                        onSubmit={handleSubmit}
+                        ref={formRef}
+                    >
+                        <div className="form__field d-flex flex-column gap-0-5">
+                            <label className="form__label" htmlFor="title">
                                 Title
                             </label>
                             <input
                                 id="title"
-                                className={`${styles.new__input} ${styles['new__input--title']}`}
+                                className="form__input form__input--title"
                                 type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
@@ -69,13 +73,13 @@ const New = () => {
                             />
                         </div>
 
-                        <div className={styles.new__field}>
-                            <label className={styles.new__label} htmlFor="description">
+                        <div className="form__field d-flex flex-column gap-0-5">
+                            <label className="form__label" htmlFor="description">
                                 Description
                             </label>
                             <textarea
                                 id="description"
-                                className={styles.new__textarea}
+                                className="form__textarea"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                                 placeholder="Add more detail (optional)"
@@ -84,19 +88,16 @@ const New = () => {
                         </div>
 
                         {error && (
-                            <p className={styles.new__error} role="alert">
+                            <p className="form__error" role="alert">
                                 {error}
                             </p>
                         )}
 
-                        <Button
-                            type="submit"
-                            icon="IconPlus"
-                            iconPosition="left"
-                            className={styles.new__submit}
-                        >
-                            Add Todo
-                        </Button>
+                        <div className="form__actions form__actions--stacked">
+                            <Button type="submit" icon="IconPlus" iconPosition="left">
+                                Add Todo
+                            </Button>
+                        </div>
                     </form>
                 </div>
             </div>
