@@ -67,14 +67,12 @@ const Recent = () => {
         // Capture "before" positions of all currently rendered items.
         flipState.current = Flip.getState(Array.from(itemRefs.current.values()))
 
-        // Insert before the drop target, consistently regardless of drag
-        // direction. Locating the target by id after removal avoids the
-        // off-by-one that a raw dropIndex causes when dragging downward.
-        const targetId = todos[dropIndex].id
+        // Remove the dragged item, then re-insert at dropIndex. Because the
+        // array has shifted after removal, this lands the item below the target
+        // when dragging down and above it when dragging up — correct both ways.
         const reordered = [...todos]
         const [moved] = reordered.splice(startIndex, 1)
-        const targetPos = reordered.findIndex((item) => item.id === targetId)
-        reordered.splice(targetPos, 0, moved)
+        reordered.splice(dropIndex, 0, moved)
 
         reorderTodos(reordered)
     }
