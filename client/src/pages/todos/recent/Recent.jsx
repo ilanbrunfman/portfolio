@@ -129,10 +129,13 @@ const Recent = () => {
     useLayoutEffect(() => {
         if (!flipState.current) return
 
+        // No `absolute: true`: pinning items to position:absolute collapses the
+        // list height mid-animation, and since the todos content is vertically
+        // centered that makes the heading flicker down and back. Transform-only
+        // keeps the list height stable through the reorder.
         Flip.from(flipState.current, {
             duration: 0.4,
             ease: 'power2.out',
-            absolute: true,
         })
 
         flipState.current = null
@@ -146,67 +149,75 @@ const Recent = () => {
     }
 
     return (
-        <div className="row">
-            <div className="col-12">
-                <div className={`mx-auto ${styles.recent}`}>
+        <>
+            <div className="row">
+                <div className="col-12">
+                    <div className={`mx-auto ${styles.recent}`}>
 
-                    <h1 className={`${styles.recent__heading} mb-2`}>Recent Todos</h1>
+                        <h1 className={`${styles.recent__heading} mb-2`}>Recent Todos</h1>
 
-                    <ul className={`${styles.recent__list} d-flex flex-column gap-0-5`}>
-                        {todos.map((todo, index) => (
-                            <li
-                                key={todo.id}
-                                ref={(el) => setItemRef(todo.id, el)}
-                                className={[
-                                    'd-flex align-items-center gap-1',
-                                    styles.recent__item,
-                                    todo.completed ? styles['recent__item--completed'] : '',
-                                    dragOverId === todo.id ? styles['recent__item--dragover'] : '',
-                                ]
-                                    .filter(Boolean)
-                                    .join(' ')}
-                                draggable
-                                onDragStart={() => handleDragStart(index)}
-                                onDragOver={(e) => handleDragOver(e, todo.id)}
-                                onDrop={() => handleDrop(index)}
-                                onDragEnd={() => setDragOverId(null)}
-                            >
-                                <button
-                                    type="button"
-                                    className={styles.recent__handle}
-                                    onKeyDown={(e) => handleHandleKeyDown(e, index)}
-                                    aria-label={`Reorder ${todo.title}. Use the up and down arrow keys to move it.`}
-                                >
-                                    <span aria-hidden="true">⠿</span>
-                                </button>
-
-                                <input
-                                    className={styles.recent__checkbox}
-                                    type="checkbox"
-                                    checked={todo.completed}
-                                    onChange={() => toggleComplete(todo.id)}
-                                    aria-label={`Mark ${todo.title} complete`}
-                                />
-
-                                <Link className={styles.recent__title} to={`/todos/${todo.id}`}>
-                                    {todo.title}
-                                </Link>
-
-                                <Button
-                                    variant="ghost"
-                                    size="md"
-                                    icon="IconTrash"
-                                    className={styles.recent__delete}
-                                    onClick={() => handleDelete(todo.id)}
-                                    aria-label={`Delete ${todo.title}`}
-                                />
-                            </li>
-                        ))}
-                    </ul>
-
+                    </div>
                 </div>
             </div>
-        </div>
+
+            <div className="row">
+                <div className="col-12">
+                    <div className={`mx-auto ${styles.recent}`}>
+                        <ul className={`${styles.recent__list} d-flex flex-column gap-0-5`}>
+                            {todos.map((todo, index) => (
+                                <li
+                                    key={todo.id}
+                                    ref={(el) => setItemRef(todo.id, el)}
+                                    className={[
+                                        'd-flex align-items-center gap-1',
+                                        styles.recent__item,
+                                        todo.completed ? styles['recent__item--completed'] : '',
+                                        dragOverId === todo.id ? styles['recent__item--dragover'] : '',
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' ')}
+                                    draggable
+                                    onDragStart={() => handleDragStart(index)}
+                                    onDragOver={(e) => handleDragOver(e, todo.id)}
+                                    onDrop={() => handleDrop(index)}
+                                    onDragEnd={() => setDragOverId(null)}
+                                >
+                                    <button
+                                        type="button"
+                                        className={styles.recent__handle}
+                                        onKeyDown={(e) => handleHandleKeyDown(e, index)}
+                                        aria-label={`Reorder ${todo.title}. Use the up and down arrow keys to move it.`}
+                                    >
+                                        <span aria-hidden="true">⠿</span>
+                                    </button>
+
+                                    <input
+                                        className={styles.recent__checkbox}
+                                        type="checkbox"
+                                        checked={todo.completed}
+                                        onChange={() => toggleComplete(todo.id)}
+                                        aria-label={`Mark ${todo.title} complete`}
+                                    />
+
+                                    <Link className={styles.recent__title} to={`/todos/${todo.id}`}>
+                                        {todo.title}
+                                    </Link>
+
+                                    <Button
+                                        variant="ghost"
+                                        size="md"
+                                        icon="IconTrash"
+                                        className={styles.recent__delete}
+                                        onClick={() => handleDelete(todo.id)}
+                                        aria-label={`Delete ${todo.title}`}
+                                    />
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </>
     )
 }
 
