@@ -1,4 +1,5 @@
 import roofingThumb from '@/assets/thumbnails/roofing.svg'
+import todosThumb from '@/assets/thumbnails/todos.svg'
 
 // Heights vary in the URL on purpose (900, 1500, 800, 1050, 1600, 900) just
 // to demonstrate the masonry effect with Picsum's placeholder service.
@@ -40,7 +41,7 @@ export const portfolioProjects = [
         id: 4,
         title: 'Task Management App',
         description: 'A productivity app for organizing projects and daily tasks.',
-        image: 'https://picsum.photos/1200/1050?4',
+        image: todosThumb,
         tags: ['React', 'Firebase', 'CSS'],
         link: '#',
         route: 'todos',
