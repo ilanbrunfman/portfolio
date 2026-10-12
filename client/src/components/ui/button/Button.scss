@@ -79,4 +79,11 @@
             background-color: var(--accent-bg);
         }
     }
+
+    // Full-width on small screens only.
+    &.btn-block-sm{
+        @media (max-width: 560px){
+            width: 100%;
+        }
+    }
 }

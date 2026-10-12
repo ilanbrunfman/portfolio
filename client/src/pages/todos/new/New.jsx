@@ -93,11 +93,14 @@ const New = () => {
                             </p>
                         )}
 
-                        <div className="form__actions form__actions--stacked">
-                            <Button type="submit" icon="IconPlus" iconPosition="left">
-                                Add Todo
-                            </Button>
-                        </div>
+                        <Button
+                            type="submit"
+                            icon="IconPlus"
+                            iconPosition="left"
+                            className="align-self-start btn-block-sm"
+                        >
+                            Add Todo
+                        </Button>
                     </form>
                 </div>
             </div>

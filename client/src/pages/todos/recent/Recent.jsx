@@ -215,6 +215,22 @@ const Recent = () => {
                     </div>
                 </div>
             </div>
+
+            <div className="row">
+                <div className="col-12">
+                    <div className={`mx-auto ${styles.recent} mt-2`}>
+                        <Button
+                            to="/todos/new"
+                            variant="primary"
+                            icon="IconPlus"
+                            iconPosition="left"
+                            className="btn-block-sm"
+                        >
+                            New todo
+                        </Button>
+                    </div>
+                </div>
+            </div>
         </>
     )
 }
