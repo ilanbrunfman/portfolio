@@ -1,0 +1,349 @@
+@use "variables" as var;
+
+// ISA (Interactive Sales Aid) demo shell. AbbVie-*inspired* tokens scoped to
+// the app root; everything else leans on the global utilities + .surface.
+// Kept separate from the generic template.scss, like landing.scss.
+
+.isa-app {
+    // Inspired-by palette (not AbbVie's actual brand assets).
+    --accent: #0b5cd7;
+    --accent-bg: rgba(11, 92, 215, 0.10);
+    --accent-border: rgba(11, 92, 215, 0.40);
+    --isa-navy: #071d49;
+
+    position: relative;
+    height: 100svh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+}
+
+// --- top bar (navy row + ISI overlay anchored to it) ---
+.isa-topbar {
+    position: relative;
+    z-index: 20;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+
+    &__bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.75rem 1.25rem;
+        background: var(--isa-navy);
+        color: #fff;
+    }
+
+    &__brand {
+        font-size: 1.15rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+    }
+
+    // Light-ghost action buttons (ISI / References / Slides).
+    &__menu {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        appearance: none;
+        border: none;
+        border-radius: 8px;
+        background: transparent;
+        color: #fff;
+        fill: currentColor;
+        font: inherit;
+        padding: 0.4rem 0.8rem;
+        cursor: pointer;
+        transition: background 0.15s ease;
+
+        &:hover { background: rgba(255, 255, 255, 0.12); }
+
+        &.is-active { background: rgba(255, 255, 255, 0.18); }
+    }
+
+    // Slides reads as the primary action — outlined, distinct from the links.
+    &__menu--primary {
+        border: 1px solid rgba(255, 255, 255, 0.45);
+
+        &:hover { background: rgba(255, 255, 255, 0.16); }
+    }
+
+    &__actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+}
+
+// --- stage ---
+.isa-stage {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    overflow: hidden;
+    touch-action: pan-y;
+}
+
+.isa-slide {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    // Let horizontal drags reach the swipe handler; keep vertical scrolling.
+    touch-action: pan-y;
+    padding: clamp(1.25rem, 3vw, 2.5rem);
+    display: flex;
+    flex-direction: column;
+}
+
+// shared inner width for slide content
+.isa-canvas {
+    width: 100%;
+    max-width: 1040px;
+    margin-inline: auto;
+}
+
+// --- two-tier deck navigation (main + secondary) ---
+.isa-nav2 {
+    flex-shrink: 0;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+
+    &__main {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        padding: 0.5rem 1rem;
+        overflow-x: auto;
+    }
+
+    // Accent pill that slides (via GSAP) to the active item.
+    &__indicator {
+        position: absolute;
+        top: 0.5rem;
+        bottom: 0.5rem;
+        left: 0;
+        width: 0;
+        border-radius: 8px;
+        background: var(--accent);
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    &__item {
+        position: relative;
+        z-index: 1;
+        appearance: none;
+        border: none;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        font-weight: 600;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        padding: 0.5rem 0.9rem;
+        cursor: pointer;
+        transition: color 0.15s ease;
+
+        &:hover:not(.is-active) { color: var(--text-h); }
+        &.is-active { color: #fff; }
+    }
+
+    &__secondary {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        padding: 0 1rem 0.6rem;
+    }
+
+    &__subitem {
+        appearance: none;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--bg);
+        color: var(--text);
+        font: inherit;
+        font-size: 0.8rem;
+        padding: 0.3rem 0.75rem;
+        cursor: pointer;
+        transition: border-color 0.15s ease, color 0.15s ease;
+
+        &:hover { border-color: var(--accent-border); }
+        &.is-active { border-color: var(--accent); color: var(--accent); }
+    }
+}
+
+// --- ISI content (rendered inside the full-page modal) ---
+.isa-isi {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    > p { margin: 0; color: var(--text-h); font-weight: 500; line-height: 1.6; }
+
+    h4 { margin: 0 0 0.25rem; color: var(--text-h); font-size: 0.95rem; }
+    div p { margin: 0; color: var(--text); line-height: 1.6; }
+}
+
+// --- slide-menu tiles (rendered inside the reusable Modal) ---
+.isa-menu {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+
+    @include var.sm { grid-template-columns: repeat(3, 1fr); }
+
+    &__tile {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        text-align: left;
+        appearance: none;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg);
+        color: var(--text-h);
+        padding: 0.9rem;
+        cursor: pointer;
+        transition: border-color 0.15s ease, background 0.15s ease;
+
+        &:hover { border-color: var(--accent-border); background: var(--accent-bg); }
+        &.is-active { border-color: var(--accent); }
+
+        &-num { font-size: 0.72rem; font-weight: 700; color: var(--accent); }
+        &-title { font-weight: 600; }
+    }
+}
+
+// --- slide content bits ---
+.isa-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+.isa-h1 {
+    margin: 0;
+    font-size: clamp(2rem, 1rem + 3vw, 3.2rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    color: var(--text-h);
+}
+
+.isa-h2 {
+    margin: 0;
+    font-size: clamp(1.5rem, 1rem + 1.8vw, 2.1rem);
+    line-height: 1.15;
+    color: var(--text-h);
+}
+
+.isa-lead {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--text);
+    max-width: 60ch;
+}
+
+.isa-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-bg);
+    border-radius: 999px;
+    padding: 0.3rem 0.75rem;
+}
+
+// cover
+.isa-cover {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.25rem;
+    background: linear-gradient(135deg, var(--isa-navy), #0a2f6b);
+    color: #fff;
+    border-radius: 20px;
+    padding: clamp(1.75rem, 4vw, 3.5rem);
+
+    .isa-h1, .isa-eyebrow { color: #fff; }
+    .isa-eyebrow { opacity: 0.85; }
+
+    &__icon {
+        color: #fff;
+        fill: currentColor;
+        opacity: 0.9;
+        margin-bottom: 0.25rem;
+    }
+
+    &__image {
+        width: 100%;
+        max-width: 360px;
+        height: auto;
+    }
+}
+
+// moa steps
+.isa-step {
+    position: relative;
+
+    &__num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 700;
+    }
+}
+
+// efficacy chart
+.isa-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 2rem;
+    height: 280px;
+    padding: 1rem 0.5rem 0;
+
+    &__col {
+        flex: 1 1 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.6rem;
+        height: 100%;
+    }
+
+    &__bar {
+        width: 72px;
+        max-width: 60%;
+        border-radius: 6px 6px 0 0;
+        background: color-mix(in srgb, var(--text) 40%, var(--bg));
+        transition: height 0.6s ease;
+
+        &.is-primary { background: var(--accent); }
+    }
+
+    &__value { font-weight: 800; font-size: 1.4rem; color: var(--text-h); }
+    &__label { color: var(--text); font-weight: 500; }
+}

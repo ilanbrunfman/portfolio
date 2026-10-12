@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 
 import MainLayout from './components/layout/main/MainLayout'
 import HomePage from './pages/home/HomePage'
@@ -11,6 +11,7 @@ import RecentTodo from './pages/todos/recent/Recent'
 import Todo from './pages/todos/todo/Todo'
 
 import RoofingPage from './pages/landing-pages/roofing/RoofingPage'
+import IsaApp from './pages/isa/IsaApp'
 
 import PageNotFoundPage from './pages/page-not-found/PageNotFoundPage'
 
@@ -45,6 +46,14 @@ const router = createBrowserRouter([
     {
         path: '/roofing',
         element: <RoofingPage />,
+    },
+    {
+        path: '/isa',
+        element: <Navigate to="/isa/cover" replace />,
+    },
+    {
+        path: '/isa/:slideId',
+        element: <IsaApp />,
     },
     {
         path: '*',

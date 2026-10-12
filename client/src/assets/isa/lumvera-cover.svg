@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 440" fill="none">
+  <style>
+    .mol { animation: float 6s ease-in-out infinite; }
+    .node { transform-box: fill-box; transform-origin: center; animation: pulse 3s ease-in-out infinite; }
+    .n2 { animation-delay: .4s } .n3 { animation-delay: .8s }
+    .n4 { animation-delay: 1.2s } .n5 { animation-delay: .6s } .n6 { animation-delay: 1s }
+    @keyframes float { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-12px) } }
+    @keyframes pulse { 0%, 100% { opacity: .85; transform: scale(1) } 50% { opacity: 1; transform: scale(1.14) } }
+    @media (prefers-reduced-motion: reduce) { .mol, .node { animation: none } }
+  </style>
+
+  <g class="mol">
+    <!-- connective lines -->
+    <g stroke="#ffffff" stroke-opacity="0.22" stroke-width="2">
+      <line x1="220" y1="220" x2="220" y2="96"/>
+      <line x1="220" y1="220" x2="110" y2="150"/>
+      <line x1="220" y1="220" x2="330" y2="150"/>
+      <line x1="220" y1="220" x2="120" y2="310"/>
+      <line x1="220" y1="220" x2="330" y2="300"/>
+      <line x1="220" y1="220" x2="220" y2="356"/>
+      <line x1="110" y1="150" x2="220" y2="96"/>
+      <line x1="330" y1="150" x2="220" y2="96"/>
+      <line x1="120" y1="310" x2="220" y2="356"/>
+      <line x1="330" y1="300" x2="220" y2="356"/>
+    </g>
+
+    <!-- central ring + node -->
+    <circle cx="220" cy="220" r="52" stroke="#5b9bf5" stroke-opacity="0.5" stroke-width="2"/>
+    <circle class="node n1" cx="220" cy="220" r="26" fill="#5b9bf5"/>
+
+    <!-- nodes -->
+    <circle class="node n2" cx="220" cy="96" r="16" fill="#ffffff"/>
+    <circle class="node n3" cx="110" cy="150" r="13" fill="#5b9bf5"/>
+    <circle class="node n4" cx="330" cy="150" r="18" fill="#ffffff" fill-opacity="0.85"/>
+    <circle class="node n5" cx="120" cy="310" r="18" fill="#5b9bf5"/>
+    <circle class="node n6" cx="330" cy="300" r="13" fill="#ffffff" fill-opacity="0.7"/>
+    <circle class="node n2" cx="220" cy="356" r="15" fill="#ffffff" fill-opacity="0.9"/>
+  </g>
+</svg>
