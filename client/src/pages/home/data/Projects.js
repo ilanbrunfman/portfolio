@@ -1,5 +1,6 @@
 import roofingThumb from '@/assets/thumbnails/roofing.svg'
 import todosThumb from '@/assets/thumbnails/todos.svg'
+import isaThumb from '@/assets/thumbnails/isa.svg'
 
 // Heights vary in the URL on purpose (900, 1500, 800, 1050, 1600, 900) just
 // to demonstrate the masonry effect with Picsum's placeholder service.
@@ -71,6 +72,15 @@ export const portfolioProjects = [
         tags: ['React', 'SCSS', 'Landing Page'],
         link: '#',
         route: '/roofing',
+    },
+    {
+        id: 8,
+        title: 'Lumvera ISA — Interactive Sales Aid',
+        description: 'Swipeable pharma CLM detail aid with per-slide references, ISI, and quarterly-updatable efficacy data.',
+        image: isaThumb,
+        tags: ['React', 'GSAP', 'CLM'],
+        link: '#',
+        route: '/isa',
     }
 ]
 
