@@ -1,3 +1,5 @@
+import roofingThumb from '@/assets/thumbnails/roofing.svg'
+
 // Heights vary in the URL on purpose (900, 1500, 800, 1050, 1600, 900) just
 // to demonstrate the masonry effect with Picsum's placeholder service.
 // No width/height fields here anymore — ProjectCard measures the real
@@ -59,6 +61,15 @@ export const portfolioProjects = [
         image: 'https://picsum.photos/1200/900?6',
         tags: ['React', 'SCSS', 'Vite'],
         link: '#'
+    },
+    {
+        id: 7,
+        title: 'Summit Roofing — Landing Page',
+        description: 'High-converting roofing landing page composed from a reusable section system.',
+        image: roofingThumb,
+        tags: ['React', 'SCSS', 'Landing Page'],
+        link: '#',
+        route: '/roofing',
     }
 ]
 
