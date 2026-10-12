@@ -34,6 +34,10 @@
     }
 }
 
+@media (prefers-reduced-motion: no-preference) {
+    :root { scroll-behavior: smooth; }
+}
+
 // @media (prefers-color-scheme: dark) {
 //     :root {
 //         --text: #9ca3af;
@@ -170,6 +174,7 @@ code {
 
 // Elevated card surface — shared by the todo forms and detail view.
 .surface{
+    box-sizing: border-box;
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 16px;
@@ -295,6 +300,25 @@ code {
     &-center{ align-self: center; }
     &-end{ align-self: flex-end; }
     &-stretch{ align-self: stretch; }
+}
+
+@mixin grid-cols{
+    &-1{ grid-template-columns: repeat(1, 1fr); }
+    &-2{ grid-template-columns: repeat(2, 1fr); }
+    &-3{ grid-template-columns: repeat(3, 1fr); }
+    &-4{ grid-template-columns: repeat(4, 1fr); }
+    &-5{ grid-template-columns: repeat(5, 1fr); }
+    &-6{ grid-template-columns: repeat(6, 1fr); }
+}
+
+// Pair with .d-grid (and a .gap-* utility). Mobile-first: e.g.
+// `d-grid grid-1 grid-sm-2 grid-lg-3 gap-2`.
+.grid{
+    @media (min-width: var.$xsm) { @include grid-cols }
+    @media (min-width: var.$sm) { &-sm { @include grid-cols } }
+    @media (min-width: var.$md) { &-md { @include grid-cols } }
+    @media (min-width: var.$lg) { &-lg { @include grid-cols } }
+    @media (min-width: var.$xl) { &-xl { @include grid-cols } }
 }
 
 .justify{
