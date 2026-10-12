@@ -321,6 +321,16 @@ code {
     @media (min-width: var.$xl) { &-xl { @include grid-cols } }
 }
 
+// Named ratio grids — single column on mobile, the ratio from md up.
+.grid-7-5 {
+    grid-template-columns: 1fr;
+    @media (min-width: var.$md) { grid-template-columns: 7fr 5fr; }
+}
+.grid-5-7 {
+    grid-template-columns: 1fr;
+    @media (min-width: var.$md) { grid-template-columns: 5fr 7fr; }
+}
+
 .justify{
     @mixin justify{
         &-start{ justify-content: flex-start; } 
