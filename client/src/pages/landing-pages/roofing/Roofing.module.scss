@@ -1,0 +1,10 @@
+// Per-brand theming: override the accent tokens here and every shared section
+// re-skins automatically. Swap these values for the next lander.
+.page {
+    --accent: #2563eb;
+    --accent-bg: rgba(37, 99, 235, 0.1);
+    --accent-border: rgba(37, 99, 235, 0.4);
+
+    background: var(--bg);
+    min-height: 100svh;
+}

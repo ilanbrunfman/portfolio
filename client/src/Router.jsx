@@ -10,6 +10,8 @@ import NewTodo from './pages/todos/new/New'
 import RecentTodo from './pages/todos/recent/Recent'
 import Todo from './pages/todos/todo/Todo'
 
+import RoofingPage from './pages/landing-pages/roofing/RoofingPage'
+
 import PageNotFoundPage from './pages/page-not-found/PageNotFoundPage'
 
 const router = createBrowserRouter([
@@ -39,6 +41,10 @@ const router = createBrowserRouter([
             { path: 'new', element: <NewTodo /> },
             { path: ':id', element: <Todo /> }
         ]
+    },
+    {
+        path: '/roofing',
+        element: <RoofingPage />,
     },
     {
         path: '*',
