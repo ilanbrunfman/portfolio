@@ -1,4 +1,5 @@
 import Modal from '@/components/ui/modal/Modal'
+import './SlideMenu.scss'
 
 /**
  * Slide navigator, rendered inside the reusable Modal. Tiles are flat for v1

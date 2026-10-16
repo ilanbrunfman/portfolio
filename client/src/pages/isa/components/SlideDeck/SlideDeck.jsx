@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { gsap } from 'gsap'
-import { SLIDE_COMPONENTS } from '../slides'
+import { SLIDE_COMPONENTS } from '../../slides'
+import './SlideDeck.scss'
 
 const SWIPE_THRESHOLD = 50
 

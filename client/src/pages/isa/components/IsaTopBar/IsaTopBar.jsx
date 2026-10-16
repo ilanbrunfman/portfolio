@@ -1,4 +1,5 @@
 import Icon from '@/components/ui/icon/Icon'
+import './IsaTopBar.scss'
 
 const IsaTopBar = ({ brand, isiOpen, onToggleIsi, onReferences, hasReferences, onMenu }) => (
     <header className="isa-topbar">

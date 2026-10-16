@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from 'react'
 import { gsap } from 'gsap'
+import './DeckNav.scss'
 
 /**
  * Two-tier deck navigation:

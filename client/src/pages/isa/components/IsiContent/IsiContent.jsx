@@ -1,3 +1,5 @@
+import './IsiContent.scss'
+
 /**
  * Important Safety Information body, rendered inside the full-page ISI modal.
  * (The modal title shows isi.title.)

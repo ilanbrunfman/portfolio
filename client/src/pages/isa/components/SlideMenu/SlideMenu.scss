@@ -1,0 +1,31 @@
+@use "@/assets/styles/shared/variables" as var;
+
+// --- slide-menu tiles (rendered inside the reusable Modal) ---
+.isa-menu {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+
+    @include var.sm { grid-template-columns: repeat(3, 1fr); }
+
+    &__tile {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        text-align: left;
+        appearance: none;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg);
+        color: var(--text-h);
+        padding: 0.9rem;
+        cursor: pointer;
+        transition: border-color 0.15s ease, background 0.15s ease;
+
+        &:hover { border-color: var(--accent-border); background: var(--accent-bg); }
+        &.is-active { border-color: var(--accent); }
+
+        &-num { font-size: 0.72rem; font-weight: 700; color: var(--accent); }
+        &-title { font-weight: 600; }
+    }
+}

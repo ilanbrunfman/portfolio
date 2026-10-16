@@ -1,0 +1,20 @@
+// --- stage ---
+.isa-stage {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    overflow: hidden;
+    touch-action: pan-y;
+}
+
+.isa-slide {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    // Let horizontal drags reach the swipe handler; keep vertical scrolling.
+    touch-action: pan-y;
+    padding: clamp(1.25rem, 3vw, 2.5rem);
+    display: flex;
+    flex-direction: column;
+}
