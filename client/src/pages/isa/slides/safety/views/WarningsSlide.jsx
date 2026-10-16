@@ -10,7 +10,7 @@ const WarningsSlide = ({ data, slide }) => (
             {data.safety.warnings.map((w) => (
                 <div key={w.title} className="surface d-flex flex-column gap-0-5">
                     <h3 className="isa-h3">{w.title}</h3>
-                    <p className="isa-body">{w.text}</p>
+                    <p className="isa-body lh-1-6">{w.text}</p>
                 </div>
             ))}
         </div>

@@ -14,7 +14,7 @@ const AdministrationSlide = ({ data, slide }) => {
                     <li key={step.title} className="surface isa-step d-flex flex-column gap-1">
                         <span className="isa-step__num">{i + 1}</span>
                         <h3 className="isa-h3">{step.title}</h3>
-                        <p className="isa-body">{step.text}</p>
+                        <p className="isa-body lh-1-6">{step.text}</p>
                     </li>
                 ))}
             </ol>

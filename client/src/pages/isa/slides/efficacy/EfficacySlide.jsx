@@ -13,7 +13,7 @@ const EfficacySlide = ({ data, slide, onNavigate }) => {
         >
             <div className="d-grid grid-2 gap-2">
                 {efficacy.series.map((s) => (
-                    <div key={s.label} className={`surface isa-stat${s.highlight ? ' is-primary' : ''}`}>
+                    <div key={s.label} className={`surface isa-stat d-flex flex-column gap-0-5${s.highlight ? ' is-primary' : ''}`}>
                         <span className="isa-stat__value">{s.value}%</span>
                         <span className="isa-stat__label">{s.label}</span>
                     </div>

@@ -84,6 +84,8 @@ Tiles come from the deck tree — add a child to show a new tile:
 
 ## Styling
 
-`SectionOverview.scss` — block `.isa-overview`: 1 → 2 (`sm`) → 3 (`md`)
-column grid; `__tile`, `__num`, `__title`, `__summary`, `__arrow`.
+Layout uses `template.scss` utilities in the markup — the list is
+`d-grid grid-1 grid-sm-2 grid-md-3 gap-1` (1 → 2 → 3 columns).
+`SectionOverview.scss` (block `.isa-overview`) only adds the list reset and
+the tile visuals: `__tile`, `__num`, `__title`, `__summary`, `__arrow`.
 Colors come from `--accent*` on `.isa-app`.

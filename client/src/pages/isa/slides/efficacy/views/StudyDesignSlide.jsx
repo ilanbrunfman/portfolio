@@ -9,7 +9,7 @@ const StudyDesignSlide = ({ data, slide }) => {
                 <p className="isa-lead">{efficacy.studyDesign}</p>
             </div>
 
-            <dl className="isa-facts">
+            <dl className="isa-facts d-grid grid-2 grid-md-4 gap-1">
                 {efficacy.studyFacts.map((fact) => (
                     <div key={fact.label} className="surface isa-facts__item">
                         <dt>{fact.label}</dt>

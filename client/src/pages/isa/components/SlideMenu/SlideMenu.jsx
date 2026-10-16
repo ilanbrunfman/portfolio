@@ -20,16 +20,16 @@ const Tile = ({ slide, currentId, onSelect, child = false }) => (
  */
 const SlideMenu = ({ open, sections, currentId, onSelect, onClose, disclaimer }) => (
     <Modal isOpen={open} onClose={onClose} title="Slides" size="lg">
-        <div className="isa-menu">
+        <div className="isa-menu d-grid grid-2 grid-sm-3 gap-1">
             {sections.map((section) =>
                 section.children.length ? (
                     <section
                         key={section.id}
-                        className="isa-menu__group"
+                        className="isa-menu__group d-flex flex-column gap-0-5"
                         aria-label={`${section.number} ${section.title}`}
                     >
                         <Tile slide={section} currentId={currentId} onSelect={onSelect} />
-                        <div className="isa-menu__children">
+                        <div className="isa-menu__children d-grid grid-2 grid-sm-3 gap-0-5">
                             {section.children.map((child) => (
                                 <Tile key={child.id} slide={child} currentId={currentId} onSelect={onSelect} child />
                             ))}

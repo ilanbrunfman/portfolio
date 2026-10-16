@@ -152,7 +152,7 @@
 
 // --- shared slide text bits ---
 .isa-h3 { margin: 0; font-size: 1.1rem; color: var(--text-h); }
-.isa-body { margin: 0; color: var(--text); line-height: 1.6; }
+.isa-body { margin: 0; color: var(--text); } // pair with .lh-1-6
 .isa-footnote { margin: 0.75rem 0 0; font-size: 0.8rem; color: var(--text); }
 .isa-callout { margin: 0; font-size: 1.2rem; font-weight: 600; color: var(--text-h); }
 .isa-reset-list { margin: 0; padding: 0; list-style: none; }
@@ -163,26 +163,17 @@
     line-height: 1.6;
 }
 
-// headline stat tiles (efficacy overview)
+// headline stat tiles (efficacy overview) — layout: `d-flex flex-column`
 .isa-stat {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-
     &__value { font-size: clamp(2rem, 1.2rem + 3vw, 3rem); font-weight: 800; line-height: 1; color: var(--text-h); }
     &__label { font-weight: 600; color: var(--text); }
 
     &.is-primary .isa-stat__value { color: var(--accent); }
 }
 
-// study design facts
+// study design facts — layout: `d-grid grid-2 grid-md-4 gap-1`
 .isa-facts {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
     margin: 0;
-
-    @media (min-width: 768px) { grid-template-columns: repeat(4, 1fr); }
 
     &__item {
         dt { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
@@ -192,9 +183,7 @@
 
 // --- line chart (response over time) ---
 // Lumvera = accent, solid. Placebo = neutral comparator, dashed (never color-only).
-.isa-legend {
-    display: flex;
-    gap: 1.25rem;
+.isa-legend { // layout: `d-flex gap-1`
     margin: 0;
     padding: 0;
     list-style: none;
@@ -321,9 +310,7 @@
 
     &__label { font-size: 0.8rem; font-weight: 600; color: var(--text-h); white-space: nowrap; }
 
-    &__key {
-        display: flex;
-        gap: 1.25rem;
+    &__key { // layout: `d-flex gap-1`
         font-size: 0.8rem;
         color: var(--text);
 

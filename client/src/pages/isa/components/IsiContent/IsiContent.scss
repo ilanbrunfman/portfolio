@@ -1,9 +1,6 @@
 // --- ISI content (rendered inside the full-page modal) ---
 .isa-isi {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-
+    // layout: `d-flex flex-column gap-1` in the markup
     > p { margin: 0; color: var(--text-h); font-weight: 500; line-height: 1.6; }
 
     h4 { margin: 0 0 0.25rem; color: var(--text-h); font-size: 0.95rem; }

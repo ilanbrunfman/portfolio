@@ -39,7 +39,7 @@ const SectionOverview = ({ section, headline, lead, onNavigate, children }) => {
             {children}
 
             <nav aria-label={`${section.title} topics`}>
-                <ul className="isa-overview" ref={gridRef}>
+                <ul className="isa-overview d-grid grid-1 grid-sm-2 grid-md-3 gap-1" ref={gridRef}>
                     {section.children.map((child) => (
                         <li key={child.id}>
                             <button

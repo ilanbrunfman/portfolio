@@ -5,7 +5,7 @@ import './IsiContent.scss'
  * (The modal title shows isi.title.)
  */
 const IsiContent = ({ isi }) => (
-    <div className="isa-isi">
+    <div className="isa-isi d-flex flex-column gap-1">
         <p>{isi.summary}</p>
         {isi.sections.map((section) => (
             <div key={section.heading}>

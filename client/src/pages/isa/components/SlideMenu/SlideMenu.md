@@ -66,6 +66,7 @@ import SlideMenu from './components/SlideMenu/SlideMenu'
 
 ## Styling
 
-`SlideMenu.scss` — `.isa-menu` grid (2 columns, 3 from the `sm`
-breakpoint), `__group` / `__children` for sections with children,
+Layout uses `template.scss` utilities in the markup (`d-grid grid-2
+grid-sm-3`, `d-flex flex-column`, `gap-*`). `SlideMenu.scss` only adds
+visuals: `__group` (full-row tinted block) / `__children` (indent + rule),
 `__tile` (+ `--child` modifier), `__tile-num`, `__tile-title`, `__disclaimer`.

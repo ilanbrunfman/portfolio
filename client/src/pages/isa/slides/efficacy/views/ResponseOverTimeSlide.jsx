@@ -46,7 +46,7 @@ const ResponseOverTimeSlide = ({ data, slide }) => {
             </div>
 
             <div className="surface d-flex flex-column gap-1">
-                <ul className="isa-legend" aria-hidden="true">
+                <ul className="isa-legend d-flex gap-1" aria-hidden="true">
                     {SERIES.map((s) => (
                         <li key={s.key} className={s.className}>
                             <svg width="20" height="8"><line x1="0" y1="4" x2="20" y2="4" /></svg>

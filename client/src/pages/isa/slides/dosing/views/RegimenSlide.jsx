@@ -34,7 +34,7 @@ const RegimenSlide = ({ data, slide }) => {
                         </li>
                     ))}
                 </ol>
-                <div className="isa-timeline__key">
+                <div className="isa-timeline__key d-flex gap-1">
                     <span className="is-initiation">Initiation</span>
                     <span>Maintenance</span>
                 </div>
