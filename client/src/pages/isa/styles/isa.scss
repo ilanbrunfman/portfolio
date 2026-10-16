@@ -149,3 +149,192 @@
     &__value { font-weight: 800; font-size: 1.4rem; color: var(--text-h); }
     &__label { color: var(--text); font-weight: 500; }
 }
+
+// --- shared slide text bits ---
+.isa-h3 { margin: 0; font-size: 1.1rem; color: var(--text-h); }
+.isa-body { margin: 0; color: var(--text); line-height: 1.6; }
+.isa-footnote { margin: 0.75rem 0 0; font-size: 0.8rem; color: var(--text); }
+.isa-callout { margin: 0; font-size: 1.2rem; font-weight: 600; color: var(--text-h); }
+.isa-reset-list { margin: 0; padding: 0; list-style: none; }
+
+.isa-note {
+    border-left: 4px solid var(--accent);
+    color: var(--text-h);
+    line-height: 1.6;
+}
+
+// headline stat tiles (efficacy overview)
+.isa-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    &__value { font-size: clamp(2rem, 1.2rem + 3vw, 3rem); font-weight: 800; line-height: 1; color: var(--text-h); }
+    &__label { font-weight: 600; color: var(--text); }
+
+    &.is-primary .isa-stat__value { color: var(--accent); }
+}
+
+// study design facts
+.isa-facts {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin: 0;
+
+    @media (min-width: 768px) { grid-template-columns: repeat(4, 1fr); }
+
+    &__item {
+        dt { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+        dd { margin: 0.35rem 0 0; font-weight: 700; font-size: 1.05rem; color: var(--text-h); }
+    }
+}
+
+// --- line chart (response over time) ---
+// Lumvera = accent, solid. Placebo = neutral comparator, dashed (never color-only).
+.isa-legend {
+    display: flex;
+    gap: 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.85rem;
+    color: var(--text);
+
+    li { display: inline-flex; align-items: center; gap: 0.4rem; }
+    line { stroke-width: 2; }
+}
+
+.is-primary line,
+.isa-line-chart__series.is-primary path { stroke: var(--accent); }
+.is-comparator line,
+.isa-line-chart__series.is-comparator path { stroke: color-mix(in srgb, var(--text) 55%, var(--bg)); stroke-dasharray: 6 4; }
+
+.isa-line-chart {
+    position: relative;
+
+    svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
+
+    &__grid { stroke: var(--border); stroke-width: 1; }
+    &__tick { fill: var(--text); font-size: 12px; }
+    &__crosshair { stroke: var(--text); stroke-width: 1; opacity: 0.45; }
+
+    &__series {
+        path { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+        circle { stroke: var(--bg); stroke-width: 2; transition: r 0.1s ease; }
+        text { fill: var(--text-h); font-size: 13px; font-weight: 700; }
+
+        &.is-primary circle { fill: var(--accent); }
+        &.is-comparator circle { fill: color-mix(in srgb, var(--text) 55%, var(--bg)); }
+    }
+
+    &__tooltip {
+        position: absolute;
+        top: 0;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        padding: 0.5rem 0.7rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg);
+        box-shadow: var(--shadow);
+        font-size: 0.8rem;
+        color: var(--text);
+        white-space: nowrap;
+        pointer-events: none;
+
+        &-title { font-weight: 600; color: var(--text-h); }
+        &-row { display: inline-flex; align-items: center; gap: 0.4rem; }
+        &-row strong { color: var(--text-h); }
+        line { stroke-width: 2; }
+    }
+}
+
+// expandable data table under a chart
+.isa-data-table {
+    font-size: 0.85rem;
+    color: var(--text);
+
+    summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+
+    table { margin-top: 0.5rem; border-collapse: collapse; }
+    th, td { padding: 0.3rem 1rem 0.3rem 0; text-align: left; }
+}
+
+// --- data table (adverse reactions) ---
+.isa-table-wrap { overflow-x: auto; }
+
+.isa-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    caption { caption-side: bottom; padding-top: 0.75rem; text-align: left; font-size: 0.8rem; color: var(--text); }
+
+    th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+    thead th { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
+    tbody th { font-weight: 600; color: var(--text-h); }
+    td { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-h); }
+    tbody tr:last-child > * { border-bottom: none; }
+}
+
+// --- dose timeline (regimen) ---
+.isa-timeline {
+    position: relative;
+    height: 56px;
+    margin: 0.5rem 1.25rem 0;
+    padding: 0;
+    list-style: none;
+
+    // the track
+    &::before {
+        content: "";
+        position: absolute;
+        top: 9px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--border);
+    }
+
+    &__dose {
+        position: absolute;
+        top: 0;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    &__dot {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid var(--accent);
+        background: var(--bg);
+    }
+
+    .is-initiation &__dot,
+    &__dose.is-initiation &__dot { background: var(--accent); }
+
+    &__label { font-size: 0.8rem; font-weight: 600; color: var(--text-h); white-space: nowrap; }
+
+    &__key {
+        display: flex;
+        gap: 1.25rem;
+        font-size: 0.8rem;
+        color: var(--text);
+
+        span { display: inline-flex; align-items: center; gap: 0.4rem; }
+        span::before {
+            content: "";
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+        }
+        .is-initiation::before { background: var(--accent); }
+    }
+}
