@@ -1,4 +1,4 @@
-const IconPlus = ({color, size, strokeWidth, className}) => {
+const IconMagnifyingGlass = ({color, size, strokeWidth, className}) => {
 
     const clr = color ? color : 'currentColor';
     
@@ -8,4 +8,4 @@ const IconPlus = ({color, size, strokeWidth, className}) => {
         </svg>
     )
 }
-export default IconPlus
+export default IconMagnifyingGlass

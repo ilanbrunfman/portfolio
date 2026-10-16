@@ -1,4 +1,4 @@
-const IconX = ({color, size, strokeWidth, className}) => {
+const IconStack = ({color, size, strokeWidth, className}) => {
 
     const clr = color ? color : 'currentColor';
     
@@ -8,4 +8,4 @@ const IconX = ({color, size, strokeWidth, className}) => {
         </svg>
     )
 }
-export default IconX
+export default IconStack

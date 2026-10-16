@@ -1,4 +1,4 @@
-const IconArrowLeft = ({color, size, strokeWidth, className}) => {
+const IconCaretRight = ({color, size, strokeWidth, className}) => {
 
     const clr = color ? color : 'currentColor';
     
@@ -8,4 +8,4 @@ const IconArrowLeft = ({color, size, strokeWidth, className}) => {
         </svg>
     )
 }
-export default IconArrowLeft
+export default IconCaretRight

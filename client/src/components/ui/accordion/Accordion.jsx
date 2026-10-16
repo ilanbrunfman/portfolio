@@ -56,7 +56,7 @@ const AccordionItem = ({ title, defaultOpen = false, open, onToggle, children })
                 onClick={handleToggle}
             >
                 <span className="accordion__title">{title}</span>
-                <Icon name="IconChevronRight" size={16} className="accordion__chevron" />
+                <Icon name="IconCaretRight" size={16} className="accordion__chevron" />
             </button>
 
             {/* Content stays mounted and animates via grid-template-rows; `inert`
