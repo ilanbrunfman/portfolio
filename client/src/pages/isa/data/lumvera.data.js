@@ -24,8 +24,15 @@ export const lumvera = {
         lastUpdated: 'Q4 2026',
         primaryEndpoint: 'PASI 90 response at Week 16',
         footnote: 'Illustrative sample data for demonstration only.',
+        overview: 'Rapid, durable skin clearance versus placebo across the sample pivotal study.',
         studyDesign:
             'Sample randomized, double-blind, placebo-controlled study (N=820) in adults with moderate-to-severe plaque psoriasis. Figures shown are fictional.',
+        studyFacts: [
+            { label: 'Patients', value: 'N=820' },
+            { label: 'Randomization', value: '3:1 Lumvera vs placebo' },
+            { label: 'Primary endpoint', value: 'PASI 90 at Week 16' },
+            { label: 'Duration', value: '52 weeks' },
+        ],
         series: [
             { label: 'Lumvera', value: 71, highlight: true },
             { label: 'Placebo', value: 6 },
@@ -41,19 +48,40 @@ export const lumvera = {
 
     dosing: {
         headline: 'Simple, consistent dosing',
+        overview: 'Two initiation doses, then maintenance every 12 weeks.',
+        // Weeks with a dose, for the regimen timeline.
+        schedule: [0, 4, 16, 28, 40, 52],
         regimen: [
             { phase: 'Initiation', detail: '150 mg at Weeks 0 and 4' },
             { phase: 'Maintenance', detail: '150 mg every 12 weeks' },
         ],
         notes: ['Subcutaneous injection', 'Self-administered after training'],
+        administration: [
+            { title: 'Prepare', text: 'Let the prefilled pen reach room temperature for 30 minutes.' },
+            { title: 'Inject', text: 'Thigh, abdomen or upper arm; rotate sites each dose.' },
+            { title: 'Dispose', text: 'Place the used pen in a sharps container.' },
+        ],
     },
 
     safety: {
+        overview: 'Well-characterized safety profile in the sample study (illustrative).',
         common: ['Upper respiratory infection', 'Injection-site reaction', 'Headache'],
+        // Incidence (%) through Week 16 — illustrative.
+        adverseReactions: [
+            { name: 'Upper respiratory infection', lumvera: 8.4, placebo: 6.1 },
+            { name: 'Injection-site reaction', lumvera: 3.2, placebo: 1.0 },
+            { name: 'Headache', lumvera: 2.9, placebo: 2.3 },
+        ],
         warning: 'Do not administer to patients with a clinically important active infection (illustrative).',
+        warnings: [
+            { title: 'Infections', text: 'May increase the risk of infection. Do not start during an active infection.' },
+            { title: 'Tuberculosis', text: 'Evaluate for TB before treatment; do not give with active TB.' },
+            { title: 'Vaccinations', text: 'Avoid live vaccines during treatment.' },
+        ],
     },
 
     // References are per-slide so each tile opens only its own citations.
+    // A child slide without its own entry falls back to its parent's.
     references: {
         cover: ['Prescribing information (fictional). Lumvera. 2026.'],
         moa: ['Author A, et al. Journal of Illustrative Dermatology. 2026;12(3):100–110.'],
@@ -61,6 +89,7 @@ export const lumvera = {
             'Author A, et al. Journal of Illustrative Dermatology. 2026;12(3):100–110.',
             'Data on file, Lumvera (fictional product). 2026.',
         ],
+        'efficacy-design': ['Data on file, Lumvera (fictional product). 2026.'],
         dosing: ['Prescribing information (fictional). Lumvera. 2026.'],
         safety: ['Author B, et al. Sample Clinical Trials Review. 2025;8(1):22–30.'],
     },
@@ -87,13 +116,40 @@ export const lumvera = {
     },
 }
 
-// The deck is a tree: any node may carry `children` (sub-slides). v1 is flat,
-// but the shell flattens this recursively, so nesting is pure data later.
+// The deck is a tree: any node may carry `children` (sub-slides). The shell
+// flattens it in preorder (parent overview first, then its children) and
+// numbers it 01, 02, 03, 03.1… — see utils/deck.js. `summary` is the one-line
+// blurb shown on the parent's overview tiles.
 export const deck = [
     { id: 'cover', title: 'Cover', component: 'cover' },
     { id: 'moa', title: 'Mechanism of Action', component: 'moa' },
-    { id: 'efficacy', title: 'Efficacy', component: 'efficacy' },
-    { id: 'dosing', title: 'Dosing', component: 'dosing' },
-    { id: 'safety', title: 'Safety', component: 'safety' },
+    {
+        id: 'efficacy',
+        title: 'Efficacy',
+        component: 'efficacy',
+        children: [
+            { id: 'efficacy-primary', title: 'Primary endpoint', component: 'efficacyPrimary', summary: 'PASI 90 at Week 16' },
+            { id: 'efficacy-over-time', title: 'Response over time', component: 'efficacyOverTime', summary: 'Week 0 to Week 16' },
+            { id: 'efficacy-design', title: 'Study design', component: 'efficacyDesign', summary: 'Who was studied, and how' },
+        ],
+    },
+    {
+        id: 'dosing',
+        title: 'Dosing',
+        component: 'dosing',
+        children: [
+            { id: 'dosing-regimen', title: 'Regimen', component: 'dosingRegimen', summary: 'Initiation and maintenance' },
+            { id: 'dosing-administration', title: 'Administration', component: 'dosingAdministration', summary: 'Prefilled pen, three steps' },
+        ],
+    },
+    {
+        id: 'safety',
+        title: 'Safety',
+        component: 'safety',
+        children: [
+            { id: 'safety-reactions', title: 'Adverse reactions', component: 'safetyReactions', summary: 'Most common, vs placebo' },
+            { id: 'safety-warnings', title: 'Warnings', component: 'safetyWarnings', summary: 'Infections, TB, vaccines' },
+        ],
+    },
     { id: 'summary', title: 'Summary', component: 'summary' },
 ]

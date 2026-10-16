@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { deck, lumvera } from './data/lumvera.data'
+import { buildDeck, sectionOf } from './utils/deck'
 import Modal from '@/components/ui/modal/Modal'
 import IsaTopBar from './components/IsaTopBar/IsaTopBar'
 import SlideDeck from './components/SlideDeck/SlideDeck'
@@ -9,34 +10,8 @@ import IsiContent from './components/IsiContent/IsiContent'
 import SlideMenu from './components/SlideMenu/SlideMenu'
 import './styles/isa.scss'
 
-// Flatten the deck tree (preorder) into the linear navigation sequence. Any
-// node's `children` are included right after it, so nested tiles work later
-// with no changes here.
-const flattenDeck = (nodes, parentId = null, acc = []) => {
-    for (const node of nodes) {
-        acc.push({ id: node.id, title: node.title, component: node.component, parentId })
-        if (node.children?.length) flattenDeck(node.children, node.id, acc)
-    }
-    return acc
-}
-
 const IsaApp = () => {
-    const slides = useMemo(() => flattenDeck(deck), [])
-    // id -> parentId (for finding a slide's top-level section).
-    const parentOf = useMemo(
-        () => Object.fromEntries(slides.map((s) => [s.id, s.parentId])),
-        [slides]
-    )
-    // id -> tree node (for reading a section's children).
-    const treeById = useMemo(() => {
-        const map = {}
-        const walk = (nodes) => nodes.forEach((n) => {
-            map[n.id] = n
-            if (n.children?.length) walk(n.children)
-        })
-        walk(deck)
-        return map
-    }, [])
+    const { slides, sections, byId } = useMemo(() => buildDeck(deck), [])
 
     const navigate = useNavigate()
     const { slideId } = useParams()
@@ -49,11 +24,14 @@ const IsaApp = () => {
     const index = foundIndex >= 0 ? foundIndex : 0
     const current = slides[index]
 
-    // Walk up to the top-level section the current slide belongs to.
-    let activeMainId = current.id
-    while (parentOf[activeMainId]) activeMainId = parentOf[activeMainId]
-    const secondaryNodes = treeById[activeMainId]?.children ?? []
-    const currentRefs = lumvera.references[current.id] ?? []
+    // Secondary nav = the active section's overview + its children.
+    const section = sectionOf(current, byId)
+    const secondaryNodes = section.children.length
+        ? [{ id: section.id, title: 'Overview' }, ...section.children]
+        : []
+    // A child slide without its own references falls back to its parent's.
+    const currentRefs =
+        lumvera.references[current.id] ?? lumvera.references[current.parentId] ?? []
 
     const goTo = (id) => navigate(`/isa/${id}`)
     const goNext = () => {
@@ -84,11 +62,12 @@ const IsaApp = () => {
                 index={index}
                 onNext={goNext}
                 onPrev={goPrev}
+                onNavigate={goTo}
             />
 
             <DeckNav
-                mainNodes={deck}
-                activeMainId={activeMainId}
+                mainNodes={sections}
+                activeMainId={section.id}
                 secondaryNodes={secondaryNodes}
                 activeId={current.id}
                 onSelect={goToId}
@@ -96,7 +75,7 @@ const IsaApp = () => {
 
             <SlideMenu
                 open={menuOpen}
-                slides={slides}
+                sections={sections}
                 currentId={current.id}
                 onSelect={goToId}
                 onClose={() => setMenuOpen(false)}
