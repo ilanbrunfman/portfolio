@@ -325,3 +325,24 @@
         .is-initiation::before { background: var(--accent); }
     }
 }
+
+// --- summary key messages (Accordion inside each .surface) ---
+// Layout comes from utilities in the markup; this only sizes the shared
+// Accordion header up for a slide and lines the detail up under the text.
+.isa-summary {
+    .accordion__header {
+        font-size: 1.05rem;
+        font-weight: 600;
+        line-height: 1.4;
+        padding: 0.75rem 0.5rem;
+    }
+
+    &__check {
+        flex-shrink: 0;
+        width: 30px;
+        height: 30px;
+    }
+
+    // 30px badge + 1rem gap + header padding → detail aligns with the headline
+    &__detail { padding-left: calc(30px + 1rem + 0.5rem); }
+}

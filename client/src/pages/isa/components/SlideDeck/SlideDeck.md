@@ -24,6 +24,7 @@ import SlideDeck from './components/SlideDeck/SlideDeck'
     onNext={goNext}
     onPrev={goPrev}
     onNavigate={goTo}
+    getSlide={(id) => byId[id]}
 />
 ```
 
@@ -39,6 +40,7 @@ import SlideDeck from './components/SlideDeck/SlideDeck'
 | `onNext`     | `function`             | —       | Swipe left / `ArrowRight` |
 | `onPrev`     | `function`             | —       | Swipe right / `ArrowLeft` |
 | `onNavigate` | `(id: string) => void` | —       | Jump to any slide — passed down to slides |
+| `getSlide`   | `(id: string) => DeckSlide` | —  | Look up any slide by id — passed down to slides |
 
 ### Props every slide receives
 
@@ -47,6 +49,7 @@ import SlideDeck from './components/SlideDeck/SlideDeck'
 | `data`       | Product data (`lumvera`) |
 | `slide`      | The current `DeckSlide` — `number`, `title`, `parentId`, `children` |
 | `onNavigate` | Go to a slide by id (overview tiles use this to open children) |
+| `getSlide`   | Resolve another slide by id — e.g. `getSlide('efficacy-primary').number` → `'03.1'` for cross-links like "Go to 03.1 Primary endpoint" (the Summary slide uses it) |
 
 ---
 
@@ -67,7 +70,7 @@ import SlideDeck from './components/SlideDeck/SlideDeck'
 
 ## Adding a slide
 
-1. Create the slide receiving `{ data, slide, onNavigate }`:
+1. Create the slide receiving `{ data, slide, onNavigate, getSlide }`:
    - a **top-level tile** → `slides/<section>/<Section>Slide.jsx`
    - a **child** of a tile → `slides/<section>/views/MySlide.jsx`
 

@@ -13,7 +13,7 @@ import WarningsSlide from './safety/views/WarningsSlide'
 import SummarySlide from './summary/SummarySlide'
 
 // Maps a deck node's `component` key to its slide component.
-// Every slide receives { data, slide, onNavigate } — see SlideDeck.md.
+// Every slide receives { data, slide, onNavigate, getSlide } — see SlideDeck.md.
 export const SLIDE_COMPONENTS = {
     cover: CoverSlide,
     moa: MoaSlide,

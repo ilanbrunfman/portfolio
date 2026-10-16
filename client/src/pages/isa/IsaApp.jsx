@@ -63,6 +63,7 @@ const IsaApp = () => {
                 onNext={goNext}
                 onPrev={goPrev}
                 onNavigate={goTo}
+                getSlide={(id) => byId[id]}
             />
 
             <DeckNav

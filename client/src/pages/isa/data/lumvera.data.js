@@ -96,10 +96,24 @@ export const lumvera = {
 
     summary: {
         headline: 'Why Lumvera',
+        // Each point: headline (always visible) + detail (expands) + the
+        // slide holding its supporting data.
         points: [
-            '71% PASI 90 response at Week 16 vs 6% with placebo (illustrative).',
-            'Simple maintenance dosing — every 12 weeks after initiation.',
-            'Well-characterized safety profile; common reactions only (illustrative).',
+            {
+                headline: '71% PASI 90 response at Week 16 vs 6% with placebo',
+                detail: 'Sample pivotal study, N=820. Response builds from Week 4 and continues through Week 16 (illustrative).',
+                slideId: 'efficacy-primary',
+            },
+            {
+                headline: 'Simple maintenance dosing — every 12 weeks after initiation',
+                detail: '150 mg at Weeks 0 and 4, then every 12 weeks: 6 doses in the first year, self-administered with a prefilled pen.',
+                slideId: 'dosing-regimen',
+            },
+            {
+                headline: 'Well-characterized safety profile',
+                detail: 'Most common: upper respiratory infection (8.4%), injection-site reaction (3.2%) and headache (2.9%), vs 6.1%, 1.0% and 2.3% with placebo (illustrative).',
+                slideId: 'safety-reactions',
+            },
         ],
         closing: 'Consider whether Lumvera may be right for your patients.',
     },

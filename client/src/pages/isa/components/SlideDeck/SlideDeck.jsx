@@ -11,10 +11,11 @@ const SWIPE_THRESHOLD = 50
  * and handles pointer swipe + arrow keys. Direction is derived from the index
  * delta, so it's correct however the slide changed (swipe, keys, nav, URL).
  *
- * Every slide receives `{ data, slide, onNavigate }` — `slide.children` lets a
- * parent (overview) slide link to its sub-slides via `onNavigate(id)`.
+ * Every slide receives `{ data, slide, onNavigate, getSlide }` — `slide.children`
+ * lets a parent (overview) slide link to its sub-slides via `onNavigate(id)`;
+ * `getSlide(id)` resolves any other slide (number/title) for cross-links.
  */
-const SlideDeck = ({ slide, data, index, onNext, onPrev, onNavigate }) => {
+const SlideDeck = ({ slide, data, index, onNext, onPrev, onNavigate, getSlide }) => {
     const contentRef = useRef(null)
     const prevIndex = useRef(index)
     const pointer = useRef({ x: 0, y: 0, active: false })
@@ -71,7 +72,7 @@ const SlideDeck = ({ slide, data, index, onNext, onPrev, onNavigate }) => {
             }}
         >
             <div className="isa-slide" ref={contentRef} key={slide.id}>
-                {SlideComponent && <SlideComponent data={data} slide={slide} onNavigate={onNavigate} />}
+                {SlideComponent && <SlideComponent data={data} slide={slide} onNavigate={onNavigate} getSlide={getSlide} />}
             </div>
         </div>
     )
