@@ -53,7 +53,9 @@
         align-items: center;
         justify-content: center;
         gap: 0.4rem;
-        padding: 0 1rem 0.6rem;
+        padding: 0.6rem 1rem;
+        // Sits above the main row; a hairline separates the two tiers.
+        border-bottom: 1px solid var(--border);
     }
 
     &__subitem {

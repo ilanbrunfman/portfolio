@@ -2,10 +2,17 @@
 
 Two-tier bottom navigation for the deck:
 
-- **Main row** — top-level deck nodes, with an accent pill that slides
-  (GSAP) to the active item.
-- **Secondary row** — children of the active section. Hidden when there
-  are none (v1 deck is flat), shown automatically once nodes get `children`.
+- **Secondary row (top)** — the active section's sub-slides: its
+  **Overview** (the parent slide) followed by its children. Hidden for
+  sections without children (Cover, MOA, Summary).
+- **Main row (bottom)** — top-level deck nodes, with an accent pill that
+  slides (GSAP) to the active item.
+
+```
+   (Overview) (Primary endpoint) (Response over time) …    ← secondary
+ ─────────────────────────────────────────────────────
+ Cover · MOA · [Efficacy] · Dosing · Safety · Summary     ← main
+```
 
 ---
 
@@ -21,9 +28,9 @@ import DeckNav from './components/DeckNav/DeckNav'
 
 ```jsx
 <DeckNav
-    mainNodes={deck}
-    activeMainId={mainId}
-    secondaryNodes={secondaryNodes}  // treeById[activeMainId]?.children ?? []
+    mainNodes={sections}                       // buildDeck(deck).sections
+    activeMainId={section.id}                  // sectionOf(current, byId).id
+    secondaryNodes={secondaryNodes}            // [{ id: section.id, title: 'Overview' }, ...section.children]
     activeId={current.id}
     onSelect={goToId}
 />
@@ -37,7 +44,7 @@ import DeckNav from './components/DeckNav/DeckNav'
 |------------------|------------------------|---------|-------------|
 | `mainNodes`      | `Array<{ id, title }>` | —       | Top-level deck nodes |
 | `activeMainId`   | `string`               | —       | Highlights the main item + positions the indicator |
-| `secondaryNodes` | `Array<{ id, title }>` | `[]`    | Children of the active section |
+| `secondaryNodes` | `Array<{ id, title }>` | `[]`    | Active section's overview + children (empty → row hidden) |
 | `activeId`       | `string`               | —       | Current slide id (highlights the sub-item) |
 | `onSelect`       | `(id: string) => void` | —       | Called with the clicked node id |
 
@@ -48,11 +55,14 @@ import DeckNav from './components/DeckNav/DeckNav'
 - The indicator is positioned from the active button's `offsetLeft` /
   `offsetWidth`; set instantly on first render (and with reduced motion),
   tweened afterwards.
-- Active items get `aria-current="true"`.
+- Active items get `aria-current="true"`. The main item stays active
+  while you're on any of its children.
+- The "Overview" entry is built in `IsaApp`, not here — `DeckNav` just
+  renders whatever `secondaryNodes` it gets.
 
 ---
 
 ## Styling
 
-`DeckNav.scss` — block `.isa-nav2` with `__main`, `__indicator`, `__item`,
-`__secondary`, `__subitem`. Colors come from `--accent` on `.isa-app`.
+`DeckNav.scss` — block `.isa-nav2` with `__secondary` (top row, hairline
+below it), `__subitem`, `__main`, `__indicator`, `__item`. Colors come from `--accent` on `.isa-app`.

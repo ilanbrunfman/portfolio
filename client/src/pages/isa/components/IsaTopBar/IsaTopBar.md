@@ -56,5 +56,6 @@ import IsaTopBar from './components/IsaTopBar/IsaTopBar'
 ## Notes
 
 - **References** is per slide — `IsaApp` decides `hasReferences` from
-  `lumvera.references[slide.id]`.
+  `lumvera.references[slide.id]`, falling back to the parent's entry
+  (`references[slide.parentId]`) for child slides without their own.
 - The Slides button carries `aria-haspopup="dialog"` because it opens a modal.

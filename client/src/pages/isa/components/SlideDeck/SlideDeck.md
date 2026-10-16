@@ -23,6 +23,7 @@ import SlideDeck from './components/SlideDeck/SlideDeck'
     index={currentIndex}
     onNext={goNext}
     onPrev={goPrev}
+    onNavigate={goTo}
 />
 ```
 
@@ -32,11 +33,20 @@ import SlideDeck from './components/SlideDeck/SlideDeck'
 
 | Prop     | Type       | Default | Description |
 |----------|------------|---------|-------------|
-| `slide`  | `object`   | —       | Deck node; `slide.component` is a key of `SLIDE_COMPONENTS` |
-| `data`   | `object`   | —       | Product data, passed straight to the slide as `data` |
-| `index`  | `number`   | —       | Position in the flattened deck — drives animation direction |
-| `onNext` | `function` | —       | Swipe left / `ArrowRight` |
-| `onPrev` | `function` | —       | Swipe right / `ArrowLeft` |
+| `slide`      | `DeckSlide`            | —       | Current slide from `buildDeck`; `slide.component` is a key of `SLIDE_COMPONENTS` |
+| `data`       | `object`               | —       | Product data, passed straight to the slide |
+| `index`      | `number`               | —       | Position in the flattened deck — drives animation direction |
+| `onNext`     | `function`             | —       | Swipe left / `ArrowRight` |
+| `onPrev`     | `function`             | —       | Swipe right / `ArrowLeft` |
+| `onNavigate` | `(id: string) => void` | —       | Jump to any slide — passed down to slides |
+
+### Props every slide receives
+
+| Prop         | Description |
+|--------------|-------------|
+| `data`       | Product data (`lumvera`) |
+| `slide`      | The current `DeckSlide` — `number`, `title`, `parentId`, `children` |
+| `onNavigate` | Go to a slide by id (overview tiles use this to open children) |
 
 ---
 
@@ -45,6 +55,8 @@ import SlideDeck from './components/SlideDeck/SlideDeck'
 - **Direction** comes from the index delta (`index < previous` → slide in
   from the left), so it's right whether navigation came from a swipe,
   keys, `DeckNav`, the menu or the URL.
+- **Order** is the flattened deck in preorder: a parent overview, then its
+  children, then the next section (`03 → 03.1 → 03.2 → 03.3 → 04`).
 - **Swipe**: a horizontal drag of at least `SWIPE_THRESHOLD` (50px).
   Vertical-dominant drags are ignored so slide content can still scroll.
 - **Keys** are bound once on `window`; latest handlers are read via a ref.
@@ -55,9 +67,24 @@ import SlideDeck from './components/SlideDeck/SlideDeck'
 
 ## Adding a slide
 
-1. Create `slides/MySlide.jsx` receiving `{ data }`.
+1. Create the slide receiving `{ data, slide, onNavigate }`:
+   - a **top-level tile** → `slides/<section>/<Section>Slide.jsx`
+   - a **child** of a tile → `slides/<section>/views/MySlide.jsx`
+
+   ```
+   slides/efficacy/
+   ├─ EfficacySlide.jsx          ← parent overview (renders SectionOverview)
+   └─ views/
+      ├─ PrimaryEndpointSlide.jsx
+      ├─ ResponseOverTimeSlide.jsx
+      └─ StudyDesignSlide.jsx
+   ```
 2. Register it in `slides/index.js` → `SLIDE_COMPONENTS.mySlide`.
-3. Add `{ id, title, component: 'mySlide' }` to `deck` in the data file.
+3. Add `{ id, title, component: 'mySlide' }` to `deck` in the data file —
+   top level for a new tile, or inside a parent's `children` (with a
+   `summary` for its overview tile) for a sub-slide.
+4. A **parent** slide should render `SectionOverview` so its children
+   get tiles.
 
 ---
 

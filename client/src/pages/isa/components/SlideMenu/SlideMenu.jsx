@@ -1,31 +1,47 @@
 import Modal from '@/components/ui/modal/Modal'
 import './SlideMenu.scss'
 
+const Tile = ({ slide, currentId, onSelect, child = false }) => (
+    <button
+        type="button"
+        className={`isa-menu__tile${child ? ' isa-menu__tile--child' : ''}${slide.id === currentId ? ' is-active' : ''}`}
+        aria-current={slide.id === currentId ? 'true' : undefined}
+        onClick={() => onSelect(slide.id)}
+    >
+        <span className="isa-menu__tile-num">{slide.number}</span>
+        <span className="isa-menu__tile-title">{slide.title}</span>
+    </button>
+)
+
 /**
- * Slide navigator, rendered inside the reusable Modal. Tiles are flat for v1
- * but the slides array is already parent-aware (parentId) for future nesting.
+ * Slide navigator, rendered inside the reusable Modal. Single tiles share
+ * grid rows; a section with children spans the full row as a group — its
+ * overview tile first, then its child tiles (03, 03.1, 03.2…).
  */
-const SlideMenu = ({ open, slides, currentId, onSelect, onClose, disclaimer }) => (
+const SlideMenu = ({ open, sections, currentId, onSelect, onClose, disclaimer }) => (
     <Modal isOpen={open} onClose={onClose} title="Slides" size="lg">
         <div className="isa-menu">
-            {slides.map((slide, i) => (
-                <button
-                    key={slide.id}
-                    type="button"
-                    className={`isa-menu__tile${slide.id === currentId ? ' is-active' : ''}`}
-                    onClick={() => onSelect(slide.id)}
-                >
-                    <span className="isa-menu__tile-num">{String(i + 1).padStart(2, '0')}</span>
-                    <span className="isa-menu__tile-title">{slide.title}</span>
-                </button>
-            ))}
+            {sections.map((section) =>
+                section.children.length ? (
+                    <section
+                        key={section.id}
+                        className="isa-menu__group"
+                        aria-label={`${section.number} ${section.title}`}
+                    >
+                        <Tile slide={section} currentId={currentId} onSelect={onSelect} />
+                        <div className="isa-menu__children">
+                            {section.children.map((child) => (
+                                <Tile key={child.id} slide={child} currentId={currentId} onSelect={onSelect} child />
+                            ))}
+                        </div>
+                    </section>
+                ) : (
+                    <Tile key={section.id} slide={section} currentId={currentId} onSelect={onSelect} />
+                )
+            )}
         </div>
 
-        {disclaimer && (
-            <p style={{ marginTop: '1.25rem', fontSize: '0.75rem', color: 'var(--text)', lineHeight: 1.5 }}>
-                {disclaimer}
-            </p>
-        )}
+        {disclaimer && <p className="isa-menu__disclaimer">{disclaimer}</p>}
     </Modal>
 )
 

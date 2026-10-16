@@ -4,6 +4,18 @@ Slide navigator opened from the top bar's **Slides** button. Shows every
 slide as a numbered tile inside the reusable `Modal` (it renders the
 modal itself), plus an optional disclaimer underneath.
 
+Sections **with children** render as a full-width group: the overview tile
+(`03 Efficacy`) followed by its indented child tiles (`03.1`, `03.2`…).
+Single tiles share grid rows.
+
+```
+01 Cover    02 Mechanism of Action
+┌────────────────────────────────────┐
+│ 03 Efficacy                        │
+│ ┃ 03.1 Primary   03.2 Over time  … │
+└────────────────────────────────────┘
+```
+
 ---
 
 ## Import
@@ -19,7 +31,7 @@ import SlideMenu from './components/SlideMenu/SlideMenu'
 ```jsx
 <SlideMenu
     open={menuOpen}
-    slides={slides}          // flattenDeck(deck)
+    sections={sections}      // buildDeck(deck).sections
     currentId={current.id}
     onSelect={goToId}         // navigates + closes the menu
     onClose={() => setMenuOpen(false)}
@@ -34,7 +46,7 @@ import SlideMenu from './components/SlideMenu/SlideMenu'
 | Prop         | Type                   | Default | Description |
 |--------------|------------------------|---------|-------------|
 | `open`       | `boolean`              | —       | Controls the modal |
-| `slides`     | `Array<{ id, title }>` | —       | Flattened deck (tile number = position + 1) |
+| `sections`   | `DeckSlide[]`          | —       | Top-level slides from `buildDeck` (with `number` + `children`) |
 | `currentId`  | `string`               | —       | Highlights the current tile |
 | `onSelect`   | `(id: string) => void` | —       | Tile clicked — close the menu here if desired |
 | `onClose`    | `function`             | —       | Backdrop / Escape / close button |
@@ -44,12 +56,16 @@ import SlideMenu from './components/SlideMenu/SlideMenu'
 
 ## Notes
 
-- Tiles are flat for v1; slides already carry `parentId`, so grouping
-  child tiles under their parent later is a rendering change only.
+- Numbers come from `utils/deck.js` (`buildDeck`), so the menu, the
+  overview tiles and the eyebrows always agree.
+- Only one level of children is grouped visually; deeper levels would
+  need a recursive group.
+- The current tile gets `.is-active` and `aria-current="true"`.
 
 ---
 
 ## Styling
 
 `SlideMenu.scss` — `.isa-menu` grid (2 columns, 3 from the `sm`
-breakpoint) and `__tile`, `__tile-num`, `__tile-title`.
+breakpoint), `__group` / `__children` for sections with children,
+`__tile` (+ `--child` modifier), `__tile-num`, `__tile-title`, `__disclaimer`.

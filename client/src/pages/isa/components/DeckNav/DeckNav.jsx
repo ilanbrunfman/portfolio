@@ -5,10 +5,8 @@ import './DeckNav.scss'
 /**
  * Two-tier deck navigation:
  *  - main: the top-level deck nodes (sections / parent tiles)
- *  - secondary: children of the active section (only shown when it has any)
- *
- * v1 is flat, so `secondaryNodes` is empty and the secondary row is hidden —
- * but it's driven by the deck tree, so nested tiles light it up automatically.
+ *  - secondary (rendered above main): the active section's sub-slides,
+ *    hidden when it has none. IsaApp passes the overview first, then children.
  */
 const DeckNav = ({ mainNodes, activeMainId, secondaryNodes = [], activeId, onSelect }) => {
     const indicatorRef = useRef(null)
@@ -34,6 +32,23 @@ const DeckNav = ({ mainNodes, activeMainId, secondaryNodes = [], activeId, onSel
 
     return (
         <nav className="isa-nav2" aria-label="Slide navigation">
+            {/* Sub-slides of the active section sit above the main row. */}
+            {secondaryNodes.length > 0 && (
+                <div className="isa-nav2__secondary">
+                    {secondaryNodes.map((node) => (
+                        <button
+                            key={node.id}
+                            type="button"
+                            className={`isa-nav2__subitem${node.id === activeId ? ' is-active' : ''}`}
+                            aria-current={node.id === activeId ? 'true' : undefined}
+                            onClick={() => onSelect(node.id)}
+                        >
+                            {node.title}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             <div className="isa-nav2__main">
                 <span className="isa-nav2__indicator" ref={indicatorRef} aria-hidden="true" />
                 {mainNodes.map((node) => (
@@ -49,23 +64,7 @@ const DeckNav = ({ mainNodes, activeMainId, secondaryNodes = [], activeId, onSel
                     </button>
                 ))}
             </div>
-
-            {secondaryNodes.length > 0 && (
-            <div className="isa-nav2__secondary">
-                {secondaryNodes.map((node) => (
-                    <button
-                        key={node.id}
-                        type="button"
-                        className={`isa-nav2__subitem${node.id === activeId ? ' is-active' : ''}`}
-                        aria-current={node.id === activeId ? 'true' : undefined}
-                        onClick={() => onSelect(node.id)}
-                    >
-                        {node.title}
-                    </button>
-                ))}
-            </div>
-        )}
-    </nav>
+        </nav>
     )
 }
 
