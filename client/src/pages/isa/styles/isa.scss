@@ -1,4 +1,4 @@
-@use "variables" as var;
+@use "@/assets/styles/shared/variables" as var;
 
 // ISA (Interactive Sales Aid) demo shell. AbbVie-*inspired* tokens scoped to
 // the app root; everything else leans on the global utilities + .surface.

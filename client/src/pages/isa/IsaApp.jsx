@@ -7,6 +7,7 @@ import SlideDeck from './components/SlideDeck'
 import DeckNav from './components/DeckNav'
 import IsiContent from './components/IsiContent'
 import SlideMenu from './components/SlideMenu'
+import './styles/isa.scss'
 
 // Flatten the deck tree (preorder) into the linear navigation sequence. Any
 // node's `children` are included right after it, so nested tiles work later
