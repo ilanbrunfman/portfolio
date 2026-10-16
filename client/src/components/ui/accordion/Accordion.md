@@ -150,7 +150,10 @@ instead of changing the global styles:
 
 - The caret is `Icon name="IconCaretRight"` — change it in `Accordion.jsx`
   and every accordion in the app follows.
-- Current uses: header `SettingsMenu` (Theme).
+- Current uses: header `SettingsMenu` (Theme); ISA Summary slide
+  (`pages/isa/slides/summary/SummarySlide.jsx` — one item per key message,
+  header sized up via the scoped `.isa-summary .accordion__header` override
+  in `pages/isa/styles/isa.scss`).
 
 ---
 
