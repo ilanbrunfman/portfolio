@@ -118,37 +118,93 @@
     }
 }
 
-// efficacy chart
+// --- efficacy bar chart (primary endpoints) ---
+// Product arm = accent gradient + glow; comparators = neutral. Every bar is
+// direct-labelled (value on top, arm name below), never colour-only.
 .isa-chart {
-    display: flex;
-    align-items: flex-end;
-    gap: 2rem;
-    height: 280px;
-    padding: 1rem 0.5rem 0;
+    --bar-neutral: color-mix(in srgb, var(--text) 26%, var(--bg));
 
+    // layout: `d-flex`. Faint gridlines at 25/50/75/100% of the content box
+    // (padding-top leaves room for the value riding a full-height bar) and a
+    // solid baseline.
+    &__plot {
+        height: 260px;
+        padding-top: 2.25rem;
+        border-bottom: 2px solid var(--border);
+        background-image: linear-gradient(to bottom, color-mix(in srgb, var(--border) 70%, transparent) 1px, transparent 1px);
+        background-size: 100% 25%;
+        background-origin: content-box;
+        background-clip: content-box;
+    }
+
+    // layout: `d-flex justify-center`; bars align to the baseline.
     &__col {
         flex: 1 1 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 0.6rem;
-        height: 100%;
+        align-items: flex-end;
     }
 
-    // Height is set/tweened by GSAP (PrimaryEndpointSlide) — no CSS transition.
+    // Height (% of the plot) is set/tweened by GSAP — no CSS transition.
     &__bar {
-        width: 72px;
-        max-width: 60%;
+        position: relative;
+        width: clamp(40px, 42%, 96px);
         height: 0;
-        border-radius: 6px 6px 0 0;
-        background: color-mix(in srgb, var(--text) 40%, var(--bg));
+        border-radius: 12px 12px 3px 3px;
+        background: linear-gradient(to bottom, color-mix(in srgb, var(--bar-neutral) 80%, var(--bg)), var(--bar-neutral));
 
-        &.is-primary { background: var(--accent); }
+        &.is-primary {
+            background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 70%, #fff), var(--accent));
+            box-shadow: 0 12px 28px -10px var(--accent-border);
+        }
     }
 
-    &__value { font-weight: 800; font-size: 1.4rem; color: var(--text-h); font-variant-numeric: tabular-nums; }
-    &__label { color: var(--text); font-weight: 500; text-align: center; }
+    // Sits just above the bar's top edge, so it moves with the bar.
+    &__value {
+        position: absolute;
+        bottom: calc(100% + 0.4rem);
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: clamp(1.25rem, 1rem + 1vw, 1.75rem);
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        color: var(--text-h);
+    }
+
+    &__bar.is-primary &__value { color: var(--accent); }
+
+    // layout: `d-flex`; one cell per column, same flex basis as `__col`.
+    &__labels { padding-top: 0.75rem; }
+
+    &__label {
+        flex: 1 1 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-align: center;
+        color: var(--text);
+
+        // swatch keys the label to its bar
+        &::before {
+            content: "";
+            flex-shrink: 0;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--bar-neutral);
+        }
+
+        &.is-primary {
+            font-weight: 700;
+            color: var(--text-h);
+
+            &::before { background: var(--accent); }
+        }
+    }
 }
 
 // --- shared slide text bits ---
