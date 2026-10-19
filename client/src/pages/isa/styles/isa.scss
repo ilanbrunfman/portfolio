@@ -127,9 +127,10 @@
     // layout: `d-flex`. Faint gridlines at 25/50/75/100% of the content box
     // (padding-top leaves room for the value riding a full-height bar) and a
     // solid baseline.
+    // Height tracks the viewport so the slide fits without window scroll.
     &__plot {
-        height: 260px;
-        padding-top: 2.25rem;
+        height: clamp(150px, 26svh, 220px);
+        padding-top: 2rem;
         border-bottom: 2px solid var(--border);
         background-image: linear-gradient(to bottom, color-mix(in srgb, var(--border) 70%, transparent) 1px, transparent 1px);
         background-size: 100% 25%;
