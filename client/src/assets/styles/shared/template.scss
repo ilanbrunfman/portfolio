@@ -99,6 +99,10 @@
 
 body {
     margin: 0;
+    // WebKit touch (iPad/iPhone) flashes a grey box over tapped buttons/links.
+    // Components give their own hover/active/:focus-visible feedback, so turn
+    // it off app-wide (inherited, so this covers every element).
+    -webkit-tap-highlight-color: transparent;
 }
 
 #root {
