@@ -1,4 +1,5 @@
-import { useId, useRef, useState } from 'react'
+import { useId, useLayoutEffect, useRef, useState } from 'react'
+import { gsap } from 'gsap'
 import './Tabs.scss'
 
 /**
@@ -33,6 +34,42 @@ const Tabs = ({ items, defaultValue, value, onChange, label, className = '', chi
     const tabId = (id) => `${baseId}-tab-${id}`
     const panelId = `${baseId}-panel`
     const tabRefs = useRef({})
+    const listRef = useRef(null)
+    const indicatorRef = useRef(null)
+    const hasPositioned = useRef(false)
+    // Latest active id, for the ResizeObserver callback below.
+    const activeIdRef = useRef(activeId)
+    activeIdRef.current = activeId
+
+    // Slide the accent pill under the active tab (snaps on first paint and
+    // with reduced motion).
+    useLayoutEffect(() => {
+        const tab = tabRefs.current[activeId]
+        const indicator = indicatorRef.current
+        if (!tab || !indicator) return
+
+        const target = { x: tab.offsetLeft, width: tab.offsetWidth }
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+        if (!hasPositioned.current || reduce) {
+            gsap.set(indicator, target)
+            hasPositioned.current = true
+        } else {
+            gsap.to(indicator, { ...target, duration: 0.35, ease: 'power3.out', overwrite: true })
+        }
+    }, [activeId])
+
+    // Tab widths change when fonts load or the layout resizes — re-snap.
+    useLayoutEffect(() => {
+        const list = listRef.current
+        if (!list || typeof ResizeObserver === 'undefined') return
+        const observer = new ResizeObserver(() => {
+            const tab = tabRefs.current[activeIdRef.current]
+            if (tab) gsap.set(indicatorRef.current, { x: tab.offsetLeft, width: tab.offsetWidth })
+        })
+        observer.observe(list)
+        return () => observer.disconnect()
+    }, [])
 
     const select = (id) => {
         if (id === activeId) return
@@ -59,7 +96,8 @@ const Tabs = ({ items, defaultValue, value, onChange, label, className = '', chi
 
     return (
         <div className={`tabs ${className}`.trim()}>
-            <div className="tabs__list" role="tablist" aria-label={label} onKeyDown={handleKeyDown}>
+            <div className="tabs__list" role="tablist" aria-label={label} onKeyDown={handleKeyDown} ref={listRef}>
+                <span className="tabs__indicator" ref={indicatorRef} aria-hidden="true" />
                 {items.map((item) => {
                     const isActive = item.id === activeId
                     return (

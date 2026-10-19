@@ -79,6 +79,11 @@ const [tab, setTab] = useState('pasi90')
 
 ## Notes
 
+- Styled as a segmented control: tabs sit on a tinted pill track and an
+  accent pill (`.tabs__indicator`) slides to the active tab via GSAP —
+  same pattern as the ISA `DeckNav` main row. It snaps on first paint, with
+  `prefers-reduced-motion`, and whenever the strip resizes (font load,
+  viewport change).
 - One panel for all tabs is deliberate. If you need each tab's content to
   keep its own state while hidden, render per-tab panels yourself instead.
 - The strip scrolls horizontally when labels don't fit, rather than wrapping.
