@@ -22,20 +22,32 @@ export const lumvera = {
 
     efficacy: {
         lastUpdated: 'Q4 2026',
-        primaryEndpoint: 'PASI 90 response at Week 16',
         footnote: 'Illustrative sample data for demonstration only.',
-        overview: 'Rapid, durable skin clearance versus placebo across the sample pivotal study.',
+        overview: 'Rapid, durable skin clearance versus placebo and an active comparator across the sample pivotal study.',
         studyDesign:
-            'Sample randomized, double-blind, placebo-controlled study (N=820) in adults with moderate-to-severe plaque psoriasis. Figures shown are fictional.',
+            'Sample randomized, double-blind, placebo- and active-controlled study (N=820) in adults with moderate-to-severe plaque psoriasis. Figures shown are fictional.',
         studyFacts: [
             { label: 'Patients', value: 'N=820' },
-            { label: 'Randomization', value: '3:1 Lumvera vs placebo' },
-            { label: 'Primary endpoint', value: 'PASI 90 at Week 16' },
+            { label: 'Randomization', value: '3:2:1 Lumvera, comparator, placebo' },
+            { label: 'Primary endpoints', value: 'PASI 90 and sPGA 0/1 at Week 16' },
             { label: 'Duration', value: '52 weeks' },
         ],
-        series: [
-            { label: 'Lumvera', value: 71, highlight: true },
-            { label: 'Placebo', value: 6 },
+        // Study arms = chart columns, in display order. `highlight` marks the
+        // product arm (accent colour).
+        arms: [
+            { id: 'lumvera', label: 'Lumvera', highlight: true },
+            { id: 'comparator', label: 'Active comparator' },
+            { id: 'placebo', label: 'Placebo' },
+        ],
+        // One dataset per endpoint tab: % of patients responding at Week 16,
+        // keyed by arm id. `defaultEndpoint` is the headline (overview tile +
+        // first tab shown).
+        defaultEndpoint: 'pasi90',
+        endpoints: [
+            { id: 'pasi90', label: 'PASI 90', title: 'PASI 90 response at Week 16', values: { lumvera: 71, comparator: 47, placebo: 6 } },
+            { id: 'spga01', label: 'sPGA 0/1', title: 'sPGA 0/1 (clear or almost clear) at Week 16', values: { lumvera: 84, comparator: 61, placebo: 8 } },
+            { id: 'pasi75', label: 'PASI 75', title: 'PASI 75 response at Week 16', values: { lumvera: 89, comparator: 70, placebo: 10 } },
+            { id: 'pasi100', label: 'PASI 100', title: 'PASI 100 (complete clearance) at Week 16', values: { lumvera: 42, comparator: 20, placebo: 1 } },
         ],
         overTime: [
             { week: 0, lumvera: 0, placebo: 0 },

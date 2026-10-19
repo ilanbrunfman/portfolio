@@ -2,13 +2,14 @@ const BAR_MAX_PX = 190
 
 const PrimaryEndpointSlide = ({ data, slide }) => {
     const { efficacy } = data
-    const summary = efficacy.series.map((s) => `${s.label} ${s.value} percent`).join(', ')
+    const endpoint = efficacy.endpoints.find((e) => e.id === efficacy.defaultEndpoint)
+    const summary = efficacy.arms.map((arm) => `${arm.label} ${endpoint.values[arm.id]} percent`).join(', ')
 
     return (
         <div className="isa-canvas d-flex flex-column gap-2">
             <div className="d-flex flex-column gap-1">
                 <span className="isa-eyebrow">{slide.number} · Efficacy</span>
-                <h2 className="isa-h2">{efficacy.primaryEndpoint}</h2>
+                <h2 className="isa-h2">{endpoint.title}</h2>
                 <span className="isa-badge">Data updated {efficacy.lastUpdated}</span>
             </div>
 
@@ -16,16 +17,16 @@ const PrimaryEndpointSlide = ({ data, slide }) => {
                 <div
                     className="isa-chart"
                     role="img"
-                    aria-label={`${efficacy.primaryEndpoint}: ${summary}.`}
+                    aria-label={`${endpoint.title}: ${summary}.`}
                 >
-                    {efficacy.series.map((s) => (
-                        <div key={s.label} className="isa-chart__col">
-                            <span className="isa-chart__value">{s.value}%</span>
+                    {efficacy.arms.map((arm) => (
+                        <div key={arm.id} className="isa-chart__col">
+                            <span className="isa-chart__value">{endpoint.values[arm.id]}%</span>
                             <div
-                                className={`isa-chart__bar${s.highlight ? ' is-primary' : ''}`}
-                                style={{ height: `${(s.value / 100) * BAR_MAX_PX}px` }}
+                                className={`isa-chart__bar${arm.highlight ? ' is-primary' : ''}`}
+                                style={{ height: `${(endpoint.values[arm.id] / 100) * BAR_MAX_PX}px` }}
                             />
-                            <span className="isa-chart__label">{s.label}</span>
+                            <span className="isa-chart__label">{arm.label}</span>
                         </div>
                     ))}
                 </div>
