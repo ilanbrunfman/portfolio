@@ -136,18 +136,19 @@
         height: 100%;
     }
 
+    // Height is set/tweened by GSAP (PrimaryEndpointSlide) — no CSS transition.
     &__bar {
         width: 72px;
         max-width: 60%;
+        height: 0;
         border-radius: 6px 6px 0 0;
         background: color-mix(in srgb, var(--text) 40%, var(--bg));
-        transition: height 0.6s ease;
 
         &.is-primary { background: var(--accent); }
     }
 
-    &__value { font-weight: 800; font-size: 1.4rem; color: var(--text-h); }
-    &__label { color: var(--text); font-weight: 500; }
+    &__value { font-weight: 800; font-size: 1.4rem; color: var(--text-h); font-variant-numeric: tabular-nums; }
+    &__label { color: var(--text); font-weight: 500; text-align: center; }
 }
 
 // --- shared slide text bits ---

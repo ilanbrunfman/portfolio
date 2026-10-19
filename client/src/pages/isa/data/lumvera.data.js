@@ -154,7 +154,7 @@ export const deck = [
         title: 'Efficacy',
         component: 'efficacy',
         children: [
-            { id: 'efficacy-primary', title: 'Primary endpoint', component: 'efficacyPrimary', summary: 'PASI 90 at Week 16' },
+            { id: 'efficacy-primary', title: 'Primary endpoints', component: 'efficacyPrimary', summary: 'PASI 90, sPGA 0/1, PASI 75, PASI 100' },
             { id: 'efficacy-over-time', title: 'Response over time', component: 'efficacyOverTime', summary: 'Week 0 to Week 16' },
             { id: 'efficacy-design', title: 'Study design', component: 'efficacyDesign', summary: 'Who was studied, and how' },
         ],

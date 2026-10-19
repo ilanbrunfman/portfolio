@@ -9,7 +9,7 @@ Two-tier bottom navigation for the deck:
   slides (GSAP) to the active item.
 
 ```
-   (Overview) (Primary endpoint) (Response over time) …    ← secondary
+   (Overview) (Primary endpoints) (Response over time) …    ← secondary
  ─────────────────────────────────────────────────────
  Cover · MOA · [Efficacy] · Dosing · Safety · Summary     ← main
 ```

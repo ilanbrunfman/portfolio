@@ -49,7 +49,7 @@ import SlideDeck from './components/SlideDeck/SlideDeck'
 | `data`       | Product data (`lumvera`) |
 | `slide`      | The current `DeckSlide` — `number`, `title`, `parentId`, `children` |
 | `onNavigate` | Go to a slide by id (overview tiles use this to open children) |
-| `getSlide`   | Resolve another slide by id — e.g. `getSlide('efficacy-primary').number` → `'03.1'` for cross-links like "Go to 03.1 Primary endpoint" (the Summary slide uses it) |
+| `getSlide`   | Resolve another slide by id — e.g. `getSlide('efficacy-primary').number` → `'03.1'` for cross-links like "Go to 03.1 Primary endpoints" (the Summary slide uses it) |
 
 ---
 
