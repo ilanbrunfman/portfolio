@@ -114,7 +114,13 @@ const Card = ({ project, onOpen }) => {
 
     if (project.route) {
         return (
-            <Link to={project.route} {...sharedProps} aria-label={`View ${project.title} project page`}>
+            <Link
+                to={project.route}
+                {...sharedProps}
+                // Jump to top with no animation ('instant' overrides the global smooth scroll)
+                onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}
+                aria-label={`View ${project.title} project page`}
+            >
                 {tileContent}
             </Link>
         )
