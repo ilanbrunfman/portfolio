@@ -165,7 +165,8 @@
             font-weight: 500;
             transition: color 0.15s ease;
 
-            &:hover { color: var(--accent); }
+            &:hover,
+            &.is-active { color: var(--accent); }
         }
     }
 }
