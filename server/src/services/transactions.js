@@ -5,7 +5,8 @@ import { toDay } from '../lib/dates.js'
 /**
  * Transactions as the API sends them:
  * { id, accountId, date: 'YYYY-MM-DD', amount, description, note, transferId,
- *   category: { id, name, kind, color } | null, runningBalance? }
+ *   category: { id, name, kind, color } | null, runningBalance?, counterpartAccountId? }
+ * (counterpartAccountId = the other account of a transfer, from the ledger query)
  */
 export function toTransactionJson(row) {
     const date = row.date instanceof Date ? toDay(row.date) : row.date
@@ -25,6 +26,7 @@ export function toTransactionJson(row) {
         transferId: row.transferId,
         category,
         ...(row.runningBalance !== undefined && { runningBalance: row.runningBalance }),
+        ...(row.counterpartAccountId !== undefined && { counterpartAccountId: row.counterpartAccountId }),
     }
 }
 
@@ -62,10 +64,13 @@ export async function listLedger({ accountId, limit, cursor }) {
                 c.name  AS "categoryName",
                 c.kind::text AS "categoryKind",
                 c.color AS "categoryColor",
+                other."accountId" AS "counterpartAccountId",
                 (a."openingBalance" + SUM(t.amount) OVER (ORDER BY t.date, t.id))::int AS "runningBalance"
             FROM transactions t
             JOIN accounts a ON a.id = t."accountId"
             LEFT JOIN categories c ON c.id = t."categoryId"
+            -- for a transfer: the other side's row (same transferId, different id)
+            LEFT JOIN transactions other ON other."transferId" = t."transferId" AND other.id <> t.id
             WHERE t."accountId" = ${accountId}
         )
         SELECT * FROM ledger
