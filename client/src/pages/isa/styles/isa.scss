@@ -16,6 +16,18 @@
     flex-direction: column;
     overflow: hidden;
     background: var(--bg);
+
+    // Kiosk-style deck: no text selection or iPad long-press copy menu
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+
+    // ...but form fields still need to be editable
+    input,
+    textarea {
+        -webkit-user-select: text;
+        user-select: text;
+    }
 }
 
 // shared inner width for slide content
