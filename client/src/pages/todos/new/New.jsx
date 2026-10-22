@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { useTodos } from '@/pages/todos/context/TodoContext'
 import Button from '@/components/ui/button/Button'
+import Combobox from '@/components/ui/combobox/Combobox'
+import { todoSuggestions } from '@/pages/todos/data/todoSuggestions'
 import styles from './New.module.scss'
 
 const New = () => {
@@ -63,12 +65,14 @@ const New = () => {
                             <label className="form__label" htmlFor="title">
                                 Title
                             </label>
-                            <input
+                            {/* Type a title or pick a suggestion */}
+                            <Combobox
                                 id="title"
-                                className="form__input form__input--title"
-                                type="text"
                                 value={title}
-                                onChange={(e) => setTitle(e.target.value)}
+                                onChange={setTitle}
+                                options={todoSuggestions}
+                                inputClassName="form__input form__input--title"
+                                toggleLabel="Show suggested titles"
                                 placeholder="What needs to be done?"
                             />
                         </div>
