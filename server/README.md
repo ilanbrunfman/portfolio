@@ -81,11 +81,37 @@ src/
   index.js        starts the server (reads PORT)
   db.js           the shared Prisma client
   app.js          builds the Express app: JSON parsing, routes, 404, errors
-  routes/         one file per resource (health, accounts, transactions, …)
+  routes/         one file per resource (health, accounts, …)
+  schemas/        Zod schemas: what each endpoint accepts
+  middleware/     validate() – checks requests against a schema
+  lib/            HttpError
 ```
 
 ## Endpoints
 
-| Method | Path          | Returns |
-|--------|---------------|---------|
-| GET    | `/api/health` | `{ status: 'ok', db: 'ok' \| 'unreachable', time }` (503 if the database is down) |
+All money values are whole **cents**. Errors always look like
+`{ "error": "message" }`; validation errors add `fields`:
+
+```json
+{ "error": "Validation failed", "fields": { "name": "Name is required" } }
+```
+
+| Method | Path | Body / query | Returns |
+|--------|------|--------------|---------|
+| GET | `/api/health` | | `{ status, db: 'ok' \| 'unreachable', time }` (503 if the database is down) |
+| GET | `/api/accounts` | `?includeArchived=true` | Accounts with `balance` and `transactionCount` |
+| GET | `/api/accounts/:id` | | One account (404 if missing) |
+| POST | `/api/accounts` | `{ name, type?, openingBalance?, color? }` | 201 + the new account |
+| PATCH | `/api/accounts/:id` | any of `{ name, type, openingBalance, color, archived }` | The updated account |
+
+`type` is `CHECKING`, `SAVINGS`, `CREDIT` or `CASH`. Accounts aren't
+deleted; `PATCH { "archived": true }` hides them from the default list.
+
+### Try it with curl
+
+```bash
+curl localhost:4000/api/accounts
+curl -X POST localhost:4000/api/accounts \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Travel fund","type":"SAVINGS","openingBalance":50000}'
+```
