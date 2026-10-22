@@ -6,6 +6,7 @@ import Checkbox from '@/components/ui/form/checkbox/Checkbox'
 import AccountCard from '@/pages/bank/components/account-card/AccountCard'
 import AccountForm from '@/pages/bank/components/account-form/AccountForm'
 import TransferForm from '@/pages/bank/components/transfer-form/TransferForm'
+import MonthSummary from '@/pages/bank/components/month-summary/MonthSummary'
 import { formatMoney } from '@/pages/bank/utils/money'
 
 /**
@@ -76,6 +77,8 @@ const Overview = () => {
                     className="align-self-start"
                 />
             )}
+
+            {active.length > 0 && <MonthSummary />}
 
             <Modal
                 isOpen={editor.open}
