@@ -283,7 +283,7 @@
     min-height: 150px;
 
     // Absolute so the SVG's own size never feeds back into the measured box.
-    svg { position: absolute; inset: 0; display: block; touch-action: pan-y; }
+    > svg { position: absolute; inset: 0; display: block; touch-action: pan-y; }
 
     &__grid { stroke: var(--border); stroke-width: 1; }
     &__tick { fill: var(--text); font-size: 12px; }
@@ -293,6 +293,7 @@
         path { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
         circle { stroke: var(--bg); stroke-width: 2; transition: r 0.1s ease; }
         text { fill: var(--text-h); font-size: 13px; font-weight: 700; }
+        .isa-line-chart__value { font-size: 12px; font-weight: 600; }
 
         &.is-primary circle { fill: var(--accent); }
         &.is-comparator circle { fill: color-mix(in srgb, var(--text) 55%, var(--bg)); }
@@ -322,23 +323,14 @@
     }
 }
 
-// compact data table under a chart, sized to its content
-// (scrolls sideways if it can't fit). Layout: `align-self-start`.
-.isa-data-table {
-    flex: none;
-    max-width: 100%;
-    overflow-x: auto;
-    font-size: 0.8rem;
-    color: var(--text);
-
-    table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
-    // Caption is for screen readers only; the slide title already says it.
-    caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-    th, td { padding: 0.2rem 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border); }
-    th:first-child { padding-left: 0; text-align: left; }
-    thead th { font-weight: 600; color: var(--text-h); }
-    tbody th { font-weight: 500; }
-    tbody tr:last-child > * { border-bottom: 0; }
+// Hidden visually but still read by screen readers.
+.isa-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
 }
 
 // --- data table (adverse reactions) ---

@@ -5,9 +5,11 @@ import { useLayoutEffect, useRef, useState } from 'react'
 const M = { top: 16, right: 104, bottom: 36, left: 44 }
 const Y_TICKS = [0, 25, 50, 75, 100]
 
+// `pointLabels`: print each point's value above its dot. Placebo stays off
+// (values hug the baseline and would collide); its tooltip covers those.
 const SERIES = [
-    { key: 'lumvera', label: 'Lumvera', className: 'is-primary' },
-    { key: 'placebo', label: 'Placebo', className: 'is-comparator' },
+    { key: 'lumvera', label: 'Lumvera', className: 'is-primary', pointLabels: true },
+    { key: 'placebo', label: 'Placebo', className: 'is-comparator', pointLabels: false },
 ]
 
 const ResponseOverTimeSlide = ({ data, slide }) => {
@@ -39,14 +41,25 @@ const ResponseOverTimeSlide = ({ data, slide }) => {
     const path = (key) => points.map((p, i) => `${i ? 'L' : 'M'}${x(p.week)},${y(p[key])}`).join(' ')
 
     // Crosshair snaps to the nearest week.
-    const handleMove = (e) => {
+    const nearestIndex = (e) => {
         const rect = e.currentTarget.getBoundingClientRect()
         const svgX = ((e.clientX - rect.left) / rect.width) * W
         let nearest = 0
         points.forEach((p, i) => {
             if (Math.abs(x(p.week) - svgX) < Math.abs(x(points[nearest].week) - svgX)) nearest = i
         })
-        setHover(nearest)
+        return nearest
+    }
+    const handleMove = (e) => setHover(nearestIndex(e))
+    // Touch has no hover: a tap pins the tooltip, tapping the same week again clears it.
+    const handleDown = (e) => {
+        if (e.pointerType === 'mouse') return
+        const i = nearestIndex(e)
+        setHover((current) => (current === i ? null : i))
+    }
+    // Only a mouse leaving clears it; on touch, pointerleave fires right after the tap.
+    const handleLeave = (e) => {
+        if (e.pointerType === 'mouse') setHover(null)
     }
 
     const last = points[points.length - 1]
@@ -77,9 +90,10 @@ const ResponseOverTimeSlide = ({ data, slide }) => {
                             height={H}
                             viewBox={`0 0 ${W} ${H}`}
                             role="img"
-                            aria-label={`PASI 90 response by week. At week ${last.week}: Lumvera ${last.lumvera}%, placebo ${last.placebo}%. Full values in the data table.`}
+                            aria-label={`PASI 90 response by week. At week ${last.week}: Lumvera ${last.lumvera}%, placebo ${last.placebo}%. Full values in the table that follows.`}
                             onPointerMove={handleMove}
-                            onPointerLeave={() => setHover(null)}
+                            onPointerDown={handleDown}
+                            onPointerLeave={handleLeave}
                         >
                             {/* grid + y axis */}
                             {Y_TICKS.map((t) => (
@@ -107,6 +121,13 @@ const ResponseOverTimeSlide = ({ data, slide }) => {
                                     {points.map((p, i) => (
                                         <circle key={p.week} cx={x(p.week)} cy={y(p[s.key])} r={hover === i ? 5 : 4} />
                                     ))}
+                                    {/* values above the dots (the last one is in the end label) */}
+                                    {s.pointLabels &&
+                                        points.slice(1, -1).map((p) => (
+                                            <text key={p.week} className="isa-line-chart__value" x={x(p.week)} y={y(p[s.key]) - 12} textAnchor="middle">
+                                                {p[s.key]}%
+                                            </text>
+                                        ))}
                                     {/* direct label at the line end */}
                                     <text x={x(last.week) + 12} y={y(last[s.key])} dominantBaseline="middle">
                                         {s.label} {last[s.key]}%
@@ -132,9 +153,8 @@ const ResponseOverTimeSlide = ({ data, slide }) => {
                         )}
                     </div>
 
-                    {/* Always-visible values under the chart. Weeks run across so the
-                        table stays short and leaves the height to the plot. */}
-                    <div className="isa-data-table align-self-start">
+                    {/* Screen-reader copy of the values (the chart is an image to them) */}
+                    <div className="isa-sr-only">
                         <table>
                             <caption>PASI 90 response (%)</caption>
                             <thead>
