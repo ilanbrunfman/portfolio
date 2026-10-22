@@ -75,9 +75,49 @@ export const BankProvider = ({ children }) => {
         setAccounts((prev) => prev.map((a) => (a.id === id ? fresh : a)))
     }, [])
 
+    /**
+     * POST /api/transactions, then refresh that account's balance.
+     * @param {{ accountId: number, date: string, amount: number, description: string, categoryId?: number|null, note?: string|null }} data
+     */
+    const createTransaction = useCallback(async (data) => {
+        const created = await api('/transactions', { method: 'POST', body: data })
+        await refreshAccount(data.accountId)
+        return created
+    }, [refreshAccount])
+
+    /**
+     * PATCH /api/transactions/:id, then refresh the account's balance.
+     * @param {object} transaction  The existing transaction (needs id, accountId).
+     * @param {object} changes
+     */
+    const updateTransaction = useCallback(async (transaction, changes) => {
+        const updated = await api(`/transactions/${transaction.id}`, { method: 'PATCH', body: changes })
+        await refreshAccount(transaction.accountId)
+        return updated
+    }, [refreshAccount])
+
+    /**
+     * DELETE /api/transactions/:id. A transfer deletes both sides, so the
+     * other account is refreshed too (simplest: reload all accounts).
+     * @param {object} transaction
+     */
+    const deleteTransaction = useCallback(async (transaction) => {
+        await api(`/transactions/${transaction.id}`, { method: 'DELETE' })
+        if (transaction.transferId) loadAccounts()
+        else await refreshAccount(transaction.accountId)
+    }, [refreshAccount, loadAccounts])
+
     const value = useMemo(
-        () => ({ accounts, categories, status, error, reload, createAccount, updateAccount, refreshAccount }),
-        [accounts, categories, status, error, reload, createAccount, updateAccount, refreshAccount]
+        () => ({
+            accounts, categories, status, error, reload,
+            createAccount, updateAccount, refreshAccount,
+            createTransaction, updateTransaction, deleteTransaction,
+        }),
+        [
+            accounts, categories, status, error, reload,
+            createAccount, updateAccount, refreshAccount,
+            createTransaction, updateTransaction, deleteTransaction,
+        ]
     )
 
     return <BankContext.Provider value={value}>{children}</BankContext.Provider>
