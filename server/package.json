@@ -12,7 +12,8 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev && prisma generate",
     "db:generate": "prisma generate",
-    "db:reset": "prisma migrate reset --force && prisma generate",
+    "db:seed": "prisma db seed",
+    "db:reset": "prisma migrate reset --force && prisma generate && prisma db seed",
     "db:studio": "prisma studio"
   },
   "dependencies": {

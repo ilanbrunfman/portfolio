@@ -13,6 +13,7 @@ docker compose up -d   # start PostgreSQL on localhost:5433
 nvm use                # Node 24 (from .nvmrc) – the client stays on Node 20
 npm install            # also generates the Prisma client
 npm run db:migrate     # create/update the tables
+npm run db:seed        # optional: fill in demo data
 npm run dev            # http://localhost:4000, restarts on file changes
 ```
 
@@ -38,7 +39,8 @@ client in `src/generated/prisma/` (not committed, rebuilt on `npm install`).
 |---------|--------------|
 | `npm run db:migrate` | After editing the schema: write a migration, apply it, regenerate the client |
 | `npm run db:generate` | Regenerate the client only |
-| `npm run db:reset` | Drop everything and re-run all migrations (**deletes data**) |
+| `npm run db:seed` | Replace all rows with demo data (**deletes existing rows**) |
+| `npm run db:reset` | Drop everything, re-run all migrations, then seed (**deletes data**) |
 | `npm run db:studio` | Open Prisma Studio, a browser UI to view/edit rows |
 
 Code imports the shared client from `src/db.js`:
@@ -51,6 +53,13 @@ const accounts = await prisma.account.findMany()
 Tables: `accounts`, `categories`, `transactions`. Money is whole **cents**
 (`1250` = 12.50). Balances aren't stored; they're computed from
 `openingBalance` + the account's transactions.
+
+### Demo data (`prisma/seed.js`)
+
+4 accounts (checking, savings, credit card, cash), 13 categories and about
+4 months of transactions ending today: salary, rent, bills, subscriptions,
+daily spending, and transfers (monthly savings, ATM withdrawals, credit card
+payments). It uses a fixed random seed, so every run gives the same data.
 
 ## Client
 
@@ -66,6 +75,7 @@ docker-compose.yml  local PostgreSQL container
 prisma.config.js    Prisma settings (loads .env, schema + migrations paths)
 prisma/
   schema.prisma     the tables
+  seed.js           demo data
   migrations/       SQL history, one folder per change
 src/
   index.js        starts the server (reads PORT)
