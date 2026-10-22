@@ -4,6 +4,10 @@
         margin: 0;
         padding: 0;
         border: 0;
+
+        legend {
+            padding: 0; // browsers indent legends by default
+        }
     }
 
     // A round color button; the real radio input is invisible on top of it
