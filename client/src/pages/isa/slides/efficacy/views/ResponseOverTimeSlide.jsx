@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 
 // Chart margins in px. The SVG is drawn at its measured pixel size (not a
 // fixed viewBox) so it fills the tile's height without stretching the text.
-const M = { top: 16, right: 104, bottom: 36, left: 44 }
+const M = { top: 16, right: 120, bottom: 36, left: 48 }
 const Y_TICKS = [0, 25, 50, 75, 100]
 
 // `pointLabels`: print each point's value above its dot. Placebo stays off
@@ -38,6 +38,8 @@ const ResponseOverTimeSlide = ({ data, slide }) => {
     const maxWeek = points[points.length - 1].week
     const x = (week) => M.left + (week / maxWeek) * PLOT_W
     const y = (pct) => M.top + PLOT_H - (pct / 100) * PLOT_H
+    // Narrow plots (phones) drop the "Wk" prefix so x labels don't collide.
+    const compactAxis = PLOT_W / (points.length - 1) < 56
     const path = (key) => points.map((p, i) => `${i ? 'L' : 'M'}${x(p.week)},${y(p[key])}`).join(' ')
 
     // Crosshair snaps to the nearest week.
@@ -107,7 +109,7 @@ const ResponseOverTimeSlide = ({ data, slide }) => {
                             {/* x axis */}
                             {points.map((p) => (
                                 <text key={p.week} className="isa-line-chart__tick" x={x(p.week)} y={H - 12} textAnchor="middle">
-                                    Wk {p.week}
+                                    {compactAxis ? p.week : `Wk ${p.week}`}
                                 </text>
                             ))}
 
