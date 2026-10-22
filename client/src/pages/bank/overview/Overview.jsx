@@ -5,10 +5,12 @@ import Modal from '@/components/ui/modal/Modal'
 import Checkbox from '@/components/ui/form/checkbox/Checkbox'
 import AccountCard from '@/pages/bank/components/account-card/AccountCard'
 import AccountForm from '@/pages/bank/components/account-form/AccountForm'
+import TransferForm from '@/pages/bank/components/transfer-form/TransferForm'
 import { formatMoney } from '@/pages/bank/utils/money'
 
 /**
- * /bank – total balance, a card per account, and add/edit in a modal.
+ * /bank – total balance, a card per account, add/edit accounts and
+ * transfer money between them (modals).
  */
 const Overview = () => {
     const { accounts, status, error, reload } = useBank()
@@ -18,6 +20,7 @@ const Overview = () => {
 
     const openEditor = (account = null) => setEditor({ open: true, account })
     const closeEditor = () => setEditor((prev) => ({ ...prev, open: false }))
+    const [transferOpen, setTransferOpen] = useState(false)
 
     if (status === 'loading') return <p>Loading accounts…</p>
 
@@ -47,7 +50,12 @@ const Overview = () => {
                     <span>Total balance</span>
                     <strong className="bank__total">{formatMoney(total)}</strong>
                 </section>
-                <Button icon="IconPlus" onClick={() => openEditor()}>Add account</Button>
+                <div className="d-flex flex-wrap gap-0-5">
+                    {active.length >= 2 && (
+                        <Button variant="secondary" onClick={() => setTransferOpen(true)}>Transfer</Button>
+                    )}
+                    <Button icon="IconPlus" onClick={() => openEditor()}>Add account</Button>
+                </div>
             </div>
 
             {visible.length === 0 ? (
@@ -76,6 +84,10 @@ const Overview = () => {
                 size="sm"
             >
                 <AccountForm key={editor.account?.id ?? 'new'} account={editor.account} onDone={closeEditor} />
+            </Modal>
+
+            <Modal isOpen={transferOpen} onClose={() => setTransferOpen(false)} title="Transfer" size="lg">
+                <TransferForm onDone={() => setTransferOpen(false)} />
             </Modal>
         </div>
     )

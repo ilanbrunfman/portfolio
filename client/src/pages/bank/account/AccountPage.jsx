@@ -5,6 +5,7 @@ import { useLedger } from '@/pages/bank/hooks/useLedger'
 import Button from '@/components/ui/button/Button'
 import Modal from '@/components/ui/modal/Modal'
 import TransactionForm from '@/pages/bank/components/transaction-form/TransactionForm'
+import TransferForm from '@/pages/bank/components/transfer-form/TransferForm'
 import TransactionList from '@/pages/bank/components/transaction-list/TransactionList'
 import { formatMoney } from '@/pages/bank/utils/money'
 import { ACCOUNT_TYPE_LABEL } from '@/pages/bank/data/accountTypes'
@@ -34,11 +35,19 @@ const AccountPage = () => {
 }
 
 const AccountLedger = ({ account }) => {
+    const { accounts } = useBank()
     const { items, status, error, hasMore, loadingMore, loadMore, reload } = useLedger(account.id)
     // `transaction` stays set while the modal plays its close animation
     const [editor, setEditor] = useState({ open: false, transaction: null })
 
+    const [transferOpen, setTransferOpen] = useState(false)
+    const canTransfer = accounts.filter((a) => !a.archived).length >= 2
+
     const openEditor = (transaction = null) => setEditor({ open: true, transaction })
+    const handleTransferDone = (changed) => {
+        setTransferOpen(false)
+        if (changed) reload()
+    }
     const handleDone = (changed) => {
         setEditor((prev) => ({ ...prev, open: false }))
         if (changed) reload() // re-fetch so running balances are right
@@ -64,7 +73,12 @@ const AccountLedger = ({ account }) => {
                 {account.archived ? (
                     <p>Restore this account to add transactions.</p>
                 ) : (
-                    <Button icon="IconPlus" onClick={() => openEditor()}>Add transaction</Button>
+                    <div className="d-flex flex-wrap gap-0-5">
+                        {canTransfer && (
+                            <Button variant="secondary" onClick={() => setTransferOpen(true)}>Transfer</Button>
+                        )}
+                        <Button icon="IconPlus" onClick={() => openEditor()}>Add transaction</Button>
+                    </div>
                 )}
             </div>
 
@@ -92,6 +106,10 @@ const AccountLedger = ({ account }) => {
                     recent={items}
                     onDone={handleDone}
                 />
+            </Modal>
+
+            <Modal isOpen={transferOpen} onClose={() => handleTransferDone(false)} title="Transfer" size="lg">
+                <TransferForm defaultFromId={account.id} onDone={handleTransferDone} />
             </Modal>
         </div>
     )

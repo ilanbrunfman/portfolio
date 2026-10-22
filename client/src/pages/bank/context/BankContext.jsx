@@ -15,10 +15,11 @@ export const BankProvider = ({ children }) => {
     const [status, setStatus] = useState('loading') // 'loading' | 'ready' | 'error'
     const [error, setError] = useState(null)
 
-    // Start a load; state is set only when the request finishes
+    // Start a load; state is set only when the request finishes.
+    // Returns the promise so callers can wait for fresh balances.
     const loadAccounts = useCallback((isCancelled = () => false) => {
         // Both requests run at the same time
-        Promise.all([api('/accounts?includeArchived=true'), api('/categories')])
+        return Promise.all([api('/accounts?includeArchived=true'), api('/categories')])
             .then(([accountList, categoryList]) => {
                 if (isCancelled()) return
                 setAccounts(accountList)
@@ -103,20 +104,48 @@ export const BankProvider = ({ children }) => {
      */
     const deleteTransaction = useCallback(async (transaction) => {
         await api(`/transactions/${transaction.id}`, { method: 'DELETE' })
-        if (transaction.transferId) loadAccounts()
+        if (transaction.transferId) await loadAccounts()
         else await refreshAccount(transaction.accountId)
     }, [refreshAccount, loadAccounts])
+
+    /**
+     * POST /api/transfers, then refresh both accounts' balances.
+     * @param {{ fromAccountId: number, toAccountId: number, amount: number, date: string, description?: string, note?: string|null }} data
+     */
+    const createTransfer = useCallback(async (data) => {
+        const created = await api('/transfers', { method: 'POST', body: data })
+        await Promise.all([refreshAccount(data.fromAccountId), refreshAccount(data.toAccountId)])
+        return created
+    }, [refreshAccount])
+
+    /**
+     * PATCH /api/transfers/:transferId. Up to four accounts can be affected
+     * (old and new from/to), so all accounts are reloaded.
+     */
+    const updateTransfer = useCallback(async (transferId, changes) => {
+        const updated = await api(`/transfers/${transferId}`, { method: 'PATCH', body: changes })
+        await loadAccounts()
+        return updated
+    }, [loadAccounts])
+
+    /** DELETE /api/transfers/:transferId (both sides) */
+    const deleteTransfer = useCallback(async (transferId) => {
+        await api(`/transfers/${transferId}`, { method: 'DELETE' })
+        await loadAccounts()
+    }, [loadAccounts])
 
     const value = useMemo(
         () => ({
             accounts, categories, status, error, reload,
             createAccount, updateAccount, refreshAccount,
             createTransaction, updateTransaction, deleteTransaction,
+            createTransfer, updateTransfer, deleteTransfer,
         }),
         [
             accounts, categories, status, error, reload,
             createAccount, updateAccount, refreshAccount,
             createTransaction, updateTransaction, deleteTransaction,
+            createTransfer, updateTransfer, deleteTransfer,
         ]
     )
 
