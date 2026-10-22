@@ -14,6 +14,7 @@ const KINDS = [
 
 /**
  * Add, edit or delete a transaction. Meant to sit inside a <Modal>.
+ * (Transfers use TransferForm.)
  *
  * @param {object} props
  * @param {object} props.account              The account it belongs to.
@@ -25,7 +26,6 @@ const KINDS = [
 const TransactionForm = ({ account, transaction, recent = [], onDone }) => {
     const { categories, createTransaction, updateTransaction, deleteTransaction } = useBank()
     const isEdit = Boolean(transaction)
-    const isTransfer = Boolean(transaction?.transferId)
 
     const [kind, setKind] = useState(transaction && transaction.amount > 0 ? 'INCOME' : 'EXPENSE')
     const [amount, setAmount] = useState(transaction ? centsToInput(Math.abs(transaction.amount)) : '')
@@ -127,34 +127,11 @@ const TransactionForm = ({ account, transaction, recent = [], onDone }) => {
 
     const deleteControls = confirmDelete ? (
         <div className="form__actions align-items-center" role="group" aria-label="Confirm delete">
-            <span className="mr-auto">
-                {isTransfer ? 'Delete both sides of this transfer?' : 'Delete this transaction?'}
-            </span>
+            <span className="mr-auto">Delete this transaction?</span>
             <Button variant="ghost" onClick={() => setConfirmDelete(false)} disabled={saving}>Keep it</Button>
             <Button onClick={handleDelete} disabled={saving}>{saving ? 'Deleting…' : 'Delete'}</Button>
         </div>
     ) : null
-
-    // Transfers can only be deleted for now (editing both sides comes later)
-    if (isTransfer) {
-        return (
-            <div className="d-flex flex-column gap-1">
-                {errors.form && <p className="form__error" role="alert">{errors.form}</p>}
-                <p>
-                    <strong>{transaction.description}</strong> is one side of a transfer between two accounts.
-                    Transfers can't be edited yet; delete it to remove both sides.
-                </p>
-                {deleteControls ?? (
-                    <div className="form__actions">
-                        <Button variant="secondary" icon="IconTrash" onClick={() => setConfirmDelete(true)} className="mr-auto">
-                            Delete transfer
-                        </Button>
-                        <Button variant="ghost" onClick={() => onDone(false)}>Close</Button>
-                    </div>
-                )}
-            </div>
-        )
-    }
 
     return (
         <form className="d-flex flex-column gap-1" onSubmit={handleSubmit} noValidate>

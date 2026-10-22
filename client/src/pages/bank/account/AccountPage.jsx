@@ -40,12 +40,17 @@ const AccountLedger = ({ account }) => {
     // `transaction` stays set while the modal plays its close animation
     const [editor, setEditor] = useState({ open: false, transaction: null })
 
-    const [transferOpen, setTransferOpen] = useState(false)
+    // Transfer modal: new (transferId null) or editing an existing transfer
+    const [transferEditor, setTransferEditor] = useState({ open: false, transferId: null })
     const canTransfer = accounts.filter((a) => !a.archived).length >= 2
+    const accountNames = Object.fromEntries(accounts.map((a) => [a.id, a.name]))
 
     const openEditor = (transaction = null) => setEditor({ open: true, transaction })
+    const openTransfer = (transferId = null) => setTransferEditor({ open: true, transferId })
+    // A row click: transfers open the transfer form, everything else the transaction form
+    const handleSelect = (t) => (t.transferId ? openTransfer(t.transferId) : openEditor(t))
     const handleTransferDone = (changed) => {
-        setTransferOpen(false)
+        setTransferEditor((prev) => ({ ...prev, open: false }))
         if (changed) reload()
     }
     const handleDone = (changed) => {
@@ -75,7 +80,7 @@ const AccountLedger = ({ account }) => {
                 ) : (
                     <div className="d-flex flex-wrap gap-0-5">
                         {canTransfer && (
-                            <Button variant="secondary" onClick={() => setTransferOpen(true)}>Transfer</Button>
+                            <Button variant="secondary" onClick={() => openTransfer()}>Transfer</Button>
                         )}
                         <Button icon="IconPlus" onClick={() => openEditor()}>Add transaction</Button>
                     </div>
@@ -86,7 +91,7 @@ const AccountLedger = ({ account }) => {
             {error && <p className="form__error" role="alert">{error}</p>}
             {status === 'ready' && items.length === 0 && <p>No transactions yet.</p>}
 
-            {items.length > 0 && <TransactionList items={items} onSelect={openEditor} />}
+            {items.length > 0 && <TransactionList items={items} onSelect={handleSelect} accountNames={accountNames} />}
 
             {hasMore && (
                 <Button variant="secondary" onClick={loadMore} disabled={loadingMore} className="align-self-center">
@@ -97,7 +102,7 @@ const AccountLedger = ({ account }) => {
             <Modal
                 isOpen={editor.open}
                 onClose={() => handleDone(false)}
-                title={editor.transaction ? (editor.transaction.transferId ? 'Transfer' : 'Edit transaction') : 'New transaction'}
+                title={editor.transaction ? 'Edit transaction' : 'New transaction'}
             >
                 <TransactionForm
                     key={editor.transaction?.id ?? 'new'}
@@ -108,8 +113,18 @@ const AccountLedger = ({ account }) => {
                 />
             </Modal>
 
-            <Modal isOpen={transferOpen} onClose={() => handleTransferDone(false)} title="Transfer" size="lg">
-                <TransferForm defaultFromId={account.id} onDone={handleTransferDone} />
+            <Modal
+                isOpen={transferEditor.open}
+                onClose={() => handleTransferDone(false)}
+                title={transferEditor.transferId ? 'Edit transfer' : 'Transfer'}
+                size="lg"
+            >
+                <TransferForm
+                    key={transferEditor.transferId ?? 'new'}
+                    transferId={transferEditor.transferId}
+                    defaultFromId={account.id}
+                    onDone={handleTransferDone}
+                />
             </Modal>
         </div>
     )

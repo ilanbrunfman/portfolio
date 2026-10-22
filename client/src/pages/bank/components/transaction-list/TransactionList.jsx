@@ -9,8 +9,15 @@ import './TransactionList.scss'
  * @param {object} props
  * @param {object[]} props.items                    Transactions from the API (with runningBalance).
  * @param {(transaction: object) => void} [props.onSelect]  Makes rows clickable (e.g. to edit).
+ * @param {Record<number, string>} [props.accountNames]  id → name, to label transfers "To X" / "From X".
  */
-const TransactionList = ({ items, onSelect }) => {
+const TransactionList = ({ items, onSelect, accountNames = {} }) => {
+    const transferLabel = (t) => {
+        const other = accountNames[t.counterpartAccountId]
+        if (!other) return 'Transfer'
+        return t.amount < 0 ? `To ${other}` : `From ${other}`
+    }
+
     // [{ day, rows: [...] }] – items are already sorted newest first
     const days = []
     for (const item of items) {
@@ -31,7 +38,7 @@ const TransactionList = ({ items, onSelect }) => {
                                         <span className="transaction-list__description">{t.description}</span>
                                         <span className="transaction-list__meta d-flex flex-wrap align-items-center gap-0-5">
                                             {t.transferId ? (
-                                                <span className="transaction-list__tag">Transfer</span>
+                                                <span className="transaction-list__tag">{transferLabel(t)}</span>
                                             ) : t.category ? (
                                                 <span className="transaction-list__tag" style={{ '--tag': t.category.color }}>
                                                     {t.category.name}

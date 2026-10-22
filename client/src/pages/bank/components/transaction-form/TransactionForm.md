@@ -14,8 +14,7 @@ Add, edit or delete a transaction. Built from the form kit (`RadioGroup`,
   matching input (`categoryId` → Category).
 - Edit mode adds **Delete**, with a confirm step inside the form (no browser
   dialog).
-- **Transfer** sides can't be edited yet: the form explains that and offers
-  **Delete transfer**, which removes both sides.
+- Not for transfers: those open in [`TransferForm`](../transfer-form/TransferForm.md).
 
 Saving goes through `BankContext` (`createTransaction`, `updateTransaction`,
 `deleteTransaction`), which also refreshes the account balance.
