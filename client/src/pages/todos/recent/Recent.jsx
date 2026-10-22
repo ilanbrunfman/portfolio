@@ -4,6 +4,8 @@ import gsap from 'gsap'
 import { Flip } from 'gsap/Flip'
 import { useTodos } from '@/pages/todos/context/TodoContext'
 import Button from '@/components/ui/button/Button'
+import Checkbox from '@/components/ui/form/checkbox/Checkbox'
+import ProgressBar from '@/components/ui/form/progress-bar/ProgressBar'
 import styles from './Recent.module.scss'
 
 gsap.registerPlugin(Flip)
@@ -142,6 +144,8 @@ const Recent = () => {
     // No todos to show - send the user to the "new todo" view instead of
     // rendering an empty state here. `replace` avoids leaving this empty
     // /todos view in browser history.
+    const completedCount = todos.filter((todo) => todo.completed).length
+
     if (!todos.length) {
         return <Navigate to="/todos/new" replace />
     }
@@ -152,7 +156,15 @@ const Recent = () => {
                 <div className="col-12">
                     <div className={`mx-auto ${styles.recent}`}>
 
-                        <h1 className={`${styles.recent__heading} mb-2`}>Recent Todos</h1>
+                        <h1 className={`${styles.recent__heading} mb-1`}>Recent Todos</h1>
+
+                        <ProgressBar
+                            className="mb-2"
+                            label="Completed"
+                            value={completedCount}
+                            max={todos.length}
+                            valueText={`${completedCount} of ${todos.length}`}
+                        />
 
                     </div>
                 </div>
@@ -189,9 +201,7 @@ const Recent = () => {
                                         <span aria-hidden="true">⠿</span>
                                     </button>
 
-                                    <input
-                                        className={styles.recent__checkbox}
-                                        type="checkbox"
+                                    <Checkbox
                                         checked={todo.completed}
                                         onChange={() => toggleComplete(todo.id)}
                                         aria-label={`Mark ${todo.title} complete`}

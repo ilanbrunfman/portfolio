@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { useTodos } from '@/pages/todos/context/TodoContext'
 import Button from '@/components/ui/button/Button'
+import Input from '@/components/ui/form/input/Input'
+import Textarea from '@/components/ui/form/textarea/Textarea'
 import styles from './Todo.module.scss'
 
 const Todo = () => {
@@ -105,39 +107,27 @@ const Todo = () => {
                 <div className="surface d-flex flex-column gap-1" ref={editCardRef}>
                     <span className="form__eyebrow">Editing</span>
 
-                    <div className="form__field d-flex flex-column gap-0-5">
-                        <label className="form__label" htmlFor="todo-title">
-                            Title
-                        </label>
-                        <input
-                            id="todo-title"
-                            className="form__input form__input--title"
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Todo title"
-                        />
-                    </div>
+                    <Input
+                        id="todo-title"
+                        label="Title"
+                        size="lg"
+                        value={title}
+                        onChange={(e) => {
+                            setTitle(e.target.value)
+                            if (error) setError('')
+                        }}
+                        placeholder="Todo title"
+                        error={error}
+                    />
 
-                    <div className="form__field d-flex flex-column gap-0-5">
-                        <label className="form__label" htmlFor="todo-description">
-                            Description
-                        </label>
-                        <textarea
-                            id="todo-description"
-                            className="form__textarea"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Add more detail (optional)"
-                            rows={5}
-                        />
-                    </div>
-
-                    {error && (
-                        <p className="form__error" role="alert">
-                            {error}
-                        </p>
-                    )}
+                    <Textarea
+                        id="todo-description"
+                        label="Description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Add more detail (optional)"
+                        rows={5}
+                    />
 
                     <div className="form__actions">
                         <Button variant="ghost" onClick={handleCancel}>
