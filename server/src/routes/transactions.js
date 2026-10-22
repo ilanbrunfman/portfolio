@@ -5,11 +5,9 @@ import { HttpError } from '../lib/httpError.js'
 import { idParams } from '../schemas/common.js'
 import { transactionCreate, transactionUpdate } from '../schemas/transaction.js'
 import { toTransactionJson } from '../services/transactions.js'
+import { toDate } from '../lib/dates.js'
 
 const router = Router()
-
-// 'YYYY-MM-DD' → Date at midnight UTC (the column is a DATE, no time)
-const toDate = (day) => new Date(`${day}T00:00:00Z`)
 
 /** Turns the validated body into Prisma data (only the fields that were sent) */
 function toData(body) {
@@ -51,7 +49,7 @@ router.patch('/:id', validate({ params: idParams, body: transactionUpdate }), as
     const { id } = req.valid.params
     const existing = await findTransaction(id)
     if (existing.transferId) {
-        throw new HttpError(409, 'This is one side of a transfer. Delete the transfer and create it again.')
+        throw new HttpError(409, 'This is one side of a transfer. Edit it with PATCH /api/transfers/:transferId.')
     }
     await assertCategory(req.valid.body.categoryId)
 

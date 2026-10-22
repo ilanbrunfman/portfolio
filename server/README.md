@@ -85,7 +85,7 @@ src/
   schemas/        Zod schemas: what each endpoint accepts
   middleware/     validate() – checks requests against a schema
   services/       database logic shared by routes (e.g. the ledger query)
-  lib/            HttpError
+  lib/            HttpError, date helpers
 ```
 
 ## Endpoints
@@ -108,10 +108,21 @@ All money values are whole **cents**. Errors always look like
 | POST | `/api/transactions` | `{ accountId, date, amount, description, categoryId?, note? }` | 201 + the transaction (409 if the account is archived) |
 | PATCH | `/api/transactions/:id` | any of `{ date, amount, description, categoryId, note }` | The updated transaction (409 for a transfer side) |
 | DELETE | `/api/transactions/:id` | | 204; deleting a transfer side deletes both sides |
+| POST | `/api/transfers` | `{ fromAccountId, toAccountId, amount, date, description?, note? }` | 201 + the transfer |
+| GET | `/api/transfers/:transferId` | | `{ transferId, fromAccountId, toAccountId, amount, date, description, note }` |
+| PATCH | `/api/transfers/:transferId` | any of the create fields | The updated transfer (both rows) |
+| DELETE | `/api/transfers/:transferId` | | 204, removes both rows |
 | GET | `/api/categories` | | All categories (`{ id, name, kind: 'INCOME' \| 'EXPENSE', color }`), income first |
 
 A transaction looks like `{ id, accountId, date: 'YYYY-MM-DD', amount, description,
 note, transferId, category: { id, name, kind, color } | null }`.
+
+**Transfers** are two transaction rows sharing a `transferId` (money out of
+one account, into the other; `amount` in the transfer API is always
+positive). They're created and edited inside a **database transaction**
+(`prisma.$transaction`), so both rows are written together or not at all.
+Edit them through `/api/transfers`; `PATCH /api/transactions/:id` refuses a
+transfer side.
 
 **Pagination:** pass the `nextCursor` from one page as `cursor` to get the
 next (older) page; `nextCursor: null` means you have everything.

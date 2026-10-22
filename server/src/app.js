@@ -3,6 +3,7 @@ import healthRouter from './routes/health.js'
 import accountsRouter from './routes/accounts.js'
 import categoriesRouter from './routes/categories.js'
 import transactionsRouter from './routes/transactions.js'
+import transfersRouter from './routes/transfers.js'
 
 // Builds the Express app. Kept separate from index.js (which starts it)
 // so tests can import the app without opening a port.
@@ -16,6 +17,7 @@ app.use('/api/health', healthRouter)
 app.use('/api/accounts', accountsRouter)
 app.use('/api/categories', categoriesRouter)
 app.use('/api/transactions', transactionsRouter)
+app.use('/api/transfers', transfersRouter)
 
 // Unknown /api route → 404 in JSON (not Express's default HTML page)
 app.use((req, res) => {

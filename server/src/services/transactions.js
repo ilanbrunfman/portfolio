@@ -1,5 +1,6 @@
 import { Prisma } from '../generated/prisma/client.ts'
 import { prisma } from '../db.js'
+import { toDay } from '../lib/dates.js'
 
 /**
  * Transactions as the API sends them:
@@ -7,7 +8,7 @@ import { prisma } from '../db.js'
  *   category: { id, name, kind, color } | null, runningBalance? }
  */
 export function toTransactionJson(row) {
-    const date = row.date instanceof Date ? row.date.toISOString().slice(0, 10) : row.date
+    const date = row.date instanceof Date ? toDay(row.date) : row.date
     const category =
         row.category !== undefined
             ? row.category

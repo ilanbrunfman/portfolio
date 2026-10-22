@@ -57,3 +57,38 @@ export const transactionUpdate = z
     })
     .partial()
     .refine((data) => Object.keys(data).length > 0, 'Nothing to update')
+
+// ---------- transfers ----------
+
+const transferFields = {
+    fromAccountId: z.number({ error: 'Pick the account the money leaves' }).int().positive(),
+    toAccountId: z.number({ error: 'Pick the account the money goes to' }).int().positive(),
+    // Always positive: the direction comes from from/to
+    amount: z.number({ error: 'Amount is required' }).int('Use whole cents').positive('Amount must be more than 0'),
+    date: fields.date,
+    description: fields.description,
+    note: fields.note,
+}
+
+const differentAccounts = (data) =>
+    data.fromAccountId === undefined || data.toAccountId === undefined || data.fromAccountId !== data.toAccountId
+
+// POST /api/transfers
+export const transferCreate = z
+    .object({
+        ...transferFields,
+        description: transferFields.description.default('Transfer'),
+        note: transferFields.note.optional(),
+    })
+    .refine(differentAccounts, { message: 'Pick two different accounts', path: ['toAccountId'] })
+
+// PATCH /api/transfers/:transferId – any subset
+export const transferUpdate = z
+    .object(transferFields)
+    .partial()
+    .refine((data) => Object.keys(data).length > 0, 'Nothing to update')
+    .refine(differentAccounts, { message: 'Pick two different accounts', path: ['toAccountId'] })
+
+export const transferParams = z.object({
+    transferId: z.uuid({ error: 'Invalid transfer id' }),
+})
