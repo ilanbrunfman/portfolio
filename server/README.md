@@ -84,6 +84,7 @@ src/
   routes/         one file per resource (health, accounts, …)
   schemas/        Zod schemas: what each endpoint accepts
   middleware/     validate() – checks requests against a schema
+  services/       database logic shared by routes (e.g. the ledger query)
   lib/            HttpError
 ```
 
@@ -103,7 +104,16 @@ All money values are whole **cents**. Errors always look like
 | GET | `/api/accounts/:id` | | One account (404 if missing) |
 | POST | `/api/accounts` | `{ name, type?, openingBalance?, color? }` | 201 + the new account |
 | PATCH | `/api/accounts/:id` | any of `{ name, type, openingBalance, color, archived }` | The updated account |
+| GET | `/api/accounts/:id/transactions` | `?limit=50&cursor=…` | `{ items, nextCursor }`, newest first, each with `runningBalance` |
 | GET | `/api/categories` | | All categories (`{ id, name, kind: 'INCOME' \| 'EXPENSE', color }`), income first |
+
+A transaction looks like `{ id, accountId, date: 'YYYY-MM-DD', amount, description,
+note, transferId, category: { id, name, kind, color } | null }`.
+
+**Pagination:** pass the `nextCursor` from one page as `cursor` to get the
+next (older) page; `nextCursor: null` means you have everything.
+**Running balance** is computed in SQL with a window function
+(`SUM(amount) OVER (ORDER BY date, id)`), see `src/services/transactions.js`.
 
 `type` is `CHECKING`, `SAVINGS`, `CREDIT` or `CASH`. Accounts aren't
 deleted; `PATCH { "archived": true }` hides them from the default list.

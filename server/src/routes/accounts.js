@@ -4,6 +4,8 @@ import { validate } from '../middleware/validate.js'
 import { HttpError } from '../lib/httpError.js'
 import { idParams } from '../schemas/common.js'
 import { accountCreate, accountUpdate, accountListQuery } from '../schemas/account.js'
+import { ledgerQuery } from '../schemas/transaction.js'
+import { listLedger } from '../services/transactions.js'
 
 const router = Router()
 
@@ -64,6 +66,15 @@ router.patch('/:id', validate({ params: idParams, body: accountUpdate }), async 
     }) // a missing id throws Prisma P2025 → 404 in the error handler
     const [result] = await withBalances([account])
     res.json(result)
+})
+
+// GET /api/accounts/:id/transactions – newest first, with runningBalance,
+// one page at a time (?limit=50&cursor=<nextCursor from the previous page>)
+router.get('/:id/transactions', validate({ params: idParams, query: ledgerQuery }), async (req, res) => {
+    const { id } = req.valid.params
+    const exists = await prisma.account.count({ where: { id } })
+    if (!exists) throw new HttpError(404, 'Account not found')
+    res.json(await listLedger({ accountId: id, ...req.valid.query }))
 })
 
 export default router
