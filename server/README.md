@@ -112,6 +112,7 @@ All money values are whole **cents**. Errors always look like
 | GET | `/api/transfers/:transferId` | | `{ transferId, fromAccountId, toAccountId, amount, date, description, note }` |
 | PATCH | `/api/transfers/:transferId` | any of the create fields | The updated transfer (both rows) |
 | DELETE | `/api/transfers/:transferId` | | 204, removes both rows |
+| GET | `/api/summary` | `?month=YYYY-MM` (default: this month) | `{ month, income, spent, net, byCategory, trend }` |
 | GET | `/api/categories` | | All categories (`{ id, name, kind: 'INCOME' \| 'EXPENSE', color }`), income first |
 
 A transaction looks like `{ id, accountId, date: 'YYYY-MM-DD', amount, description,
@@ -123,6 +124,12 @@ positive). They're created and edited inside a **database transaction**
 (`prisma.$transaction`), so both rows are written together or not at all.
 Edit them through `/api/transfers`; `PATCH /api/transactions/:id` refuses a
 transfer side.
+
+**Summary**: real income and spending only (transfers and archived accounts
+are left out), as positive cents. `byCategory` = `[{ categoryId, name, color,
+total, count }]` biggest first (`categoryId: null` = Uncategorized), from a
+Prisma `groupBy`. `trend` = the last 6 months `[{ month, income, spent }]`,
+from SQL `generate_series` so empty months show as 0.
 
 **Pagination:** pass the `nextCursor` from one page as `cursor` to get the
 next (older) page; `nextCursor: null` means you have everything.
