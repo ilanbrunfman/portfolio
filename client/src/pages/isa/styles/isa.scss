@@ -280,7 +280,7 @@
 .isa-line-chart {
     position: relative;
     // Floor so the chart stays readable on short screens.
-    min-height: 180px;
+    min-height: 150px;
 
     // Absolute so the SVG's own size never feeds back into the measured box.
     svg { position: absolute; inset: 0; display: block; touch-action: pan-y; }
@@ -322,17 +322,18 @@
     }
 }
 
-// compact data table shown beside a chart (scrolls sideways if it can't fit)
+// compact full-width data table under a chart (scrolls sideways if it can't fit)
 .isa-data-table {
     flex: none;
     max-width: 100%;
     overflow-x: auto;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--text);
 
-    table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
-    caption { caption-side: top; padding-bottom: 0.5rem; text-align: left; font-weight: 600; color: var(--text-h); }
-    th, td { padding: 0.35rem 0.6rem; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    // Caption is for screen readers only; the slide title already says it.
+    caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    th, td { padding: 0.2rem 0.5rem; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border); }
     th:first-child { padding-left: 0; text-align: left; }
     thead th { font-weight: 600; color: var(--text-h); }
     tbody th { font-weight: 500; }

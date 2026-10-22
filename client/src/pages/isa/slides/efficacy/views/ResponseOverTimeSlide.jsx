@@ -70,7 +70,7 @@ const ResponseOverTimeSlide = ({ data, slide }) => {
                     ))}
                 </ul>
 
-                <div className="isa-fill d-flex flex-column flex-md-row gap-2">
+                <div className="isa-fill d-flex flex-column gap-1">
                     <div className="isa-line-chart isa-fill" ref={chartRef}>
                         <svg
                             width={W}
@@ -132,9 +132,9 @@ const ResponseOverTimeSlide = ({ data, slide }) => {
                         )}
                     </div>
 
-                    {/* Always-visible values beside the chart (below it on small screens).
-                        Weeks run across so the table stays short enough to sit next to the plot. */}
-                    <div className="isa-data-table align-self-center">
+                    {/* Always-visible values under the chart. Weeks run across so the
+                        table stays short and leaves the height to the plot. */}
+                    <div className="isa-data-table">
                         <table>
                             <caption>PASI 90 response (%)</caption>
                             <thead>
