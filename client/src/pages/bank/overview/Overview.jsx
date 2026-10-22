@@ -1,13 +1,23 @@
+import { useState } from 'react'
 import { useBank } from '@/pages/bank/context/BankContext'
 import Button from '@/components/ui/button/Button'
+import Modal from '@/components/ui/modal/Modal'
+import Checkbox from '@/components/ui/form/checkbox/Checkbox'
 import AccountCard from '@/pages/bank/components/account-card/AccountCard'
+import AccountForm from '@/pages/bank/components/account-form/AccountForm'
 import { formatMoney } from '@/pages/bank/utils/money'
 
 /**
- * /bank – total balance and a card per account.
+ * /bank – total balance, a card per account, and add/edit in a modal.
  */
 const Overview = () => {
     const { accounts, status, error, reload } = useBank()
+    const [showArchived, setShowArchived] = useState(false)
+    // `account` stays set while the modal plays its close animation
+    const [editor, setEditor] = useState({ open: false, account: null })
+
+    const openEditor = (account = null) => setEditor({ open: true, account })
+    const closeEditor = () => setEditor((prev) => ({ ...prev, open: false }))
 
     if (status === 'loading') return <p>Loading accounts…</p>
 
@@ -26,24 +36,47 @@ const Overview = () => {
     }
 
     const active = accounts.filter((a) => !a.archived)
+    const archivedCount = accounts.length - active.length
+    const visible = showArchived ? accounts : active
     const total = active.reduce((sum, a) => sum + a.balance, 0)
 
     return (
         <div className="d-flex flex-column gap-2">
-            <section className="d-flex flex-column gap-0-5" aria-label="Total balance">
-                <span>Total balance</span>
-                <strong className="bank__total">{formatMoney(total)}</strong>
-            </section>
+            <div className="d-flex flex-wrap justify-between align-items-end gap-1">
+                <section className="d-flex flex-column gap-0-5" aria-label="Total balance">
+                    <span>Total balance</span>
+                    <strong className="bank__total">{formatMoney(total)}</strong>
+                </section>
+                <Button icon="IconPlus" onClick={() => openEditor()}>Add account</Button>
+            </div>
 
-            {active.length === 0 ? (
-                <p>No accounts yet.</p>
+            {visible.length === 0 ? (
+                <p>No accounts yet. Add your first one to get started.</p>
             ) : (
                 <div className="d-grid grid-1 grid-sm-2 grid-lg-3 gap-1">
-                    {active.map((account) => (
-                        <AccountCard key={account.id} account={account} />
+                    {visible.map((account) => (
+                        <AccountCard key={account.id} account={account} onEdit={openEditor} />
                     ))}
                 </div>
             )}
+
+            {archivedCount > 0 && (
+                <Checkbox
+                    label={`Show archived (${archivedCount})`}
+                    checked={showArchived}
+                    onChange={(e) => setShowArchived(e.target.checked)}
+                    className="align-self-start"
+                />
+            )}
+
+            <Modal
+                isOpen={editor.open}
+                onClose={closeEditor}
+                title={editor.account ? 'Edit account' : 'New account'}
+                size="sm"
+            >
+                <AccountForm key={editor.account?.id ?? 'new'} account={editor.account} onDone={closeEditor} />
+            </Modal>
         </div>
     )
 }
