@@ -10,4 +10,11 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  server: {
+    // In dev, forward /api/* to the Express server (server/), so the app
+    // can call fetch('/api/...') with no CORS setup or hard-coded host.
+    proxy: {
+      '/api': 'http://localhost:4000',
+    },
+  },
 })
