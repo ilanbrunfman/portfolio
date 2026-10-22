@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useBank } from '@/pages/bank/context/BankContext'
 import { useLedger } from '@/pages/bank/hooks/useLedger'
 import Button from '@/components/ui/button/Button'
@@ -7,6 +7,8 @@ import Modal from '@/components/ui/modal/Modal'
 import TransactionForm from '@/pages/bank/components/transaction-form/TransactionForm'
 import TransferForm from '@/pages/bank/components/transfer-form/TransferForm'
 import TransactionList from '@/pages/bank/components/transaction-list/TransactionList'
+import LedgerFilters from '@/pages/bank/components/ledger-filters/LedgerFilters'
+import { filtersFromParams, filtersToQuery, hasFilters } from '@/pages/bank/components/ledger-filters/filters'
 import { formatMoney } from '@/pages/bank/utils/money'
 import { ACCOUNT_TYPE_LABEL } from '@/pages/bank/data/accountTypes'
 
@@ -35,8 +37,21 @@ const AccountPage = () => {
 }
 
 const AccountLedger = ({ account }) => {
-    const { accounts } = useBank()
-    const { items, status, error, hasMore, loadingMore, loadMore, reload } = useLedger(account.id)
+    const { accounts, categories } = useBank()
+    // Filters: React state is the live copy (its updates queue, so quick edits
+    // never overwrite each other); the URL gets a copy so a refresh or a shared
+    // link keeps them. Read from the URL once, when the page opens.
+    const [searchParams, setSearchParams] = useSearchParams()
+    const [filters, setFilterState] = useState(() => filtersFromParams(searchParams))
+    const filtered = hasFilters(filters)
+    const setFilters = useCallback((changes) => setFilterState((current) => ({ ...current, ...changes })), [])
+
+    const filterQuery = filtersToQuery(filters)
+    useEffect(() => {
+        if (filterQuery !== searchParams.toString()) setSearchParams(filterQuery, { replace: true })
+    }, [filterQuery, searchParams, setSearchParams])
+
+    const { items, totals, status, error, stale, hasMore, loadingMore, loadMore, reload } = useLedger(account.id, filters)
     // `transaction` stays set while the modal plays its close animation
     const [editor, setEditor] = useState({ open: false, transaction: null })
 
@@ -87,11 +102,29 @@ const AccountLedger = ({ account }) => {
                 )}
             </div>
 
+            {(account.transactionCount > 0 || filtered) && (
+                <LedgerFilters filters={filters} onChange={setFilters} categories={categories} />
+            )}
+
             {status === 'loading' && <p>Loading transactions…</p>}
             {error && <p className="form__error" role="alert">{error}</p>}
-            {status === 'ready' && items.length === 0 && <p>No transactions yet.</p>}
+            {status === 'ready' && !stale && items.length === 0 && (
+                <p>{filtered ? 'No transactions match these filters.' : 'No transactions yet.'}</p>
+            )}
+            {filtered && !stale && totals && totals.count > 0 && (
+                <p className="bank__totals" aria-live="polite">
+                    {totals.count} {totals.count === 1 ? 'match' : 'matches'}
+                    {totals.moneyIn > 0 && <> · in <strong className="is-in">+{formatMoney(totals.moneyIn)}</strong></>}
+                    {totals.moneyOut < 0 && <> · out <strong>{formatMoney(totals.moneyOut)}</strong></>}
+                </p>
+            )}
 
-            {items.length > 0 && <TransactionList items={items} onSelect={handleSelect} accountNames={accountNames} />}
+            {items.length > 0 && (
+                // While new results load, keep the old ones visible but dimmed
+                <div className={stale ? 'bank__stale' : ''} aria-busy={stale}>
+                    <TransactionList items={items} onSelect={handleSelect} accountNames={accountNames} />
+                </div>
+            )}
 
             {hasMore && (
                 <Button variant="secondary" onClick={loadMore} disabled={loadingMore} className="align-self-center">

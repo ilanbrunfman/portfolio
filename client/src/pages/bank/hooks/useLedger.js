@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/pages/bank/api/client'
+import { filtersToQuery } from '@/pages/bank/components/ledger-filters/filters'
 
 const PAGE_SIZE = 50
 
@@ -8,27 +9,38 @@ const PAGE_SIZE = 50
  * Mount it with key={accountId} so switching accounts starts fresh.
  *
  * @param {number} accountId
- * @returns {{ items: object[], status: 'loading'|'ready'|'error', error: string|null,
+ * @param {object} [filters]  { q, type, categoryId, from, to } – '' = not set
+ * @returns {{ items: object[], totals: { count: number, moneyIn: number, moneyOut: number } | null,
+ *            stale: boolean, status: 'loading'|'ready'|'error', error: string|null,
  *            hasMore: boolean, loadingMore: boolean, loadMore: () => void, reload: () => void }}
  */
-export function useLedger(accountId) {
-    const [page, setPage] = useState({ items: [], nextCursor: null, status: 'loading', error: null })
+export function useLedger(accountId, filters = {}) {
+    // `query` = the filters this data was loaded for
+    const [page, setPage] = useState({ items: [], nextCursor: null, totals: null, query: null, status: 'loading', error: null })
     const [loadingMore, setLoadingMore] = useState(false)
     const [version, setVersion] = useState(0) // bump to re-fetch the first page
 
+    // A string, so the effect below only re-runs when a filter really changes
+    const filterQuery = filtersToQuery(filters)
+
     const fetchPage = useCallback(
-        (cursor) => api(`/accounts/${accountId}/transactions?limit=${PAGE_SIZE}${cursor ? `&cursor=${cursor}` : ''}`),
-        [accountId]
+        (cursor) => {
+            const params = new URLSearchParams(filterQuery)
+            params.set('limit', PAGE_SIZE)
+            if (cursor) params.set('cursor', cursor)
+            return api(`/accounts/${accountId}/transactions?${params}`)
+        },
+        [accountId, filterQuery]
     )
 
-    // First page (and again on reload). Existing rows stay visible meanwhile.
+    // First page (again on reload or when filters change). Existing rows stay visible meanwhile.
     useEffect(() => {
         let cancelled = false
         fetchPage()
-            .then((data) => !cancelled && setPage({ items: data.items, nextCursor: data.nextCursor, status: 'ready', error: null }))
+            .then((data) => !cancelled && setPage({ items: data.items, nextCursor: data.nextCursor, totals: data.totals, query: filterQuery, status: 'ready', error: null }))
             .catch((err) => !cancelled && setPage((prev) => ({ ...prev, status: 'error', error: err.message })))
         return () => { cancelled = true }
-    }, [fetchPage, version])
+    }, [fetchPage, filterQuery, version])
 
     const reload = useCallback(() => setVersion((v) => v + 1), [])
 
@@ -48,6 +60,9 @@ export function useLedger(accountId) {
 
     return {
         items: page.items,
+        totals: page.totals,
+        // true while the shown rows belong to the previous filters
+        stale: page.status === 'ready' && page.query !== filterQuery,
         status: page.status,
         error: page.error,
         hasMore: Boolean(page.nextCursor),

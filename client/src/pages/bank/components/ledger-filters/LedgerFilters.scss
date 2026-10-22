@@ -1,0 +1,16 @@
+// Visuals only – layout comes from utility classes in the markup.
+.ledger-filters {
+    // A lighter card than .surface's default: no shadow, smaller padding
+    padding: 1rem 1.25rem;
+    box-shadow: none;
+
+    fieldset {
+        margin: 0;
+        padding: 0;
+        border: 0;
+
+        legend {
+            padding: 0;
+        }
+    }
+}

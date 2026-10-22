@@ -36,6 +36,27 @@
         color: var(--account-color, var(--accent));
     }
 
+    // Old results shown while new ones load
+    &__stale {
+        opacity: 0.5;
+        transition: opacity 0.15s ease;
+    }
+
+    // "12 matches · in +$X · out -$Y" above a filtered list
+    &__totals {
+        margin: 0;
+        font-size: 0.9rem;
+
+        strong {
+            color: var(--text-h);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .is-in {
+            color: #22a06b;
+        }
+    }
+
     &__account-name {
         margin: 0;
         font-size: 1.4rem;
