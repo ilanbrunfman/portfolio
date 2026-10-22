@@ -104,7 +104,7 @@ All money values are whole **cents**. Errors always look like
 | GET | `/api/accounts/:id` | | One account (404 if missing) |
 | POST | `/api/accounts` | `{ name, type?, openingBalance?, color? }` | 201 + the new account |
 | PATCH | `/api/accounts/:id` | any of `{ name, type, openingBalance, color, archived }` | The updated account |
-| GET | `/api/accounts/:id/transactions` | `?limit=50&cursor=…` | `{ items, nextCursor }`, newest first, each with `runningBalance` (and `counterpartAccountId` for transfers) |
+| GET | `/api/accounts/:id/transactions` | `?limit=50&cursor=…` + filters below | `{ items, nextCursor, totals }`, newest first, each with `runningBalance` (and `counterpartAccountId` for transfers) |
 | POST | `/api/transactions` | `{ accountId, date, amount, description, categoryId?, note? }` | 201 + the transaction (409 if the account is archived) |
 | PATCH | `/api/transactions/:id` | any of `{ date, amount, description, categoryId, note }` | The updated transaction (409 for a transfer side) |
 | DELETE | `/api/transactions/:id` | | 204; deleting a transfer side deletes both sides |
@@ -126,6 +126,11 @@ transfer side.
 
 **Pagination:** pass the `nextCursor` from one page as `cursor` to get the
 next (older) page; `nextCursor: null` means you have everything.
+**Filters** (all optional, combine freely): `q` (search description and note,
+case-insensitive), `type` (`income`, `expense`, `transfer`), `categoryId`,
+`from` / `to` (`YYYY-MM-DD`, inclusive). `totals` = `{ count, moneyIn, moneyOut }`
+for everything that matches, not just the page. Filtering happens after the
+running balance is computed, so each row still shows the real balance.
 **Running balance** is computed in SQL with a window function
 (`SUM(amount) OVER (ORDER BY date, id)`), see `src/services/transactions.js`.
 

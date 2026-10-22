@@ -1,17 +1,27 @@
 import { z } from 'zod'
 
-// GET /api/accounts/:id/transactions?limit=50&cursor=2026-10-01_123
-export const ledgerQuery = z.object({
-    limit: z.coerce.number().int().min(1).max(200).default(50),
-    cursor: z
-        .string()
-        .regex(/^\d{4}-\d{2}-\d{2}_\d+$/, 'Invalid cursor')
-        .transform((value) => {
-            const [date, id] = value.split('_')
-            return { date, id: Number(id) }
-        })
-        .optional(),
-})
+// GET /api/accounts/:id/transactions
+//   ?limit=50&cursor=2026-10-01_123            paging
+//   &q=coffee&type=expense&categoryId=6        filters (all optional)
+//   &from=2026-10-01&to=2026-10-31
+export const ledgerQuery = z
+    .object({
+        limit: z.coerce.number().int().min(1).max(200).default(50),
+        cursor: z
+            .string()
+            .regex(/^\d{4}-\d{2}-\d{2}_\d+$/, 'Invalid cursor')
+            .transform((value) => {
+                const [date, id] = value.split('_')
+                return { date, id: Number(id) }
+            })
+            .optional(),
+        q: z.string().trim().max(100).optional().transform((v) => v || undefined),
+        type: z.enum(['income', 'expense', 'transfer']).optional(),
+        categoryId: z.coerce.number().int().positive().optional(),
+        from: z.iso.date({ error: 'Use a date like 2026-10-01' }).optional(),
+        to: z.iso.date({ error: 'Use a date like 2026-10-31' }).optional(),
+    })
+    .refine((f) => !f.from || !f.to || f.from <= f.to, { message: "'from' must be before 'to'", path: ['to'] })
 
 // Reused by create and update
 const fields = {
