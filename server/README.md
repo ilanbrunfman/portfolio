@@ -103,6 +103,7 @@ All money values are whole **cents**. Errors always look like
 | GET | `/api/accounts/:id` | | One account (404 if missing) |
 | POST | `/api/accounts` | `{ name, type?, openingBalance?, color? }` | 201 + the new account |
 | PATCH | `/api/accounts/:id` | any of `{ name, type, openingBalance, color, archived }` | The updated account |
+| GET | `/api/categories` | | All categories (`{ id, name, kind: 'INCOME' \| 'EXPENSE', color }`), income first |
 
 `type` is `CHECKING`, `SAVINGS`, `CREDIT` or `CASH`. Accounts aren't
 deleted; `PATCH { "archived": true }` hides them from the default list.
