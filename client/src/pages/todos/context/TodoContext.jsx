@@ -22,20 +22,20 @@ export const TodoProvider = ({ children }) => {
     }, [todos])
 
     /**
-     * Add a new todo.
+     * Add a new todo at the top of the list (order 0); the rest shift down one.
      * @param {{ title: string, description?: string }} data
      */
     const addTodo = ({ title, description = '' }) => {
         setTodos((prev) => [
-            ...prev,
             {
                 id: crypto.randomUUID(),
                 title,
                 description,
                 completed: false,
-                order: prev.length,
+                order: 0,
                 createdAt: new Date().toISOString(),
             },
+            ...prev.map((todo) => ({ ...todo, order: todo.order + 1 })),
         ])
     }
 
