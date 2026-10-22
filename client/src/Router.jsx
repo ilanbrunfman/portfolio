@@ -12,6 +12,7 @@ import Todo from './pages/todos/todo/Todo'
 
 import RoofingPage from './pages/landing-pages/roofing/RoofingPage'
 import IsaApp from './pages/isa/IsaApp'
+import BankApp from './pages/bank/BankApp'
 
 import PageNotFoundPage from './pages/page-not-found/PageNotFoundPage'
 
@@ -54,6 +55,10 @@ const router = createBrowserRouter([
     {
         path: '/isa/:slideId',
         element: <IsaApp />,
+    },
+    {
+        path: '/bank',
+        element: <BankApp />,
     },
     {
         path: '*',
