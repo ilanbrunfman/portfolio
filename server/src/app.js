@@ -2,6 +2,7 @@ import express from 'express'
 import healthRouter from './routes/health.js'
 import accountsRouter from './routes/accounts.js'
 import categoriesRouter from './routes/categories.js'
+import transactionsRouter from './routes/transactions.js'
 
 // Builds the Express app. Kept separate from index.js (which starts it)
 // so tests can import the app without opening a port.
@@ -14,6 +15,7 @@ app.use(express.json())
 app.use('/api/health', healthRouter)
 app.use('/api/accounts', accountsRouter)
 app.use('/api/categories', categoriesRouter)
+app.use('/api/transactions', transactionsRouter)
 
 // Unknown /api route → 404 in JSON (not Express's default HTML page)
 app.use((req, res) => {
@@ -27,6 +29,10 @@ app.use((err, req, res, next) => {
     // Prisma: update/delete of a row that doesn't exist
     if (err.code === 'P2025') {
         return res.status(404).json({ error: 'Not found' })
+    }
+    // Prisma: a foreign key points to a row that doesn't exist
+    if (err.code === 'P2003') {
+        return res.status(400).json({ error: 'Related record not found' })
     }
     // Bad JSON in the request body (from express.json())
     if (err.type === 'entity.parse.failed') {

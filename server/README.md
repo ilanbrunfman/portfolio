@@ -105,6 +105,9 @@ All money values are whole **cents**. Errors always look like
 | POST | `/api/accounts` | `{ name, type?, openingBalance?, color? }` | 201 + the new account |
 | PATCH | `/api/accounts/:id` | any of `{ name, type, openingBalance, color, archived }` | The updated account |
 | GET | `/api/accounts/:id/transactions` | `?limit=50&cursor=…` | `{ items, nextCursor }`, newest first, each with `runningBalance` |
+| POST | `/api/transactions` | `{ accountId, date, amount, description, categoryId?, note? }` | 201 + the transaction (409 if the account is archived) |
+| PATCH | `/api/transactions/:id` | any of `{ date, amount, description, categoryId, note }` | The updated transaction (409 for a transfer side) |
+| DELETE | `/api/transactions/:id` | | 204; deleting a transfer side deletes both sides |
 | GET | `/api/categories` | | All categories (`{ id, name, kind: 'INCOME' \| 'EXPENSE', color }`), income first |
 
 A transaction looks like `{ id, accountId, date: 'YYYY-MM-DD', amount, description,
