@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import Icon from '@/components/ui/icon/Icon'
+import Field from '@/components/ui/form/field/Field'
+import { fieldAria } from '@/components/ui/form/field/fieldAria'
 import './Combobox.scss'
 
 /**
@@ -15,12 +17,16 @@ import './Combobox.scss'
  * highlighted, Enter submits the surrounding form.
  *
  * @param {object} props
- * @param {string} props.id                       Input id (pair with a <label htmlFor>).
+ * @param {string} [props.id]                     Input id (auto-generated if omitted).
  * @param {string} props.value                    Controlled input value.
- * @param {(value: string) => void} props.onChange Called with the new text.
+ * @param {(value: string) => void} props.onChange Called with the new text (not an event).
  * @param {string[]} props.options                Suggestions.
- * @param {string} [props.inputClassName]         Classes for the input (e.g. `form__input`).
- * @param {string} [props.className]              Extra classes on the wrapper.
+ * @param {React.ReactNode} [props.label]
+ * @param {React.ReactNode} [props.hint]
+ * @param {React.ReactNode} [props.error]
+ * @param {'md'|'lg'} [props.size='md']           'lg' = the larger title style.
+ * @param {string} [props.className]              Extra classes on the <input>.
+ * @param {string} [props.fieldClassName]         Extra classes on the field wrapper.
  * @param {string} [props.toggleLabel]            Accessible name for the caret button.
  * Any other props (placeholder, autoFocus, …) go to the <input>.
  */
@@ -29,14 +35,20 @@ const Combobox = ({
     value,
     onChange,
     options,
-    inputClassName = '',
+    label,
+    hint,
+    error,
+    size = 'md',
     className = '',
+    fieldClassName = '',
     toggleLabel = 'Show suggestions',
     ...inputProps
 }) => {
     const [open, setOpen] = useState(false)
     const [activeIndex, setActiveIndex] = useState(-1)
-    const listId = `${useId()}-list`
+    const baseId = useId()
+    const inputId = id ?? baseId
+    const listId = `${baseId}-list`
     const wrapperRef = useRef(null)
     const inputRef = useRef(null)
     const listRef = useRef(null)
@@ -129,66 +141,69 @@ const Combobox = ({
     }
 
     return (
-        <div className={`combobox ${isOpen ? 'is-open' : ''} ${className}`} ref={wrapperRef}>
-            <input
-                {...inputProps}
-                id={id}
-                ref={inputRef}
-                className={`combobox__input ${inputClassName}`}
-                type="text"
-                role="combobox"
-                autoComplete="off"
-                aria-autocomplete="list"
-                aria-expanded={isOpen}
-                aria-controls={listId}
-                aria-activedescendant={isOpen && activeIndex >= 0 ? optionId(activeIndex) : undefined}
-                value={value}
-                onChange={(event) => {
-                    onChange(event.target.value)
-                    setOpen(true)
-                    setActiveIndex(-1)
-                }}
-                onFocus={() => setOpen(true)}
-                onKeyDown={handleKeyDown}
-            />
-
-            <button
-                type="button"
-                className="combobox__toggle"
-                tabIndex={-1}
-                aria-label={toggleLabel}
-                aria-expanded={isOpen}
-                aria-controls={listId}
-                onClick={() => {
-                    if (isOpen) {
-                        close()
-                    } else {
+        <Field id={inputId} label={label} hint={hint} error={error} className={fieldClassName}>
+            <div className={`combobox ${isOpen ? 'is-open' : ''}`} ref={wrapperRef}>
+                <input
+                    {...inputProps}
+                    id={inputId}
+                    ref={inputRef}
+                    className={`combobox__input form__input ${size === 'lg' ? 'form__input--title' : ''} ${className}`}
+                    {...fieldAria(inputId, { hint, error })}
+                    type="text"
+                    role="combobox"
+                    autoComplete="off"
+                    aria-autocomplete="list"
+                    aria-expanded={isOpen}
+                    aria-controls={listId}
+                    aria-activedescendant={isOpen && activeIndex >= 0 ? optionId(activeIndex) : undefined}
+                    value={value}
+                    onChange={(event) => {
+                        onChange(event.target.value)
                         setOpen(true)
-                        inputRef.current?.focus()
-                    }
-                }}
-            >
-                <Icon name="IconCaretUp" size={16} className="combobox__caret" />
-            </button>
+                        setActiveIndex(-1)
+                    }}
+                    onFocus={() => setOpen(true)}
+                    onKeyDown={handleKeyDown}
+                />
 
-            <ul className="combobox__list" id={listId} role="listbox" ref={listRef} hidden={!isOpen}>
-                {filtered.map((option, index) => (
-                    <li
-                        key={option}
-                        id={optionId(index)}
-                        className={`combobox__option ${index === activeIndex ? 'is-active' : ''}`}
-                        role="option"
-                        aria-selected={index === activeIndex}
-                        // mousedown (not click) so the input doesn't blur first
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => pick(option)}
-                        onMouseMove={() => index !== activeIndex && setActiveIndex(index)}
-                    >
-                        {renderOption(option)}
-                    </li>
-                ))}
-            </ul>
-        </div>
+                <button
+                    type="button"
+                    className="combobox__toggle"
+                    tabIndex={-1}
+                    aria-label={toggleLabel}
+                    aria-expanded={isOpen}
+                    aria-controls={listId}
+                    onClick={() => {
+                        if (isOpen) {
+                            close()
+                        } else {
+                            setOpen(true)
+                            inputRef.current?.focus()
+                        }
+                    }}
+                >
+                    <Icon name="IconCaretUp" size={16} className="combobox__caret" />
+                </button>
+
+                <ul className="combobox__list" id={listId} role="listbox" ref={listRef} hidden={!isOpen}>
+                    {filtered.map((option, index) => (
+                        <li
+                            key={option}
+                            id={optionId(index)}
+                            className={`combobox__option ${index === activeIndex ? 'is-active' : ''}`}
+                            role="option"
+                            aria-selected={index === activeIndex}
+                            // mousedown (not click) so the input doesn't blur first
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => pick(option)}
+                            onMouseMove={() => index !== activeIndex && setActiveIndex(index)}
+                        >
+                            {renderOption(option)}
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        </Field>
     )
 }
 

@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { useTodos } from '@/pages/todos/context/TodoContext'
 import Button from '@/components/ui/button/Button'
-import Combobox from '@/components/ui/combobox/Combobox'
+import Combobox from '@/components/ui/form/combobox/Combobox'
+import Textarea from '@/components/ui/form/textarea/Textarea'
 import { todoSuggestions } from '@/pages/todos/data/todoSuggestions'
 import styles from './New.module.scss'
 
@@ -61,41 +62,29 @@ const New = () => {
                         onSubmit={handleSubmit}
                         ref={formRef}
                     >
-                        <div className="form__field d-flex flex-column gap-0-5">
-                            <label className="form__label" htmlFor="title">
-                                Title
-                            </label>
-                            {/* Type a title or pick a suggestion */}
-                            <Combobox
-                                id="title"
-                                value={title}
-                                onChange={setTitle}
-                                options={todoSuggestions}
-                                inputClassName="form__input form__input--title"
-                                toggleLabel="Show suggested titles"
-                                placeholder="What needs to be done?"
-                            />
-                        </div>
+                        {/* Type a title or pick a suggestion */}
+                        <Combobox
+                            id="title"
+                            label="Title"
+                            size="lg"
+                            value={title}
+                            onChange={(value) => {
+                                setTitle(value)
+                                if (error) setError('')
+                            }}
+                            options={todoSuggestions}
+                            toggleLabel="Show suggested titles"
+                            placeholder="What needs to be done?"
+                            error={error}
+                        />
 
-                        <div className="form__field d-flex flex-column gap-0-5">
-                            <label className="form__label" htmlFor="description">
-                                Description
-                            </label>
-                            <textarea
-                                id="description"
-                                className="form__textarea"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Add more detail (optional)"
-                                rows={4}
-                            />
-                        </div>
-
-                        {error && (
-                            <p className="form__error" role="alert">
-                                {error}
-                            </p>
-                        )}
+                        <Textarea
+                            id="description"
+                            label="Description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Add more detail (optional)"
+                        />
 
                         <Button
                             type="submit"

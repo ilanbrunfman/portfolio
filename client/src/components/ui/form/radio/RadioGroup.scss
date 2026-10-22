@@ -1,0 +1,52 @@
+// Fieldset reset; layout via utilities in the markup.
+.radio-group {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+
+    legend { padding: 0; margin-bottom: 0.25rem; }
+}
+
+// Custom radio: ring with an accent dot when selected.
+.radio {
+    cursor: pointer;
+
+    &__label { color: var(--text-h); }
+
+    &.is-disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    &__input {
+        appearance: none;
+        -webkit-appearance: none;
+        flex-shrink: 0;
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        background: transparent;
+        cursor: inherit;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+        &:hover:not(:disabled) { border-color: var(--accent); }
+
+        // Inset shadow draws the dot, so it scales with the ring.
+        &:checked {
+            border-color: var(--accent);
+            box-shadow: inset 0 0 0 4px var(--bg), inset 0 0 0 9px var(--accent);
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--accent-bg);
+        }
+
+        &:checked:focus-visible {
+            box-shadow: inset 0 0 0 4px var(--bg), inset 0 0 0 9px var(--accent), 0 0 0 3px var(--accent-bg);
+        }
+    }
+}

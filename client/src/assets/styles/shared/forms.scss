@@ -82,6 +82,12 @@
         resize: vertical;
     }
 
+    &__hint {
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--text);
+    }
+
     &__error {
         margin: 0;
         padding: 0.6rem 0.8rem;

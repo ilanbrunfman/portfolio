@@ -9,7 +9,7 @@ combobox pattern, so it works with the keyboard and screen readers.
 ## Import
 
 ```js
-import Combobox from '@/components/ui/combobox/Combobox'
+import Combobox from '@/components/ui/form/combobox/Combobox'
 ```
 
 ---
@@ -19,14 +19,14 @@ import Combobox from '@/components/ui/combobox/Combobox'
 ```jsx
 const [title, setTitle] = useState('')
 
-<label className="form__label" htmlFor="title">Title</label>
 <Combobox
-    id="title"
+    label="Title"
+    size="lg"
     value={title}
     onChange={setTitle}
     options={['Update resume', 'Call mom', 'Back up laptop']}
-    inputClassName="form__input form__input--title"
     placeholder="What needs to be done?"
+    error={error}
 />
 ```
 
@@ -38,12 +38,16 @@ const [title, setTitle] = useState('')
 
 | Prop             | Type                      | Default              | Notes |
 |------------------|---------------------------|----------------------|-------|
-| `id`             | `string`                  | —                    | Input id; pair with a `<label htmlFor>`. |
+| `id`             | `string`                  | auto                 | Input id; generated with `useId` if omitted. |
 | `value`          | `string`                  | —                    | Controlled value. |
-| `onChange`       | `(value: string) => void` | —                    | Called with the new text (typed or picked). |
+| `onChange`       | `(value: string) => void` | —                    | Called with the new text, typed or picked (not an event). |
 | `options`        | `string[]`                | —                    | Suggestions. |
-| `inputClassName` | `string`                  | `''`                 | Classes for the `<input>`, e.g. `form__input`. |
-| `className`      | `string`                  | `''`                 | Extra classes on the wrapper. |
+| `label`          | `ReactNode`               | —                    | Visible label (via [`Field`](../field/Field.md)). |
+| `hint`           | `ReactNode`               | —                    | Helper text under the input. |
+| `error`          | `ReactNode`               | —                    | Error message; marks the input `aria-invalid`. |
+| `size`           | `'md' \| 'lg'`            | `'md'`               | `'lg'` is the larger title style. |
+| `className`      | `string`                  | `''`                 | Extra classes on the `<input>`. |
+| `fieldClassName` | `string`                  | `''`                 | Extra classes on the field wrapper. |
 | `toggleLabel`    | `string`                  | `'Show suggestions'` | Accessible name for the caret button. |
 
 Any other props (`placeholder`, `autoFocus`, …) are passed to the `<input>`.
