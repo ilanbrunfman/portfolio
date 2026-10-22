@@ -121,12 +121,12 @@ const ResponseOverTimeSlide = ({ data, slide }) => {
                                 <g key={s.key} className={`isa-line-chart__series ${s.className}`}>
                                     <path d={path(s.key)} />
                                     {points.map((p, i) => (
-                                        <circle key={p.week} cx={x(p.week)} cy={y(p[s.key])} r={hover === i ? 5 : 4} />
+                                        <circle key={p.week} cx={x(p.week)} cy={y(p[s.key])} r={hover === i ? 8 : 6} />
                                     ))}
                                     {/* values above the dots (the last one is in the end label) */}
                                     {s.pointLabels &&
                                         points.slice(1, -1).map((p) => (
-                                            <text key={p.week} className="isa-line-chart__value" x={x(p.week)} y={y(p[s.key]) - 14} textAnchor="middle">
+                                            <text key={p.week} className="isa-line-chart__value" x={x(p.week)} y={y(p[s.key]) - 18} textAnchor="middle">
                                                 {p[s.key]}%
                                             </text>
                                         ))}
