@@ -1,0 +1,25 @@
+// Bank tracker – page-level visuals (layout is utility classes in the markup)
+.bank {
+    &__title {
+        margin: 0;
+    }
+
+    &__home {
+        display: inline-flex;
+        padding: 0.5rem;
+        border-radius: 50%;
+        color: var(--text);
+
+        &:hover {
+            background: var(--accent-bg);
+            color: var(--text-h);
+        }
+    }
+
+    &__total {
+        font-size: 2.4rem;
+        line-height: 1.1;
+        color: var(--text-h);
+        font-variant-numeric: tabular-nums;
+    }
+}

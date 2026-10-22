@@ -13,6 +13,7 @@ import Todo from './pages/todos/todo/Todo'
 import RoofingPage from './pages/landing-pages/roofing/RoofingPage'
 import IsaApp from './pages/isa/IsaApp'
 import BankApp from './pages/bank/BankApp'
+import BankOverview from './pages/bank/overview/Overview'
 
 import PageNotFoundPage from './pages/page-not-found/PageNotFoundPage'
 
@@ -59,6 +60,9 @@ const router = createBrowserRouter([
     {
         path: '/bank',
         element: <BankApp />,
+        children: [
+            { index: true, element: <BankOverview /> },
+        ]
     },
     {
         path: '*',

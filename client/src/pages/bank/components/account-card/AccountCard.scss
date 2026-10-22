@@ -1,0 +1,42 @@
+// Visuals only – layout comes from utility classes in the markup.
+.account-card {
+    position: relative;
+    overflow: hidden;
+    padding-left: calc(1.5rem + 4px);
+
+    // Colored strip on the left, from the account's color
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 4px;
+        background: var(--account-color);
+    }
+
+    &.is-archived {
+        opacity: 0.6;
+    }
+
+    &__name {
+        margin: 0;
+        font-size: 1.05rem;
+        color: var(--text-h);
+    }
+
+    &__type,
+    &__meta {
+        font-size: 0.8rem;
+    }
+
+    &__balance {
+        margin: 0;
+        font-size: 1.6rem;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--text-h);
+
+        &.is-negative {
+            color: #e5484d;
+        }
+    }
+}

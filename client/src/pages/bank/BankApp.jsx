@@ -1,38 +1,29 @@
-import { useEffect, useState } from 'react'
-import { api } from '@/pages/bank/api/client'
+import { Link, Outlet } from 'react-router-dom'
+import { BankProvider } from '@/pages/bank/context/BankContext'
+import Icon from '@/components/ui/icon/Icon'
+import './BankApp.scss'
 
 /**
- * Bank tracker – entry page (/bank).
- * For now it only checks that the Express API and its database are reachable.
+ * Bank tracker layout (/bank/*): header + the current page.
+ * Data comes from the Express API (server/) through BankProvider.
  */
-const BankApp = () => {
-    const [health, setHealth] = useState({ state: 'loading' })
-
-    useEffect(() => {
-        let ignore = false // skip the update if the page unmounted first
-        api('/health')
-            .then((data) => !ignore && setHealth({ state: 'ok', time: data.time }))
-            .catch((err) => !ignore && setHealth({ state: 'error', message: err.message }))
-        return () => { ignore = true }
-    }, [])
-
-    return (
-        <main className="container d-flex flex-column gap-1 py-4">
-            <h1>Bank tracker</h1>
-            {health.state === 'loading' && <p>Checking the API…</p>}
-            {health.state === 'ok' && (
-                <p>API and database connected · server time {new Date(health.time).toLocaleTimeString()}</p>
-            )}
-            {health.state === 'error' && (
-                <p role="alert">
-                    {health.message}.{' '}
-                    {health.message === 'Database unreachable'
-                        ? <>Start it with <code>docker compose up -d</code> in <code>server/</code>.</>
-                        : <>Start the API with <code>npm run dev</code> in <code>server/</code>.</>}
-                </p>
-            )}
-        </main>
-    )
-}
+const BankApp = () => (
+    <BankProvider>
+        {/* .row = full width (#root is a flex column, which would shrink the container) */}
+        <div className="row">
+            <div className="bank container d-flex flex-column gap-2 py-4">
+                <header className="d-flex align-items-center gap-1">
+                    <Link to="/" className="bank__home" aria-label="Home">
+                        <Icon name="IconHome" size={20} />
+                    </Link>
+                    <h1 className="bank__title">Bank tracker</h1>
+                </header>
+                <main>
+                    <Outlet />
+                </main>
+            </div>
+        </div>
+    </BankProvider>
+)
 
 export default BankApp
