@@ -122,7 +122,7 @@ const AccountForm = ({ account, onDone }) => {
 
             <div className="form__actions">
                 {isEdit && (
-                    <Button variant="secondary" onClick={toggleArchived} disabled={saving} className="account-form__archive">
+                    <Button variant="secondary" onClick={toggleArchived} disabled={saving} className="mr-auto">
                         {account.archived ? 'Restore account' : 'Archive account'}
                     </Button>
                 )}
