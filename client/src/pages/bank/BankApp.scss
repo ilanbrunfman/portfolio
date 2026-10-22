@@ -21,5 +21,23 @@
         line-height: 1.1;
         color: var(--text-h);
         font-variant-numeric: tabular-nums;
+
+        &.is-negative {
+            color: #e5484d;
+        }
+    }
+
+    // Account page heading: type in the account's color, then the name
+    &__account-type {
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--account-color, var(--accent));
+    }
+
+    &__account-name {
+        margin: 0;
+        font-size: 1.4rem;
     }
 }

@@ -14,6 +14,7 @@ import RoofingPage from './pages/landing-pages/roofing/RoofingPage'
 import IsaApp from './pages/isa/IsaApp'
 import BankApp from './pages/bank/BankApp'
 import BankOverview from './pages/bank/overview/Overview'
+import BankAccountPage from './pages/bank/account/AccountPage'
 
 import PageNotFoundPage from './pages/page-not-found/PageNotFoundPage'
 
@@ -62,6 +63,7 @@ const router = createBrowserRouter([
         element: <BankApp />,
         children: [
             { index: true, element: <BankOverview /> },
+            { path: 'accounts/:id', element: <BankAccountPage /> },
         ]
     },
     {

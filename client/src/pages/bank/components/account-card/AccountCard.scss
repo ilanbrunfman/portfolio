@@ -3,6 +3,7 @@
     position: relative;
     overflow: hidden;
     padding-left: calc(1.5rem + 4px);
+    transition: border-color 0.15s ease;
 
     // Colored strip on the left, from the account's color
     &::before {
@@ -15,6 +16,36 @@
 
     &.is-archived {
         opacity: 0.6;
+    }
+
+    &:hover {
+        border-color: var(--account-color);
+    }
+
+    // The name link covers the whole card; the Edit button sits above it
+    &__link {
+        color: inherit;
+        text-decoration: none;
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+        }
+
+        &:focus-visible {
+            outline: none;
+        }
+    }
+
+    &:has(.account-card__link:focus-visible) {
+        outline: 2px solid var(--account-color);
+        outline-offset: 2px;
+    }
+
+    .btn {
+        position: relative;
+        z-index: 1;
     }
 
     &__name {

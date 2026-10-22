@@ -4,21 +4,25 @@ import { api } from '@/pages/bank/api/client'
 const BankContext = createContext(null)
 
 /**
- * Holds the bank data loaded from the API and the actions that change it.
+ * Holds the bank data loaded from the API (accounts + categories) and the
+ * actions that change it.
  * Every action calls the server first and only updates local state with
  * what the server sends back, so the UI always matches the database.
  */
 export const BankProvider = ({ children }) => {
     const [accounts, setAccounts] = useState([]) // includes archived ones
+    const [categories, setCategories] = useState([])
     const [status, setStatus] = useState('loading') // 'loading' | 'ready' | 'error'
     const [error, setError] = useState(null)
 
     // Start a load; state is set only when the request finishes
     const loadAccounts = useCallback((isCancelled = () => false) => {
-        api('/accounts?includeArchived=true')
-            .then((data) => {
+        // Both requests run at the same time
+        Promise.all([api('/accounts?includeArchived=true'), api('/categories')])
+            .then(([accountList, categoryList]) => {
                 if (isCancelled()) return
-                setAccounts(data)
+                setAccounts(accountList)
+                setCategories(categoryList)
                 setStatus('ready')
                 setError(null)
             })
@@ -62,9 +66,18 @@ export const BankProvider = ({ children }) => {
         return updated
     }, [])
 
+    /**
+     * Re-fetch one account (e.g. its balance after a transaction changed).
+     * @param {number} id
+     */
+    const refreshAccount = useCallback(async (id) => {
+        const fresh = await api(`/accounts/${id}`)
+        setAccounts((prev) => prev.map((a) => (a.id === id ? fresh : a)))
+    }, [])
+
     const value = useMemo(
-        () => ({ accounts, status, error, reload, createAccount, updateAccount }),
-        [accounts, status, error, reload, createAccount, updateAccount]
+        () => ({ accounts, categories, status, error, reload, createAccount, updateAccount, refreshAccount }),
+        [accounts, categories, status, error, reload, createAccount, updateAccount, refreshAccount]
     )
 
     return <BankContext.Provider value={value}>{children}</BankContext.Provider>

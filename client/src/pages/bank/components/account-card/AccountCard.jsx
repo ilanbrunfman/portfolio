@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import Button from '@/components/ui/button/Button'
 import { formatMoney } from '@/pages/bank/utils/money'
 import { ACCOUNT_TYPE_LABEL } from '@/pages/bank/data/accountTypes'
@@ -5,6 +6,7 @@ import './AccountCard.scss'
 
 /**
  * One account: name, type, balance and number of transactions.
+ * The whole card links to the account page (/bank/accounts/:id).
  *
  * @param {object} props
  * @param {object} props.account   Account from the API (with balance, transactionCount).
@@ -20,7 +22,10 @@ const AccountCard = ({ account, onEdit }) => {
         >
             <div className="d-flex justify-between align-items-start gap-1">
                 <div className="d-flex flex-column">
-                    <h3 className="account-card__name">{name}</h3>
+                    <h3 className="account-card__name">
+                        {/* Stretched link: the whole card opens the account */}
+                        <Link to={`/bank/accounts/${account.id}`} className="account-card__link">{name}</Link>
+                    </h3>
                     <span className="account-card__type">
                         {ACCOUNT_TYPE_LABEL[type]}
                         {archived && ' · Archived'}

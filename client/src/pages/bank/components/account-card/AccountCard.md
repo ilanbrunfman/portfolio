@@ -1,7 +1,8 @@
 # AccountCard
 
 Shows one bank account: colored strip, name, type, balance and how many
-transactions it has. Negative balances (e.g. a credit card) are red;
+transactions it has. The whole card links to `/bank/accounts/:id` (the name
+is a stretched link); the Edit button stays clickable on top. Negative balances (e.g. a credit card) are red;
 archived accounts are faded.
 
 ## Usage
