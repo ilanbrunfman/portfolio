@@ -1,3 +1,5 @@
+@use "../../../assets/styles/shared/variables" as var;
+
 // ISA (Interactive Sales Aid) demo shell. AbbVie-*inspired* tokens scoped to
 // the app root; everything else leans on the global utilities + .surface.
 // Component styles live next to each component (components/<Name>/<Name>.scss);
@@ -322,11 +324,18 @@
     }
 }
 
-// compact full-width data table under a chart (scrolls sideways if it can't fit)
+// compact data table under a chart (scrolls sideways if it can't fit).
+// Full width on phones; 40–50% of the tile from md up.
 .isa-data-table {
     flex: none;
     max-width: 100%;
     overflow-x: auto;
+
+    @include var.md {
+        min-width: 40%;
+        max-width: 50%;
+    }
+
     font-size: 0.8rem;
     color: var(--text);
 
