@@ -30,6 +30,14 @@
     }
 }
 
+// Grow to fill the remaining space of a flex column/row (for slides that size
+// to the stage). Never shrinks below its content, so very short screens fall
+// back to scrolling instead of overlapping.
+.isa-fill {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
 // shared inner width for slide content
 .isa-canvas {
     width: 100%;
@@ -271,8 +279,11 @@
 
 .isa-line-chart {
     position: relative;
+    // Floor so the chart stays readable on short screens.
+    min-height: 180px;
 
-    svg { display: block; width: 100%; height: auto; touch-action: pan-y; }
+    // Absolute so the SVG's own size never feeds back into the measured box.
+    svg { position: absolute; inset: 0; display: block; touch-action: pan-y; }
 
     &__grid { stroke: var(--border); stroke-width: 1; }
     &__tick { fill: var(--text); font-size: 12px; }
@@ -311,15 +322,21 @@
     }
 }
 
-// expandable data table under a chart
+// compact data table shown beside a chart (scrolls sideways if it can't fit)
 .isa-data-table {
+    flex: none;
+    max-width: 100%;
+    overflow-x: auto;
     font-size: 0.85rem;
     color: var(--text);
 
-    summary { cursor: pointer; font-weight: 600; color: var(--accent); }
-
-    table { margin-top: 0.5rem; border-collapse: collapse; }
-    th, td { padding: 0.3rem 1rem 0.3rem 0; text-align: left; }
+    table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    caption { caption-side: top; padding-bottom: 0.5rem; text-align: left; font-weight: 600; color: var(--text-h); }
+    th, td { padding: 0.35rem 0.6rem; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border); }
+    th:first-child { padding-left: 0; text-align: left; }
+    thead th { font-weight: 600; color: var(--text-h); }
+    tbody th { font-weight: 500; }
+    tbody tr:last-child > * { border-bottom: 0; }
 }
 
 // --- data table (adverse reactions) ---
