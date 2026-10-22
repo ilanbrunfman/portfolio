@@ -3,7 +3,7 @@ import { api } from '@/pages/bank/api/client'
 
 /**
  * Bank tracker – entry page (/bank).
- * Step 1: only checks that the Express API is reachable.
+ * For now it only checks that the Express API and its database are reachable.
  */
 const BankApp = () => {
     const [health, setHealth] = useState({ state: 'loading' })
@@ -20,10 +20,15 @@ const BankApp = () => {
         <main className="container d-flex flex-column gap-1 py-4">
             <h1>Bank tracker</h1>
             {health.state === 'loading' && <p>Checking the API…</p>}
-            {health.state === 'ok' && <p>API connected · server time {new Date(health.time).toLocaleTimeString()}</p>}
+            {health.state === 'ok' && (
+                <p>API and database connected · server time {new Date(health.time).toLocaleTimeString()}</p>
+            )}
             {health.state === 'error' && (
                 <p role="alert">
-                    API not reachable: {health.message}. Start it with <code>npm run dev</code> in <code>server/</code>.
+                    {health.message}.{' '}
+                    {health.message === 'Database unreachable'
+                        ? <>Start it with <code>docker compose up -d</code> in <code>server/</code>.</>
+                        : <>Start the API with <code>npm run dev</code> in <code>server/</code>.</>}
                 </p>
             )}
         </main>

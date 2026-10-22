@@ -11,7 +11,9 @@ router.get('/', async (req, res) => {
     } catch {
         db = 'unreachable'
     }
-    res.status(db === 'ok' ? 200 : 503).json({ status: 'ok', db, time: new Date().toISOString() })
+    const body = { status: 'ok', db, time: new Date().toISOString() }
+    if (db === 'ok') return res.json(body)
+    res.status(503).json({ ...body, error: 'Database unreachable' })
 })
 
 export default router
