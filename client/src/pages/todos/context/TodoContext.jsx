@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { buildSeedTodos } from '../data/seedTodos'
 
 const TodoContext = createContext(null)
 
@@ -7,7 +8,8 @@ const STORAGE_KEY = 'todos'
 const loadTodos = () => {
     try {
         const raw = localStorage.getItem(STORAGE_KEY)
-        return raw ? JSON.parse(raw) : []
+        // Nothing saved yet (first visit): start with sample todos.
+        return raw === null ? buildSeedTodos() : JSON.parse(raw)
     } catch (err) {
         console.error('Failed to load todos from localStorage', err)
         return []
