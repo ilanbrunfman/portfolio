@@ -286,14 +286,14 @@
     > svg { position: absolute; inset: 0; display: block; touch-action: pan-y; }
 
     &__grid { stroke: var(--border); stroke-width: 1; }
-    &__tick { fill: var(--text); font-size: 13px; }
+    &__tick { fill: var(--text); font-size: 16px; }
     &__crosshair { stroke: var(--text); stroke-width: 1; opacity: 0.45; }
 
     &__series {
         path { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
         circle { stroke: var(--bg); stroke-width: 2; transition: r 0.1s ease; }
-        text { fill: var(--text-h); font-size: 15px; font-weight: 700; }
-        .isa-line-chart__value { font-size: 14px; font-weight: 600; }
+        text { fill: var(--text-h); font-size: 17px; font-weight: 700; }
+        .isa-line-chart__value { font-size: 16px; font-weight: 600; }
 
         &.is-primary circle { fill: var(--accent); }
         &.is-comparator circle { fill: color-mix(in srgb, var(--text) 55%, var(--bg)); }
