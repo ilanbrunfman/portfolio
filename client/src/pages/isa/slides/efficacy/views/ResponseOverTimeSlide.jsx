@@ -134,7 +134,7 @@ const ResponseOverTimeSlide = ({ data, slide }) => {
 
                     {/* Always-visible values under the chart. Weeks run across so the
                         table stays short and leaves the height to the plot. */}
-                    <div className="isa-data-table">
+                    <div className="isa-data-table align-self-start">
                         <table>
                             <caption>PASI 90 response (%)</caption>
                             <thead>

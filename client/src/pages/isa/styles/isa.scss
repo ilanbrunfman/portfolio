@@ -1,5 +1,3 @@
-@use "../../../assets/styles/shared/variables" as var;
-
 // ISA (Interactive Sales Aid) demo shell. AbbVie-*inspired* tokens scoped to
 // the app root; everything else leans on the global utilities + .surface.
 // Component styles live next to each component (components/<Name>/<Name>.scss);
@@ -324,25 +322,19 @@
     }
 }
 
-// compact data table under a chart (scrolls sideways if it can't fit).
-// Full width on phones; 40–50% of the tile from md up.
+// compact data table under a chart, sized to its content
+// (scrolls sideways if it can't fit). Layout: `align-self-start`.
 .isa-data-table {
     flex: none;
     max-width: 100%;
     overflow-x: auto;
-
-    @include var.md {
-        min-width: 40%;
-        max-width: 50%;
-    }
-
     font-size: 0.8rem;
     color: var(--text);
 
-    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
     // Caption is for screen readers only; the slide title already says it.
     caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-    th, td { padding: 0.2rem 0.5rem; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border); }
+    th, td { padding: 0.2rem 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border); }
     th:first-child { padding-left: 0; text-align: left; }
     thead th { font-weight: 600; color: var(--text-h); }
     tbody th { font-weight: 500; }
