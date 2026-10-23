@@ -23,6 +23,15 @@
         overflow-wrap: anywhere;
     }
 
+    // "Waking up the server…" / "Can't reach the server"
+    &__waking {
+        max-width: 420px;
+
+        p {
+            margin: 0;
+        }
+    }
+
     // Login / sign-up card
     &__auth {
         box-sizing: border-box;

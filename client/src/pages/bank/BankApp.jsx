@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from '@/pages/bank/context/AuthContext'
 import { BankProvider } from '@/pages/bank/context/BankContext'
 import AuthForm from '@/pages/bank/components/auth-form/AuthForm'
 import SideNavLayout from '@/components/layout/side-nav/SideNavLayout'
+import Button from '@/components/ui/button/Button'
 import './BankApp.scss'
 
 const HOME_LINK = { to: '/', icon: 'IconHome', label: 'Portfolio home', end: true }
@@ -20,13 +21,30 @@ const BankApp = () => (
 )
 
 const BankShell = () => {
-    const { user, status, logout } = useAuth()
+    const { user, status, slow, retry, logout } = useAuth()
 
-    if (status === 'checking' || !user) {
+    if (status !== 'ready' || !user) {
         return (
             <SideNavLayout label="Bank" links={[HOME_LINK]}>
                 <div className="bank__center d-flex align-items-center justify-center">
-                    {status === 'checking' ? <p>Loading…</p> : <AuthForm />}
+                    {status === 'ready' && <AuthForm />}
+                    {status === 'checking' && (
+                        <div className="bank__waking d-flex flex-column gap-0-5" role="status">
+                            <p>{slow ? 'Waking up the server…' : 'Loading…'}</p>
+                            {slow && (
+                                <p className="form__hint">
+                                    The demo runs on free hosting that sleeps when nobody uses it.
+                                    The first visit can take up to a minute.
+                                </p>
+                            )}
+                        </div>
+                    )}
+                    {status === 'unreachable' && (
+                        <div className="bank__waking d-flex flex-column gap-1 align-items-start" role="alert">
+                            <p>Can't reach the server right now.</p>
+                            <Button variant="secondary" onClick={retry}>Try again</Button>
+                        </div>
+                    )}
                 </div>
             </SideNavLayout>
         )
