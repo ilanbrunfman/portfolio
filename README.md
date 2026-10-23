@@ -1,7 +1,7 @@
 # Portfolio
 
-[![Server tests](https://github.com/ilanbrunfman/portfolio/actions/workflows/server-tests.yml/badge.svg?branch=2.0.1)](https://github.com/ilanbrunfman/portfolio/actions/workflows/server-tests.yml)
-[![Client checks](https://github.com/ilanbrunfman/portfolio/actions/workflows/client-checks.yml/badge.svg?branch=2.0.1)](https://github.com/ilanbrunfman/portfolio/actions/workflows/client-checks.yml)
+[![Server tests](https://github.com/ilanbrunfman/portfolio/actions/workflows/server-tests.yml/badge.svg?branch=master)](https://github.com/ilanbrunfman/portfolio/actions/workflows/server-tests.yml)
+[![Client checks](https://github.com/ilanbrunfman/portfolio/actions/workflows/client-checks.yml/badge.svg?branch=master)](https://github.com/ilanbrunfman/portfolio/actions/workflows/client-checks.yml)
 
 ## Bank tracker (`/bank`)
 
