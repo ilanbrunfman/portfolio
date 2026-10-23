@@ -26,8 +26,34 @@ enum CategoryKind {
   EXPENSE
 }
 
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique // stored lowercase
+  passwordHash String // "scrypt$salt$hash", never the password itself
+  createdAt    DateTime  @default(now())
+  accounts     Account[]
+  sessions     Session[]
+
+  @@map("users")
+}
+
+// One row per logged-in browser. The cookie holds a random token; only its
+// SHA-256 hash is stored here, so a database leak doesn't leak sessions.
+model Session {
+  id        String   @id // SHA-256 of the cookie token
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("sessions")
+}
+
 model Account {
   id             Int           @id @default(autoincrement())
+  userId         Int // the owner – every query filters by it
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   name           String
   type           AccountType   @default(CHECKING)
   openingBalance Int           @default(0) // cents
@@ -37,6 +63,7 @@ model Account {
   updatedAt      DateTime      @updatedAt
   transactions   Transaction[]
 
+  @@index([userId])
   @@map("accounts")
 }
 
