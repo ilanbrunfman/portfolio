@@ -1,5 +1,6 @@
-// Fills the database with demo data: 4 accounts, categories and ~4 months of
-// transactions ending today. Run with `npm run db:seed`.
+// Fills the database with demo data: a demo user (demo@bank.test / demo1234)
+// owning 4 accounts, categories and ~4 months of transactions ending today.
+// Run with `npm run db:seed`.
 //
 // ⚠ Wipes all existing rows first. Uses a fixed random seed, so every run
 // produces the same data (only the dates move with "today").
@@ -13,6 +14,9 @@ try {
 }
 
 const { prisma } = await import('../src/db.js')
+const { hashPassword } = await import('../src/lib/password.js')
+
+const DEMO_USER = { email: 'demo@bank.test', password: 'demo1234' }
 
 // ---------- helpers ----------
 
@@ -75,14 +79,18 @@ const SHOPS = {
 
 async function main() {
     // Start clean: empty the tables and restart ids at 1
-    await prisma.$executeRaw`TRUNCATE TABLE "transactions", "accounts", "categories" RESTART IDENTITY CASCADE`
+    await prisma.$executeRaw`TRUNCATE TABLE "transactions", "accounts", "categories", "sessions", "users" RESTART IDENTITY CASCADE`
+
+    const user = await prisma.user.create({
+        data: { email: DEMO_USER.email, passwordHash: await hashPassword(DEMO_USER.password) },
+    })
 
     await prisma.category.createMany({ data: CATEGORIES })
     const categoryId = Object.fromEntries((await prisma.category.findMany()).map((c) => [c.name, c.id]))
 
     const account = {}
     for (const { key, ...data } of ACCOUNTS) {
-        account[key] = (await prisma.account.create({ data })).id
+        account[key] = (await prisma.account.create({ data: { ...data, userId: user.id } })).id
     }
 
     const rows = []
@@ -155,6 +163,7 @@ async function main() {
     await prisma.transaction.createMany({ data: rows })
 
     console.log(`Seeded ${CATEGORIES.length} categories, ${ACCOUNTS.length} accounts, ${rows.length} transactions`)
+    console.log(`Log in as ${DEMO_USER.email} / ${DEMO_USER.password}`)
 }
 
 try {
