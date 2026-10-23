@@ -2,15 +2,28 @@ import supertest from 'supertest'
 import app from '../src/app.js'
 import { prisma } from '../src/db.js'
 
-// Call the API without starting a server: request.get('/api/accounts')
-export const request = supertest(app)
+export const PASSWORD = 'password123'
+
+/** A new user, signed up and logged in: an agent keeps its cookie between requests */
+export async function signUp(email) {
+    const agent = supertest.agent(app)
+    await agent.post('/api/auth/signup').send({ email, password: PASSWORD }).expect(201)
+    return agent
+}
+
+// Call the API without starting a server: request.get('/api/accounts').
+// After resetDb() it's logged in as owner@test.dev (live binding: importers
+// see the new agent). `anonymous` never has a cookie.
+export let request = supertest.agent(app)
+export const anonymous = supertest(app)
 
 export { prisma }
 
-/** Empty every table and restart ids at 1 – call in beforeEach */
+/** Empty every table, restart ids at 1, and log `request` in as a fresh user – call in beforeEach */
 export async function resetDb() {
     if (!process.env.DATABASE_URL.includes('_test')) throw new Error('resetDb() only runs on a _test database')
-    await prisma.$executeRaw`TRUNCATE TABLE "transactions", "accounts", "categories" RESTART IDENTITY CASCADE`
+    await prisma.$executeRaw`TRUNCATE TABLE "transactions", "accounts", "categories", "sessions", "users" RESTART IDENTITY CASCADE`
+    request = await signUp('owner@test.dev')
 }
 
 /** Create an account through the API (so it goes through validation too) */
