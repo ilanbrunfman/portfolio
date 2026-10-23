@@ -1,4 +1,7 @@
 .btn{
+    // Padding and border count inside any width (e.g. width: 100% on phones),
+    // so a full-width button never sticks out past its container
+    box-sizing: border-box;
     display: inline-flex;
     align-items: center;
     justify-content: center;
