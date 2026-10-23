@@ -1,6 +1,8 @@
 import roofingThumb from '@/assets/thumbnails/roofing.svg'
 import todosThumb from '@/assets/thumbnails/todos.svg'
 import isaThumb from '@/assets/thumbnails/isa.svg'
+// A short looping screen recording instead of a still thumbnail
+import bankGif from '@/assets/thumbnails/bank.gif'
 
 // Heights vary in the URL on purpose (900, 1500, 800, 1050, 1600, 900) just
 // to demonstrate the masonry effect with Picsum's placeholder service.
@@ -81,6 +83,15 @@ export const portfolioProjects = [
         tags: ['React', 'GSAP', 'CLM'],
         link: '#',
         route: '/isa',
+    },
+    {
+        id: 9,
+        title: 'Bank Tracker',
+        description: 'Full-stack app to track bank accounts, transactions and transfers, with login, filters and a monthly summary.',
+        image: bankGif,
+        tags: ['React', 'Node.js', 'PostgreSQL'],
+        link: '#',
+        route: '/bank',
     }
 ]
 
