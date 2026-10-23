@@ -37,13 +37,14 @@ const Tabs = ({ items, defaultValue, value, onChange, label, className = '', chi
     const listRef = useRef(null)
     const indicatorRef = useRef(null)
     const hasPositioned = useRef(false)
-    // Latest active id, for the ResizeObserver callback below.
+    // Latest active id, for the ResizeObserver callback below. Updated in the
+    // effect below, not during render (React may render more than once).
     const activeIdRef = useRef(activeId)
-    activeIdRef.current = activeId
 
     // Slide the accent pill under the active tab (snaps on first paint and
     // with reduced motion).
     useLayoutEffect(() => {
+        activeIdRef.current = activeId
         const tab = tabRefs.current[activeId]
         const indicator = indicatorRef.current
         if (!tab || !indicator) return
