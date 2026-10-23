@@ -28,22 +28,22 @@ export const portfolioProjects = [
         tags: ['React', 'TypeScript', 'Node.js'],
         link: '#'
     },
-    {
-        id: 'veeva-clm',
-        title: 'Veeva CLM Platform',
-        description: 'Enterprise Closed Loop Marketing applications for life sciences.',
-        image: 'https://picsum.photos/1200/1500?2',
-        tags: ['Vue', 'JavaScript', 'SCSS'],
-        link: '#'
-    },
-    {
-        id: 'ecommerce-store',
-        title: 'E-Commerce Store',
-        description: 'Responsive shopping experience with product browsing and checkout flow.',
-        image: 'https://picsum.photos/1200/800?3',
-        tags: ['React', 'Redux', 'API'],
-        link: '#'
-    },
+    // {
+    //     id: 'veeva-clm',
+    //     title: 'Veeva CLM Platform',
+    //     description: 'Enterprise Closed Loop Marketing applications for life sciences.',
+    //     image: 'https://picsum.photos/1200/1500?2',
+    //     tags: ['Vue', 'JavaScript', 'SCSS'],
+    //     link: '#'
+    // },
+    // {
+    //     id: 'ecommerce-store',
+    //     title: 'E-Commerce Store',
+    //     description: 'Responsive shopping experience with product browsing and checkout flow.',
+    //     image: 'https://picsum.photos/1200/800?3',
+    //     tags: ['React', 'Redux', 'API'],
+    //     link: '#'
+    // },
     {
         id: 'todos',
         title: 'Task Management App',
