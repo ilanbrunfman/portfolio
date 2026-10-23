@@ -1,7 +1,8 @@
 import roofingThumb from '@/assets/thumbnails/roofing.svg'
 import todosThumb from '@/assets/thumbnails/todos.svg'
 import isaThumb from '@/assets/thumbnails/isa.svg'
-// A short looping screen recording instead of a still thumbnail
+// Bank Tracker: still poster (first frame) + a short recording played on hover
+import bankPoster from '@/assets/thumbnails/bank.webp'
 import bankGif from '@/assets/thumbnails/bank.gif'
 
 // Heights vary in the URL on purpose (900, 1500, 800, 1050, 1600, 900) just
@@ -88,7 +89,8 @@ export const portfolioProjects = [
         id: 9,
         title: 'Bank Tracker',
         description: 'Full-stack app to track bank accounts, transactions and transfers, with login, filters and a monthly summary.',
-        image: bankGif,
+        image: bankPoster,
+        preview: { type: 'gif', src: bankGif },
         tags: ['React', 'Node.js', 'PostgreSQL'],
         link: '#',
         route: '/bank',
