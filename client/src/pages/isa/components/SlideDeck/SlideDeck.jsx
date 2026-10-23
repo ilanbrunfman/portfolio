@@ -39,6 +39,8 @@ const SlideDeck = ({ slide, data, index, onNext, onPrev, onNavigate, getSlide })
     // Arrow-key navigation (bound once; reads latest handlers via ref).
     useEffect(() => {
         const onKey = (e) => {
+            // Already handled by something focused (e.g. Tabs moving between tabs)
+            if (e.defaultPrevented) return
             if (e.key === 'ArrowRight') handlers.current.onNext()
             else if (e.key === 'ArrowLeft') handlers.current.onPrev()
         }
