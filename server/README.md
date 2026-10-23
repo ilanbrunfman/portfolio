@@ -17,21 +17,6 @@ npm run db:seed        # optional: demo data, log in as demo@bank.test / demo123
 npm run dev            # http://localhost:4000, restarts on file changes
 ```
 
-## Production (Render + Neon)
-
-`render.yaml` (repo root) describes the API service for Render: root folder
-`server`, build `npm ci`, start `npm run start:prod` (applies new migrations
-with `prisma migrate deploy`, then starts Express), health check
-`/api/health`, `NODE_ENV=production`. `DATABASE_URL` (the Neon connection
-string) is entered in Render's dashboard, never committed.
-
-- `npm start` / `start:prod` load `.env` only if it exists (`--env-file-if-exists`);
-  on Render the variables come from its settings instead.
-- `prisma` is a regular dependency, because production installs skip dev
-  packages and `migrate deploy` needs it.
-- In production the session cookie is `Secure` (HTTPS only) and Express
-  trusts the host's proxy.
-
 ## Database (Docker)
 
 | Command | What it does |
