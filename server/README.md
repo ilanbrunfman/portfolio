@@ -61,6 +61,26 @@ Tables: `accounts`, `categories`, `transactions`. Money is whole **cents**
 daily spending, and transfers (monthly savings, ATM withdrawals, credit card
 payments). It uses a fixed random seed, so every run gives the same data.
 
+## Tests
+
+```bash
+npm test             # run all tests once
+npm run test:watch   # re-run on every save
+```
+
+[Vitest](https://vitest.dev) runs the files in `test/`, and
+[Supertest](https://github.com/ladjs/supertest) sends real HTTP requests to
+the Express app (no server needed – that's why `app.js` and `index.js` are
+separate).
+
+Tests use their **own database**: your database name + `_test`
+(`bank` → `bank_test`), created and migrated automatically on the first run.
+Every test starts from empty tables (`resetDb()`), and the setup refuses to
+run against a database whose name doesn't end in `_test`.
+
+`test/helpers.js` has `request`, `resetDb()`, and `createAccount()` /
+`createCategory()` / `createTransaction()` to set up data quickly.
+
 ## Client
 
 
@@ -72,6 +92,7 @@ React app just calls `fetch('/api/...')`.
 ```
 docker-compose.yml  local PostgreSQL container
 .env.example        every env variable, with placeholder values
+vitest.config.js    test settings (points tests at the _test database)
 prisma.config.js    Prisma settings (loads .env, schema + migrations paths)
 prisma/
   schema.prisma     the tables
@@ -86,6 +107,10 @@ src/
   middleware/     validate() – checks requests against a schema
   services/       database logic shared by routes (e.g. the ledger query)
   lib/            HttpError, date helpers
+test/
+  globalSetup.js  migrates the test database before the run
+  helpers.js      request, resetDb, createAccount/Category/Transaction
+  *.test.js       one file per area (health, accounts, …)
 ```
 
 ## Endpoints
