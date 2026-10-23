@@ -1,0 +1,120 @@
+// Shared form system — global classes (same convention as the layout
+// utilities in template.scss). Used by the todo create/edit forms and any
+// future form, so the styling stays in one place instead of drifting across
+// component modules.
+
+// Visual + behaviour for form controls. Card layout is composed with utility
+// classes in the markup: `surface d-flex flex-column gap-1` on the form, and
+// `form__field d-flex flex-column gap-0-5` on each field.
+.form {
+    &__eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+
+        &::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+    }
+
+    &__field {
+        // Layout via utilities; this class only carries the focus behaviour.
+        &:focus-within .form__label {
+            color: var(--accent);
+        }
+    }
+
+    &__label {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--text);
+        transition: color 0.15s ease;
+    }
+
+    &__input,
+    &__textarea {
+        // content-box is the default here (border-box is only set on #root),
+        // so without this the padding + border would push the field past the
+        // card's inner width.
+        box-sizing: border-box;
+        width: 100%;
+        padding: 0.7rem 0.9rem;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--bg);
+        color: var(--text-h);
+        font: inherit;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+
+        &::placeholder {
+            color: var(--text);
+            opacity: 0.6;
+        }
+
+        &:hover:not(:focus) {
+            border-color: var(--accent-border);
+        }
+
+        &:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-bg);
+        }
+    }
+
+    &__input--title {
+        font-size: 1.15rem;
+        font-weight: 500;
+    }
+
+    &__textarea {
+        min-height: 120px;
+        line-height: 1.5;
+        resize: vertical;
+    }
+
+    &__hint {
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--text);
+    }
+
+    &__error {
+        margin: 0;
+        padding: 0.6rem 0.8rem;
+        font-size: 0.85rem;
+        color: #e5484d;
+        background: rgba(229, 72, 77, 0.1);
+        border: 1px solid rgba(229, 72, 77, 0.3);
+        border-radius: 8px;
+    }
+
+    &__actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.6rem;
+        margin-top: 0.25rem;
+
+        // Full-width action(s) — e.g. a single create CTA.
+        &--stacked > * {
+            width: 100%;
+        }
+
+        @media (max-width: 560px) {
+            flex-direction: column-reverse;
+
+            > * {
+                width: 100%;
+            }
+        }
+    }
+}

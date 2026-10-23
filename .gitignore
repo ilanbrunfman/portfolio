@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Dependencies
+node_modules
+
+# Secrets: real env files stay local, only the .example template is committed
+.env
+.env.*
+!.env.example

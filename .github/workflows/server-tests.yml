@@ -1,0 +1,46 @@
+# Runs the API tests (server/test) on GitHub for every push and pull request
+# that touches the server. Shows a ✓ / ✗ next to the commit on GitHub.
+name: Server tests
+
+on:
+  push:
+    paths: ['server/**', '.github/workflows/server-tests.yml']
+  pull_request:
+    paths: ['server/**', '.github/workflows/server-tests.yml']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+
+    # A throwaway Postgres just for this run (the password never leaves CI)
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: bank
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: bank_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U bank -d bank_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://bank:ci-only-password@localhost:5432/bank_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: server/.nvmrc
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - run: npm ci        # also runs prisma generate (postinstall)
+      - run: npm test      # migrates bank_test, then runs every test

@@ -1,0 +1,18 @@
+@use "@/assets/styles/shared/variables" as var;
+
+.new {
+    width: 100%;
+    max-width: 640px;
+
+    @include var.lg {
+        max-width: 820px;
+    }
+
+    @include var.xl {
+        max-width: 960px;
+    }
+
+    &__heading {
+        margin-bottom: 1.5rem;
+    }
+}

@@ -1,0 +1,100 @@
+@use "@/assets/styles/shared/variables" as var;
+
+.recent {
+    width: 100%;
+    max-width: 640px;
+
+    @include var.lg {
+        max-width: 820px;
+    }
+
+    @include var.xl {
+        max-width: 960px;
+    }
+
+    &__empty {
+        color: var(--text);
+    }
+
+    // Reset only — column layout comes from utilities (d-flex flex-column
+    // gap-0-5) on the <ul>.
+    &__list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    // Visual only — row layout (d-flex / align-items-center / gap-1) is applied
+    // via global utility classes on the <li>.
+    &__item {
+        padding: 0.7rem 0.85rem;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--bg);
+        cursor: grab;
+        transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+
+        &:hover {
+            border-color: var(--accent-border);
+        }
+
+        &--dragover {
+            border-color: var(--accent);
+            background: var(--accent-bg);
+            box-shadow: 0 0 0 3px var(--accent-bg);
+        }
+
+        &--completed {
+            .recent__title {
+                text-decoration: line-through;
+                color: var(--text);
+                opacity: 0.6;
+            }
+        }
+    }
+
+    &__handle {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 4px;
+        appearance: none;
+        border: none;
+        border-radius: 4px;
+        background: transparent;
+        color: var(--text);
+        opacity: 0.5;
+        cursor: grab;
+        transition: opacity 0.15s ease;
+
+        &:hover {
+            opacity: 1;
+        }
+
+        &:focus-visible {
+            outline: none;
+            opacity: 1;
+            box-shadow: 0 0 0 3px var(--accent-bg);
+        }
+    }
+
+    &__title {
+        flex: 1;
+        min-width: 0;
+        text-decoration: none;
+        color: var(--text-h);
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    &__delete {
+        margin-left: auto;
+        padding-inline: 5px;
+        color: #e5484d;
+
+        &:hover:not(:disabled) {
+            background: rgba(229, 72, 77, 0.1);
+        }
+    }
+}

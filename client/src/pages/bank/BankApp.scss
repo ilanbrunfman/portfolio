@@ -1,0 +1,89 @@
+// Bank tracker – page-level visuals (layout is utility classes in the markup)
+.bank {
+    // The .container sits inside the layout's content column
+    &.container {
+        box-sizing: border-box;
+        width: 100%;
+    }
+
+    &__title {
+        margin: 0;
+        font-size: clamp(1.6rem, 1.1rem + 2vw, 2.4rem);
+        line-height: 1.1;
+    }
+
+    // Fills the screen next to / above the nav and centers the login card
+    &__center {
+        flex: 1 1 auto;
+        padding: 1.5rem;
+    }
+
+    &__user {
+        font-size: 0.85rem;
+        overflow-wrap: anywhere;
+    }
+
+    // "Can't reach the bank API" card
+    &__notice {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 420px;
+
+        p {
+            margin: 0;
+        }
+    }
+
+    // Login / sign-up card
+    &__auth {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 420px;
+    }
+
+    &__total {
+        font-size: 2.4rem;
+        line-height: 1.1;
+        color: var(--text-h);
+        font-variant-numeric: tabular-nums;
+
+        &.is-negative {
+            color: #e5484d;
+        }
+    }
+
+    // Account page heading: type in the account's color, then the name
+    &__account-type {
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--account-color, var(--accent));
+    }
+
+    // Old results shown while new ones load
+    &__stale {
+        opacity: 0.5;
+        transition: opacity 0.15s ease;
+    }
+
+    // "12 matches · in +$X · out -$Y" above a filtered list
+    &__totals {
+        margin: 0;
+        font-size: 0.9rem;
+
+        strong {
+            color: var(--text-h);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .is-in {
+            color: #22a06b;
+        }
+    }
+
+    &__account-name {
+        margin: 0;
+        font-size: 1.4rem;
+    }
+}

@@ -1,0 +1,75 @@
+.tabs {
+    // Segmented control on a softly tinted track; scrolls sideways rather
+    // than wrapping when the labels don't fit.
+    &__list {
+        position: relative;
+        display: flex;
+        gap: 2px;
+        width: fit-content;
+        max-width: 100%;
+        overflow-x: auto;
+        scrollbar-width: none;
+        padding: 4px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--text) 7%, var(--bg));
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 60%, transparent);
+
+        &::-webkit-scrollbar { display: none; }
+    }
+
+    // Accent pill that GSAP slides (x + width) to the active tab.
+    &__indicator {
+        position: absolute;
+        top: 4px;
+        bottom: 4px;
+        left: 0;
+        width: 0;
+        border-radius: 999px;
+        background: var(--accent);
+        box-shadow: 0 6px 16px -6px var(--accent-border), 0 1px 2px rgba(0, 0, 0, 0.12);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    &__tab {
+        position: relative;
+        z-index: 1;
+        flex-shrink: 0;
+        appearance: none;
+        border: none;
+        border-radius: 999px;
+        background: transparent;
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        padding: 9px 16px;
+        cursor: pointer;
+        transition: color 0.2s ease;
+
+        &:hover:not(.is-active) { color: var(--text-h); }
+        &.is-active { color: #fff; }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent-border);
+            outline-offset: 2px;
+        }
+    }
+
+    &__panel {
+        margin-top: 20px;
+
+        &:focus-visible {
+            outline: 2px solid var(--accent-border);
+            outline-offset: 4px;
+            border-radius: 8px;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        &__tab { transition: none; }
+    }
+}

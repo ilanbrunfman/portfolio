@@ -1,0 +1,46 @@
+.settings-menu {
+    position: relative;
+    display: inline-flex;
+
+    &__trigger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        appearance: none;
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        background: var(--bg);
+        color: var(--text);
+        cursor: pointer;
+        transition: border-color 0.15s ease, color 0.15s ease;
+
+        &:hover {
+            border-color: var(--accent-border);
+            color: var(--text-h);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent-border);
+            outline-offset: 2px;
+        }
+    }
+
+    &__avatar-icon {
+        fill: currentColor;
+    }
+
+    &__panel {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        z-index: 20;
+        width: 260px;
+        padding: 6px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg);
+        box-shadow: var(--shadow);
+    }
+}

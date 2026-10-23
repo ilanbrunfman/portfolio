@@ -1,0 +1,87 @@
+// Visuals only – layout comes from utility classes in the markup.
+.transaction-list {
+    &__day {
+        margin: 0 0 0.4rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--text);
+    }
+
+    &__rows {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+
+        li + li {
+            border-top: 1px solid var(--border);
+        }
+    }
+
+    &__row {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 0;
+        background: none;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+    }
+
+    button.transaction-list__row {
+        cursor: pointer;
+
+        &:hover {
+            background: var(--accent-bg);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: -2px;
+        }
+    }
+
+    &__description {
+        color: var(--text-h);
+        font-weight: 500;
+    }
+
+    &__meta,
+    &__running {
+        font-size: 0.8rem;
+    }
+
+    // Small pill with the category color (or neutral for transfers)
+    &__tag {
+        padding: 0.05rem 0.5rem;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, var(--tag, var(--text)) 45%, transparent);
+        color: var(--tag, var(--text));
+        background: color-mix(in srgb, var(--tag, var(--text)) 12%, transparent);
+    }
+
+    &__note {
+        font-style: italic;
+    }
+
+    &__amount {
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--text-h);
+        white-space: nowrap;
+
+        &.is-in {
+            color: #22a06b;
+        }
+    }
+
+    &__running {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+}

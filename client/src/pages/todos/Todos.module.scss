@@ -1,0 +1,12 @@
+// Navigation and its reserved space come from SideNavLayout
+// (components/layout/side-nav); this only centers the page in what's left.
+.todos {
+    &__content {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding-inline: 1.25rem;
+    }
+}

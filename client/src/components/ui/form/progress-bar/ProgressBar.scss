@@ -1,0 +1,32 @@
+.progress {
+    &__label {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text);
+    }
+
+    &__value {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-h);
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__track {
+        height: 8px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: var(--accent-bg);
+    }
+
+    // scaleX instead of width so the change animates on the compositor.
+    &__fill {
+        height: 100%;
+        border-radius: inherit;
+        background: var(--accent);
+        transform-origin: left center;
+        transition: transform 0.35s ease;
+
+        @media (prefers-reduced-motion: reduce) { transition: none; }
+    }
+}

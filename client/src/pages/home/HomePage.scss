@@ -1,0 +1,248 @@
+@use "@/assets/styles/shared/variables" as var;
+
+.home {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    padding: 64px 0 96px;
+
+    // ---- showcase section: title, subtitle ----
+    &__showcase {
+        margin-bottom: 24px;
+    }
+
+    &__eyebrow {
+        display: inline-block;
+        font-family: var(--mono);
+        font-size: 0.78rem;
+        color: var(--accent);
+        margin-bottom: 14px;
+    }
+
+    &__title {
+        font-family: var(--heading);
+        font-size: clamp(2rem, 4vw, 2.75rem);
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--text-h);
+        margin: 0 0 12px;
+    }
+
+    &__subtitle {
+        font-size: 0.98rem;
+        line-height: 1.6;
+        color: var(--text);
+        margin: 0;
+        max-width: 620px;
+    }
+
+    // ---- toolbar section: search + filter, same row ----
+    &__toolbar {
+        margin-bottom: 24px;
+    }
+
+    &__controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    &__search {
+        position: relative;
+        flex: 1 1 260px;
+        min-width: 200px;
+        max-width: 320px;
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            appearance: none;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text-h);
+            font-family: var(--sans);
+            font-size: 0.9rem;
+            padding: 10px 36px 10px 40px;
+            border-radius: 999px;
+            transition: border-color 0.15s ease;
+
+            &::placeholder {
+                color: var(--text);
+            }
+
+            &:focus-visible {
+                outline: none;
+                border-color: var(--accent-border);
+            }
+        }
+    }
+
+    &__search-icon {
+        position: absolute;
+        top: 50%;
+        left: 14px;
+        transform: translateY(-50%);
+        width: 16px;
+        height: 16px;
+        color: var(--text);
+        pointer-events: none;
+    }
+
+    // overrides Button's default padding/sizing (chained .btn selector
+    // wins on specificity over Button.scss's own .btn--ghost rules)
+    &__search-clear.btn {
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        padding: 0;
+        border-radius: 4px;
+        color: var(--text);
+
+        &:hover {
+            color: var(--text-h);
+            background: none;
+        }
+
+        &:active {
+            transform: translateY(-50%) scale(0.9); // preserves centering while still giving click feedback
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent-border);
+            outline-offset: 1px;
+        }
+    }
+
+    &__filter-dropdown {
+        position: relative;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+
+    &__filter-trigger.btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        padding: 10px 16px;
+        border-radius: 999px;
+
+        &:hover {
+            border-color: var(--accent-border);
+            background: var(--bg);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent-border);
+            outline-offset: 2px;
+        }
+    }
+
+    &__filter-trigger-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    &__filter-trigger-label {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-h);
+    }
+
+    &__filter-trigger-count {
+        font-size: 0.82rem;
+        color: var(--text);
+    }
+
+    &__filter-list {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        z-index: 10;
+        min-width: 220px;
+        margin: 0;
+        padding: 8px;
+        list-style: none;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    &__filter-option.btn {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: none;
+        background: none;
+        padding: 8px 12px;
+        border-radius: 8px;
+        text-align: left;
+
+        &:hover {
+            background: var(--accent-bg);
+        }
+
+        &.is-active {
+            background: var(--accent-bg);
+        }
+
+        & .btn__label{
+            width: 100%;
+        }
+    }
+
+    &__filter-option-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    &__filter-option-label {
+        font-size: 0.92rem;
+        font-weight: 500;
+        color: var(--text-h);
+    }
+
+    &__filter-option.is-active &__filter-option-label {
+        color: var(--accent);
+    }
+
+    &__filter-option-count {
+        font-size: 0.8rem;
+        color: var(--text);
+    }
+
+    // ---- portfolio section: masonry grid ----
+    &__empty {
+        font-size: 0.95rem;
+        color: var(--text);
+        padding: 24px 0;
+    }
+
+    // CSS multi-column: each .project-tile's own aspect-ratio drives its
+    // height, so tiles naturally stack unevenly like a photo grid instead
+    // of lining up in strict rows.
+    &__grid {
+        column-count: 1;
+        column-gap: 16px;
+
+        @include var.md {
+            column-count: 2;
+        }
+
+        @include var.lg {
+            column-count: 3;
+        }
+    }
+}

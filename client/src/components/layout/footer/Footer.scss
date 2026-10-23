@@ -1,0 +1,27 @@
+@use "@/assets/styles/shared/variables" as var;
+
+.footer{
+    position: relative;
+    margin-top: auto;
+    background-color: var(--bg);
+    border-top: 1px solid var(--border);
+
+    &-container{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: var.$container-2xl;
+        margin-inline: auto;
+
+        padding-inline: 1.5rem;
+        padding-block: 1.5rem;
+
+        @include var.sm {
+            padding-inline: 2.0rem;
+        }
+
+        @include var.md {
+            padding-inline: 3.0rem;
+        }
+    }
+}

@@ -1,0 +1,46 @@
+// Visuals only – layout comes from utility classes in the markup.
+.account-form {
+    &__colors {
+        margin: 0;
+        padding: 0;
+        border: 0;
+
+        legend {
+            padding: 0; // browsers indent legends by default
+        }
+    }
+
+    // A round color button; the real radio input is invisible on top of it
+    &__swatch {
+        position: relative;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--swatch);
+        cursor: pointer;
+        box-shadow: 0 0 0 2px var(--bg);
+        transition: box-shadow 0.15s ease, transform 0.15s ease;
+
+        &:hover {
+            transform: scale(1.08);
+        }
+
+        // Selected: ring in the swatch's own color
+        &:has(input:checked) {
+            box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--swatch);
+        }
+
+        &:has(input:focus-visible) {
+            outline: 2px solid var(--accent);
+            outline-offset: 4px;
+        }
+
+        input {
+            position: absolute;
+            inset: 0;
+            margin: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+    }
+}

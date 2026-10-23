@@ -1,0 +1,429 @@
+// ISA (Interactive Sales Aid) demo shell. AbbVie-*inspired* tokens scoped to
+// the app root; everything else leans on the global utilities + .surface.
+// Component styles live next to each component (components/<Name>/<Name>.scss);
+// this file keeps the app-wide tokens, layout width, typography and slide bits.
+
+.isa-app {
+    // Inspired-by palette (not AbbVie's actual brand assets).
+    --accent: #0b5cd7;
+    --accent-bg: rgba(11, 92, 215, 0.10);
+    --accent-border: rgba(11, 92, 215, 0.40);
+    --isa-navy: #071d49;
+
+    position: relative;
+    height: 100svh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+
+    // Kiosk-style deck: no text selection or iPad long-press copy menu
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+
+    // ...but form fields still need to be editable
+    input,
+    textarea {
+        -webkit-user-select: text;
+        user-select: text;
+    }
+}
+
+// Grow to fill the remaining space of a flex column/row (for slides that size
+// to the stage). Never shrinks below its content, so very short screens fall
+// back to scrolling instead of overlapping.
+.isa-fill {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+// shared inner width for slide content
+.isa-canvas {
+    width: 100%;
+    max-width: 1040px;
+    margin-inline: auto;
+}
+
+// --- slide content bits ---
+.isa-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+.isa-h1 {
+    margin: 0;
+    font-size: clamp(2rem, 1rem + 3vw, 3.2rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    color: var(--text-h);
+}
+
+.isa-h2 {
+    margin: 0;
+    font-size: clamp(1.5rem, 1rem + 1.8vw, 2.1rem);
+    line-height: 1.15;
+    color: var(--text-h);
+}
+
+.isa-lead {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--text);
+    max-width: 60ch;
+}
+
+.isa-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-bg);
+    border-radius: 999px;
+    padding: 0.3rem 0.75rem;
+}
+
+// cover
+.isa-cover {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.25rem;
+    background: linear-gradient(135deg, var(--isa-navy), #0a2f6b);
+    color: #fff;
+    border-radius: 20px;
+    padding: clamp(1.75rem, 4vw, 3.5rem);
+
+    .isa-h1, .isa-eyebrow { color: #fff; }
+    .isa-eyebrow { opacity: 0.85; }
+
+    &__icon {
+        color: #fff;
+        fill: currentColor;
+        opacity: 0.9;
+        margin-bottom: 0.25rem;
+    }
+
+    &__image {
+        width: 100%;
+        max-width: 360px;
+        height: auto;
+    }
+}
+
+// moa steps
+.isa-step {
+    position: relative;
+
+    &__num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 700;
+    }
+}
+
+// --- efficacy bar chart (primary endpoints) ---
+// Product arm = accent gradient + glow; comparators = neutral. Every bar is
+// direct-labelled (value on top, arm name below), never colour-only.
+.isa-chart {
+    --bar-neutral: color-mix(in srgb, var(--text) 26%, var(--bg));
+
+    // layout: `d-flex`. Faint gridlines at 25/50/75/100% of the content box
+    // (padding-top leaves room for the value riding a full-height bar) and a
+    // solid baseline.
+    // Height tracks the viewport so the slide fits without window scroll.
+    &__plot {
+        height: clamp(150px, 26svh, 220px);
+        padding-top: 2rem;
+        border-bottom: 2px solid var(--border);
+        background-image: linear-gradient(to bottom, color-mix(in srgb, var(--border) 70%, transparent) 1px, transparent 1px);
+        background-size: 100% 25%;
+        background-origin: content-box;
+        background-clip: content-box;
+    }
+
+    // layout: `d-flex justify-center`; bars align to the baseline.
+    &__col {
+        flex: 1 1 0;
+        align-items: flex-end;
+    }
+
+    // Height (% of the plot) is set/tweened by GSAP — no CSS transition.
+    &__bar {
+        position: relative;
+        width: clamp(40px, 42%, 96px);
+        height: 0;
+        border-radius: 12px 12px 3px 3px;
+        background: linear-gradient(to bottom, color-mix(in srgb, var(--bar-neutral) 80%, var(--bg)), var(--bar-neutral));
+
+        &.is-primary {
+            background: linear-gradient(to bottom, color-mix(in srgb, var(--accent) 70%, #fff), var(--accent));
+            box-shadow: 0 12px 28px -10px var(--accent-border);
+        }
+    }
+
+    // Sits just above the bar's top edge, so it moves with the bar.
+    &__value {
+        position: absolute;
+        bottom: calc(100% + 0.4rem);
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: clamp(1.25rem, 1rem + 1vw, 1.75rem);
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        color: var(--text-h);
+    }
+
+    &__bar.is-primary &__value { color: var(--accent); }
+
+    // layout: `d-flex`; one cell per column, same flex basis as `__col`.
+    &__labels { padding-top: 0.75rem; }
+
+    &__label {
+        flex: 1 1 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-align: center;
+        color: var(--text);
+
+        // swatch keys the label to its bar
+        &::before {
+            content: "";
+            flex-shrink: 0;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--bar-neutral);
+        }
+
+        &.is-primary {
+            font-weight: 700;
+            color: var(--text-h);
+
+            &::before { background: var(--accent); }
+        }
+    }
+}
+
+// --- shared slide text bits ---
+.isa-h3 { margin: 0; font-size: 1.1rem; color: var(--text-h); }
+.isa-body { margin: 0; color: var(--text); } // pair with .lh-1-6
+.isa-footnote { margin: 0.75rem 0 0; font-size: 0.8rem; color: var(--text); }
+.isa-callout { margin: 0; font-size: 1.2rem; font-weight: 600; color: var(--text-h); }
+.isa-reset-list { margin: 0; padding: 0; list-style: none; }
+
+.isa-note {
+    border-left: 4px solid var(--accent);
+    color: var(--text-h);
+    line-height: 1.6;
+}
+
+// headline stat tiles (efficacy overview) — layout: `d-flex flex-column`
+.isa-stat {
+    &__value { font-size: clamp(2rem, 1.2rem + 3vw, 3rem); font-weight: 800; line-height: 1; color: var(--text-h); }
+    &__label { font-weight: 600; color: var(--text); }
+
+    &.is-primary .isa-stat__value { color: var(--accent); }
+}
+
+// study design facts — layout: `d-grid grid-2 grid-md-4 gap-1`
+.isa-facts {
+    margin: 0;
+
+    &__item {
+        dt { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+        dd { margin: 0.35rem 0 0; font-weight: 700; font-size: 1.05rem; color: var(--text-h); }
+    }
+}
+
+// --- line chart (response over time) ---
+// Lumvera = accent, solid. Placebo = neutral comparator, dashed (never color-only).
+.isa-legend { // layout: `d-flex gap-1`
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.85rem;
+    color: var(--text);
+
+    li { display: inline-flex; align-items: center; gap: 0.4rem; }
+    line { stroke-width: 2; }
+}
+
+.is-primary line,
+.isa-line-chart__series.is-primary path { stroke: var(--accent); }
+.is-comparator line,
+.isa-line-chart__series.is-comparator path { stroke: color-mix(in srgb, var(--text) 55%, var(--bg)); stroke-dasharray: 6 4; }
+
+.isa-line-chart {
+    position: relative;
+    // Floor so the chart stays readable on short screens.
+    min-height: 150px;
+
+    // Absolute so the SVG's own size never feeds back into the measured box.
+    > svg { position: absolute; inset: 0; display: block; touch-action: pan-y; }
+
+    &__grid { stroke: var(--border); stroke-width: 1; }
+    &__tick { fill: var(--text); font-size: 16px; }
+    &__crosshair { stroke: var(--text); stroke-width: 1; opacity: 0.45; }
+
+    &__series {
+        path { fill: none; stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+        circle { stroke: var(--bg); stroke-width: 2; transition: r 0.1s ease; }
+        text { fill: var(--text-h); font-size: 17px; font-weight: 700; }
+        .isa-line-chart__value { font-size: 16px; font-weight: 600; }
+
+        &.is-primary circle { fill: var(--accent); }
+        &.is-comparator circle { fill: color-mix(in srgb, var(--text) 55%, var(--bg)); }
+    }
+
+    &__tooltip {
+        position: absolute;
+        top: 0;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        padding: 0.5rem 0.7rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg);
+        box-shadow: var(--shadow);
+        font-size: 0.8rem;
+        color: var(--text);
+        white-space: nowrap;
+        pointer-events: none;
+
+        &-title { font-weight: 600; color: var(--text-h); }
+        &-row { display: inline-flex; align-items: center; gap: 0.4rem; }
+        &-row strong { color: var(--text-h); }
+        line { stroke-width: 2; }
+    }
+}
+
+// Hidden visually but still read by screen readers.
+.isa-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+// --- data table (adverse reactions) ---
+.isa-table-wrap { overflow-x: auto; }
+
+.isa-table {
+    width: 100%;
+    border-collapse: collapse;
+
+    caption { caption-side: bottom; padding-top: 0.75rem; text-align: left; font-size: 0.8rem; color: var(--text); }
+
+    th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+    thead th { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); }
+    tbody th { font-weight: 600; color: var(--text-h); }
+    td { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-h); }
+    tbody tr:last-child > * { border-bottom: none; }
+}
+
+// --- dose timeline (regimen) ---
+.isa-timeline {
+    position: relative;
+    height: 56px;
+    margin: 0.5rem 1.25rem 0;
+    padding: 0;
+    list-style: none;
+
+    // the track
+    &::before {
+        content: "";
+        position: absolute;
+        top: 9px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--border);
+    }
+
+    &__dose {
+        position: absolute;
+        top: 0;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    &__dot {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid var(--accent);
+        background: var(--bg);
+    }
+
+    .is-initiation &__dot,
+    &__dose.is-initiation &__dot { background: var(--accent); }
+
+    &__label { font-size: 0.8rem; font-weight: 600; color: var(--text-h); white-space: nowrap; }
+
+    &__key { // layout: `d-flex gap-1`
+        font-size: 0.8rem;
+        color: var(--text);
+
+        span { display: inline-flex; align-items: center; gap: 0.4rem; }
+        span::before {
+            content: "";
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+        }
+        .is-initiation::before { background: var(--accent); }
+    }
+}
+
+// --- summary key messages (Accordion inside each .surface) ---
+// Layout comes from utilities in the markup; this only sizes the shared
+// Accordion header up for a slide and lines the detail up under the text.
+.isa-summary {
+    .accordion__header {
+        font-size: 1.05rem;
+        font-weight: 600;
+        line-height: 1.4;
+        padding: 0.75rem 0.5rem;
+    }
+
+    &__check {
+        flex-shrink: 0;
+        width: 30px;
+        height: 30px;
+    }
+
+    // 30px badge + 1rem gap + header padding → detail aligns with the headline
+    &__detail { padding-left: calc(30px + 1rem + 0.5rem); }
+}

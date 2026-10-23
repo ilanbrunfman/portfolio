@@ -1,0 +1,50 @@
+// Custom checkbox: accent fill + white tick when checked.
+.checkbox {
+    cursor: pointer;
+
+    &__label { color: var(--text-h); }
+
+    &__input {
+        appearance: none;
+        -webkit-appearance: none;
+        position: relative;
+        flex-shrink: 0;
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: transparent;
+        cursor: pointer;
+        transition: border-color 0.15s ease, background-color 0.15s ease;
+
+        &:hover { border-color: var(--accent); }
+
+        &:checked {
+            background: var(--accent);
+            border-color: var(--accent);
+
+            &::after {
+                content: '';
+                position: absolute;
+                left: 5px;
+                top: 1px;
+                width: 5px;
+                height: 9px;
+                border: solid #fff;
+                border-width: 0 2px 2px 0;
+                transform: rotate(45deg);
+            }
+        }
+
+        &:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--accent-bg);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+}

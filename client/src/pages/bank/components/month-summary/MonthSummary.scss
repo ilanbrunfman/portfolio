@@ -1,0 +1,141 @@
+// Visuals only – layout comes from utility classes in the markup.
+.month-summary {
+    --in: #22a06b;
+    --out: #e5484d;
+
+    .is-stale {
+        opacity: 0.5;
+        transition: opacity 0.15s ease;
+    }
+
+    &__title {
+        margin: 0;
+        font-size: 1.25rem;
+    }
+
+    &__heading {
+        margin: 0;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--text);
+    }
+
+    // Income / Spent / Net
+    &__stats {
+        margin: 0;
+
+        dt {
+            font-size: 0.8rem;
+        }
+
+        dd {
+            margin: 0;
+            font-size: 1.15rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-h);
+
+            &.is-in { color: var(--in); }
+            &.is-out { color: var(--out); }
+
+            // Wider than a phone: amounts under their label, bigger
+            @media (min-width: 415px) {
+                font-size: 1.5rem;
+            }
+        }
+    }
+
+    // 6-month chart
+    &__chart {
+        height: 160px;
+        padding-bottom: 0.25rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    &__column {
+        flex: 1 1 0;
+        height: 100%;
+        padding: 0.25rem 0 0;
+        border: 0;
+        border-radius: 8px;
+        background: none;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+
+        &:hover { background: var(--accent-bg); }
+
+        &.is-selected .month-summary__label {
+            color: var(--text-h);
+            font-weight: 600;
+        }
+    }
+
+    &__bars {
+        flex: 1 1 auto;
+        gap: 3px;
+    }
+
+    &__bar {
+        width: 12px;
+        min-height: 2px;
+        border-radius: 3px 3px 0 0;
+        background: var(--in);
+
+        &.is-out { background: var(--out); }
+    }
+
+    &__label {
+        font-size: 0.75rem;
+    }
+
+    &__legend {
+        font-size: 0.8rem;
+
+        span::before {
+            content: '';
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            margin-right: 0.35rem;
+            border-radius: 2px;
+            background: var(--in);
+        }
+
+        .is-out::before { background: var(--out); }
+    }
+
+    // Spending by category
+    &__categories {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    &__amount {
+        color: var(--text-h);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    &__share {
+        color: var(--text);
+        font-size: 0.85em;
+    }
+
+    &__track {
+        height: 6px;
+        border-radius: 999px;
+        background: var(--border);
+        overflow: hidden;
+    }
+
+    &__fill {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--bar);
+    }
+}

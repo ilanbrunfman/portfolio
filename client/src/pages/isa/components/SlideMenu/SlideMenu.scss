@@ -1,0 +1,56 @@
+// --- slide-menu tiles (rendered inside the reusable Modal) ---
+// Grids/flex come from template utilities in the markup:
+//   .isa-menu → d-grid grid-2 grid-sm-3 gap-1
+//   __group   → d-flex flex-column gap-0-5
+//   __children→ d-grid grid-2 grid-sm-3 gap-0-5
+.isa-menu {
+    // A section with children: full row, overview tile + indented child tiles.
+    &__group {
+        grid-column: 1 / -1;
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--accent-bg) 40%, transparent);
+    }
+
+    &__children {
+        padding-left: 0.75rem;
+        border-left: 2px solid var(--accent-border);
+    }
+
+    &__tile {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        text-align: left;
+        appearance: none;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg);
+        color: var(--text-h);
+        font: inherit;
+        padding: 0.9rem;
+        cursor: pointer;
+        transition: border-color 0.15s ease, background 0.15s ease;
+
+        &:hover { border-color: var(--accent-border); background: var(--accent-bg); }
+        &.is-active { border-color: var(--accent); }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent-border);
+            outline-offset: 2px;
+        }
+
+        &--child { padding: 0.65rem 0.8rem; }
+
+        &-num { font-size: 0.72rem; font-weight: 700; color: var(--accent); }
+        &-title { font-weight: 600; }
+    }
+
+    &__disclaimer {
+        margin: 1.25rem 0 0;
+        font-size: 0.75rem;
+        line-height: 1.5;
+        color: var(--text);
+    }
+}

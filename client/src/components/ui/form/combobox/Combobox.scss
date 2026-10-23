@@ -1,0 +1,78 @@
+// Combobox: visuals only. The input itself takes its look from whatever
+// classes the caller passes (e.g. the shared `form__input`).
+.combobox {
+    position: relative;
+
+    // Room for the caret button. The child selector adds specificity so this
+    // wins over the caller's input padding (e.g. `form__input`) in any order.
+    > .combobox__input {
+        padding-right: 2.75rem;
+    }
+
+    &__toggle {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.75rem;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--text);
+        cursor: pointer;
+
+        &:hover { color: var(--accent); }
+    }
+
+    &__caret {
+        transform: rotate(180deg);
+        transition: transform 0.2s ease;
+    }
+
+    &.is-open &__caret { transform: rotate(0deg); }
+
+    &__list {
+        position: absolute;
+        z-index: 20;
+        top: calc(100% + 0.35rem);
+        left: 0;
+        right: 0;
+        max-height: 16rem;
+        margin: 0;
+        padding: 0.35rem;
+        overflow-y: auto;
+        list-style: none;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--bg);
+        box-shadow: var(--shadow);
+        animation: combobox-in 0.15s ease-out;
+
+        &[hidden] { display: none; }
+
+        @media (prefers-reduced-motion: reduce) { animation: none; }
+    }
+
+    &__option {
+        padding: 0.55rem 0.7rem;
+        border-radius: 6px;
+        color: var(--text-h);
+        cursor: pointer;
+
+        &.is-active { background: var(--accent-bg); }
+
+        mark {
+            background: none;
+            color: var(--accent);
+            font-weight: 600;
+        }
+    }
+}
+
+@keyframes combobox-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}

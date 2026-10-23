@@ -1,0 +1,371 @@
+@use "variables" as var;
+
+// Landing-page building blocks. Deliberately generic (no roofing specifics) so
+// every lander reuses them; per-brand look comes from overriding --accent etc.
+// on the page root. Layout leans on the global utilities; this file only adds
+// what utilities can't express (grids, hero, sticky header, section rhythm).
+
+// Vertical rhythm for a stacked section.
+.lp-section {
+    box-sizing: border-box;
+    padding-block: clamp(3rem, 5vw, 6rem);
+    scroll-margin-top: 90px; // offset for the sticky header on anchor jumps
+}
+
+.lp-container {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+
+    @include var.md {
+        padding-inline: 2rem;
+    }
+}
+
+// --- typographic helpers ---
+.lp-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+
+    &::before {
+        content: '';
+        width: 18px;
+        height: 2px;
+        background: var(--accent);
+    }
+}
+
+.lp-title {
+    margin: 0;
+    font-size: clamp(1.9rem, 1rem + 3vw, 3rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text-h);
+}
+
+.lp-lead {
+    margin: 0;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--text);
+    max-width: 62ch;
+}
+
+// Section heading block (eyebrow + title + lead).
+.lp-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: clamp(2rem, 4vw, 3rem);
+
+    &--center {
+        align-items: center;
+        text-align: center;
+        max-width: 680px;
+        margin-inline: auto;
+
+        .lp-lead { margin-inline: auto; }
+    }
+}
+
+// Outline button for use on the dark hero (self-contained, not .btn).
+.lp-ghost-light {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.8rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    background: transparent;
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.14);
+        border-color: #fff;
+    }
+}
+
+// Solid light button for the accent CTA band.
+.lp-btn-light {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.8rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    background: #fff;
+    color: var(--accent);
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.2s ease;
+
+    &:hover { opacity: 0.92; }
+    &:active { transform: scale(0.97); }
+}
+
+// (Grids now use the global .d-grid + .grid-* utilities.)
+
+// --- icon chip ---
+.lp-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--accent-bg);
+    color: var(--accent);
+    fill: currentColor;
+    flex-shrink: 0;
+}
+
+// --- sticky header ---
+.lp-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: saturate(150%) blur(8px);
+    border-bottom: 1px solid var(--border);
+
+    &__logo {
+        font-size: 1.25rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--text-h);
+        text-decoration: none;
+    }
+
+    &__nav {
+        display: none;
+        gap: 1.5rem;
+
+        @include var.md { display: flex; }
+
+        a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.15s ease;
+
+            &:hover,
+            &.is-active { color: var(--accent); }
+        }
+    }
+}
+
+.lp-phone {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 700;
+    color: var(--text-h);
+    text-decoration: none;
+    white-space: nowrap;
+
+    &:hover { color: var(--accent); }
+}
+
+// --- hero (centered over a dark image/gradient) ---
+.lp-hero {
+    position: relative;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    box-sizing: border-box;
+    min-height: clamp(460px, 72svh, 760px);
+    padding: 5rem 1.25rem;
+    overflow: hidden;
+    color: #fff;
+
+    &__bg {
+        position: absolute;
+        inset: 0;
+        background:
+            linear-gradient(180deg, rgba(10, 14, 22, 0.72), rgba(10, 14, 22, 0.82)),
+            var(--lp-hero-image, linear-gradient(135deg, #1f2a44, #0b1120));
+        background-size: cover;
+        background-position: center;
+    }
+
+    &__inner {
+        position: relative;
+        max-width: 760px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.25rem;
+    }
+
+    &__title {
+        margin: 0;
+        font-size: clamp(2.1rem, 1rem + 4.5vw, 3.6rem);
+        line-height: 1.08;
+        letter-spacing: -0.02em;
+        color: #fff;
+    }
+
+    &__subtitle {
+        margin: 0;
+        font-size: 1.15rem;
+        line-height: 1.6;
+        color: rgba(255, 255, 255, 0.85);
+    }
+
+    &__eyebrow {
+        color: #fff;
+        &::before { background: var(--accent); }
+    }
+
+    &__trust {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+}
+
+// --- generic surface card tweaks for landers ---
+.lp-card {
+    box-sizing: border-box;
+    height: 100%;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover {
+        transform: translateY(-3px);
+        border-color: var(--accent-border);
+    }
+
+    &__title {
+        margin: 0;
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: var(--text-h);
+    }
+
+    &__text {
+        margin: 0;
+        color: var(--text);
+        line-height: 1.6;
+    }
+
+    &__link {
+        color: var(--accent);
+        font-weight: 600;
+        text-decoration: none;
+
+        &:hover { text-decoration: underline; }
+    }
+}
+
+// --- trust bar ---
+.lp-trust {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem 1.5rem;
+
+    &__item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+        color: var(--text);
+    }
+}
+
+// --- media split ---
+.lp-split {
+    display: grid;
+    gap: 2rem;
+    align-items: center;
+
+    @include var.md {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    &__media {
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        border-radius: 16px;
+        object-fit: cover;
+        background: var(--accent-bg);
+    }
+
+    // image after text on desktop
+    &--reverse &__media {
+        @include var.md { order: 2; }
+    }
+}
+
+// --- stat tile ---
+.lp-stat {
+    text-align: center;
+
+    &__value {
+        font-size: clamp(2rem, 1rem + 2vw, 2.8rem);
+        font-weight: 800;
+        color: var(--accent);
+        line-height: 1;
+    }
+
+    &__label {
+        margin-top: 0.4rem;
+        color: var(--text);
+        font-weight: 500;
+    }
+}
+
+// --- big CTA band ---
+.lp-cta {
+    box-sizing: border-box;
+    text-align: center;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, #000));
+    border-radius: 20px;
+    padding: clamp(2.5rem, 5vw, 4rem) 1.5rem;
+
+    &__title {
+        margin: 0;
+        font-size: clamp(1.6rem, 1rem + 2.5vw, 2.4rem);
+        line-height: 1.15;
+        color: #fff;
+    }
+
+    &__text {
+        margin: 0.75rem auto 0;
+        max-width: 48ch;
+        color: rgba(255, 255, 255, 0.9);
+    }
+}
+
+// --- footer ---
+.lp-footer {
+    background: var(--text-h);
+    color: color-mix(in srgb, var(--bg) 75%, #fff);
+
+    a { color: inherit; text-decoration: none; &:hover { opacity: 0.8; } }
+
+    &__title {
+        color: var(--bg);
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+    }
+}
