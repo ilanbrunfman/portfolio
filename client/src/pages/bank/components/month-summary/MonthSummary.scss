@@ -32,13 +32,18 @@
 
         dd {
             margin: 0;
-            font-size: 1.5rem;
+            font-size: 1.15rem;
             font-weight: 600;
             font-variant-numeric: tabular-nums;
             color: var(--text-h);
 
             &.is-in { color: var(--in); }
             &.is-out { color: var(--out); }
+
+            // Wider than a phone: amounts under their label, bigger
+            @media (min-width: 415px) {
+                font-size: 1.5rem;
+            }
         }
     }
 

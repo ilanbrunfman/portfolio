@@ -62,7 +62,7 @@ const Overview = () => {
             {visible.length === 0 ? (
                 <p>No accounts yet. Add your first one to get started.</p>
             ) : (
-                <div className="d-grid grid-1 grid-sm-2 grid-lg-3 gap-1">
+                <div className="d-grid grid-1 grid-sm-2 grid-xl-3 gap-1">
                     {visible.map((account) => (
                         <AccountCard key={account.id} account={account} onEdit={openEditor} />
                     ))}

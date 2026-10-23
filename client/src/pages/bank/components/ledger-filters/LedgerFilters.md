@@ -1,8 +1,12 @@
 # LedgerFilters
 
-Filter controls for an account's transactions: **Show** (All / Income /
-Expenses / Transfers), **Search** (description or note), **Category**, and a
+Filter controls for an account's transactions: **Search** (description or
+note), **Show** (All / Income / Expenses / Transfers), **Category**, and a
 **From / To** date range, plus **Clear filters** when any is set.
+
+On phones (below the `md` breakpoint) only Search is visible; the rest folds
+behind a **Filters** button that shows how many are active, e.g.
+"Filters (2)". From `md` up everything is always shown.
 
 Controlled: the parent owns `filters` (the account page keeps them in the URL
 search params). `onChange` receives only what changed (e.g. `{ to: '2026-09-30' }`;

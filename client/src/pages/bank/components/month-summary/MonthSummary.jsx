@@ -65,16 +65,16 @@ const MonthSummary = () => {
             {error && <p className="form__error" role="alert">{error}</p>}
 
             <div className={`d-flex flex-column gap-2 ${stale ? 'is-stale' : ''}`}>
-                <dl className="month-summary__stats d-grid grid-1 grid-sm-3 gap-1">
-                    <div className="d-flex flex-column">
+                <dl className="month-summary__stats d-grid grid-1 grid-sm-3 gap-0-5 gap-sm-1">
+                    <div className="d-flex justify-between align-items-center flex-sm-column align-items-sm-start">
                         <dt>Income</dt>
                         <dd className="is-in">{formatMoney(summary.income)}</dd>
                     </div>
-                    <div className="d-flex flex-column">
+                    <div className="d-flex justify-between align-items-center flex-sm-column align-items-sm-start">
                         <dt>Spent</dt>
                         <dd>{formatMoney(summary.spent)}</dd>
                     </div>
-                    <div className="d-flex flex-column">
+                    <div className="d-flex justify-between align-items-center flex-sm-column align-items-sm-start">
                         <dt>Net</dt>
                         <dd className={summary.net < 0 ? 'is-out' : 'is-in'}>
                             {summary.net > 0 ? '+' : ''}{formatMoney(summary.net)}

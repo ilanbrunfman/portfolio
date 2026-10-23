@@ -4,6 +4,12 @@
     padding: 1rem 1.25rem;
     box-shadow: none;
 
+    // The search field takes the row; the phone-only Filters button sits beside it
+    &__search {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
     fieldset {
         margin: 0;
         padding: 0;

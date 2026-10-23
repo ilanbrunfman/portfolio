@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import Input from '@/components/ui/form/input/Input'
 import Combobox from '@/components/ui/form/combobox/Combobox'
 import RadioGroup from '@/components/ui/form/radio/RadioGroup'
@@ -48,6 +48,10 @@ const LedgerFilters = ({ filters, onChange, categories }) => {
     }
 
     const isActive = hasFilters(filters)
+    // Phones: everything except search folds behind a "Filters" button
+    const [open, setOpen] = useState(false)
+    const moreId = useId()
+    const moreCount = ['type', 'categoryId', 'from', 'to'].filter((key) => filters[key]).length
     const clearAll = () => {
         setSearch('')
         setCategoryText('')
@@ -56,21 +60,7 @@ const LedgerFilters = ({ filters, onChange, categories }) => {
 
     return (
         <section className="ledger-filters surface d-flex flex-column gap-1" aria-label="Filter transactions">
-            <div className="d-flex flex-wrap justify-between align-items-center gap-1">
-                <RadioGroup
-                    label="Show"
-                    options={TYPES}
-                    value={filters.type}
-                    onChange={(type) => onChange({ type })}
-                    direction="row"
-                />
-                {isActive && (
-                    <Button variant="ghost" size="sm" icon="IconX" onClick={clearAll}>
-                        Clear filters
-                    </Button>
-                )}
-            </div>
-            <div className="d-grid grid-1 grid-sm-2 grid-lg-4 gap-1">
+            <div className="d-flex align-items-end gap-0-5">
                 <Input
                     label="Search"
                     type="search"
@@ -78,29 +68,61 @@ const LedgerFilters = ({ filters, onChange, categories }) => {
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Description or note"
                     autoComplete="off"
+                    fieldClassName="ledger-filters__search"
                 />
-                <Combobox
-                    label="Category"
-                    value={categoryText}
-                    onChange={handleCategory}
-                    options={categories.map((c) => c.name)}
-                    placeholder="Any"
-                    toggleLabel="Show categories"
-                />
-                <Input
-                    label="From"
-                    type="date"
-                    value={filters.from}
-                    max={filters.to || undefined}
-                    onChange={(e) => onChange({ from: e.target.value })}
-                />
-                <Input
-                    label="To"
-                    type="date"
-                    value={filters.to}
-                    min={filters.from || undefined}
-                    onChange={(e) => onChange({ to: e.target.value })}
-                />
+                {/* Phones only (hidden from md up, where everything is always shown).
+                    The class sits on a wrapper: Button's own display rule would override it. */}
+                <div className="d-md-none">
+                    <Button
+                        variant="secondary"
+                        onClick={() => setOpen((value) => !value)}
+                        aria-expanded={open}
+                        aria-controls={moreId}
+                    >
+                        {moreCount ? `Filters (${moreCount})` : 'Filters'}
+                    </Button>
+                </div>
+            </div>
+
+            <div id={moreId} className={`${open ? 'd-flex' : 'd-none d-md-flex'} flex-column gap-1`}>
+                <div className="d-flex flex-wrap justify-between align-items-center gap-1">
+                    <RadioGroup
+                        label="Show"
+                        options={TYPES}
+                        value={filters.type}
+                        onChange={(type) => onChange({ type })}
+                        direction="row"
+                    />
+                    {isActive && (
+                        <Button variant="ghost" size="sm" icon="IconX" onClick={clearAll}>
+                            Clear filters
+                        </Button>
+                    )}
+                </div>
+                <div className="d-grid grid-1 grid-sm-3 gap-1">
+                    <Combobox
+                        label="Category"
+                        value={categoryText}
+                        onChange={handleCategory}
+                        options={categories.map((c) => c.name)}
+                        placeholder="Any"
+                        toggleLabel="Show categories"
+                    />
+                    <Input
+                        label="From"
+                        type="date"
+                        value={filters.from}
+                        max={filters.to || undefined}
+                        onChange={(e) => onChange({ from: e.target.value })}
+                    />
+                    <Input
+                        label="To"
+                        type="date"
+                        value={filters.to}
+                        min={filters.from || undefined}
+                        onChange={(e) => onChange({ to: e.target.value })}
+                    />
+                </div>
             </div>
         </section>
     )
