@@ -1,28 +1,33 @@
 // Bank tracker – page-level visuals (layout is utility classes in the markup)
 .bank {
+    // The .container sits inside the layout's content column
+    &.container {
+        box-sizing: border-box;
+        width: 100%;
+    }
+
     &__title {
-        margin-block: 0; // only top/bottom, so the mr-auto utility still applies
+        margin: 0;
+        font-size: clamp(1.6rem, 1.1rem + 2vw, 2.4rem);
+        line-height: 1.1;
+    }
+
+    // Fills the screen next to / above the nav and centers the login card
+    &__center {
+        flex: 1 1 auto;
+        padding: 1.5rem;
     }
 
     &__user {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
+        overflow-wrap: anywhere;
     }
 
     // Login / sign-up card
     &__auth {
+        box-sizing: border-box;
+        width: 100%;
         max-width: 420px;
-    }
-
-    &__home {
-        display: inline-flex;
-        padding: 0.5rem;
-        border-radius: 50%;
-        color: var(--text);
-
-        &:hover {
-            background: var(--accent-bg);
-            color: var(--text-h);
-        }
     }
 
     &__total {

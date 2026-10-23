@@ -1,54 +1,55 @@
-import { Link, Outlet } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from '@/pages/bank/context/AuthContext'
 import { BankProvider } from '@/pages/bank/context/BankContext'
 import AuthForm from '@/pages/bank/components/auth-form/AuthForm'
-import Icon from '@/components/ui/icon/Icon'
-import Button from '@/components/ui/button/Button'
+import SideNavLayout from '@/components/layout/side-nav/SideNavLayout'
 import './BankApp.scss'
 
+const HOME_LINK = { to: '/', icon: 'IconHome', label: 'Portfolio home', end: true }
+const ACCOUNTS_LINK = { to: '/bank', icon: 'IconCards', label: 'Accounts' }
+
 /**
- * Bank tracker layout (/bank/*). Logged out → the login form; logged in →
- * header + the current page, with data from the Express API (server/).
+ * Bank tracker layout (/bank/*): icon nav (sidebar on tablet/desktop,
+ * bottom bar on phones) + the current page. Logged out → a centered login
+ * card; logged in → header + page, with data from the Express API.
  */
 const BankApp = () => (
     <AuthProvider>
-        {/* .row = full width (#root is a flex column, which would shrink the container) */}
-        <div className="row">
-            <div className="bank container d-flex flex-column gap-2 py-4">
-                <BankShell />
-            </div>
-        </div>
+        <BankShell />
     </AuthProvider>
 )
 
 const BankShell = () => {
     const { user, status, logout } = useAuth()
 
-    const header = (
-        <header className="d-flex flex-wrap align-items-center gap-1">
-            <Link to="/" className="bank__home" aria-label="Home">
-                <Icon name="IconHome" size={20} />
-            </Link>
-            <h1 className="bank__title mr-auto">Bank tracker</h1>
-            {user && (
-                <div className="d-flex align-items-center gap-0-5">
-                    <span className="bank__user">{user.email}</span>
-                    <Button variant="ghost" size="sm" icon="IconSignOut" onClick={logout}>Log out</Button>
+    if (status === 'checking' || !user) {
+        return (
+            <SideNavLayout label="Bank" links={[HOME_LINK]}>
+                <div className="bank__center d-flex align-items-center justify-center">
+                    {status === 'checking' ? <p>Loading…</p> : <AuthForm />}
                 </div>
-            )}
-        </header>
-    )
-
-    if (status === 'checking') return <>{header}<p>Loading…</p></>
-    if (!user) return <>{header}<main><AuthForm /></main></>
+            </SideNavLayout>
+        )
+    }
 
     // key: a different user gets a brand-new BankProvider (no leftover data)
     return (
         <BankProvider key={user.id}>
-            {header}
-            <main>
-                <Outlet />
-            </main>
+            <SideNavLayout
+                label="Bank"
+                links={[HOME_LINK, ACCOUNTS_LINK]}
+                actions={[{ icon: 'IconSignOut', label: 'Log out', onClick: logout }]}
+            >
+                <div className="bank container d-flex flex-column gap-2 py-2">
+                    <header className="d-flex flex-wrap justify-between align-items-baseline gap-0-5">
+                        <h1 className="bank__title">Bank tracker</h1>
+                        <span className="bank__user" title="Logged in as">{user.email}</span>
+                    </header>
+                    <main>
+                        <Outlet />
+                    </main>
+                </div>
+            </SideNavLayout>
         </BankProvider>
     )
 }

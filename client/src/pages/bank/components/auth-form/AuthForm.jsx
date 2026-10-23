@@ -41,7 +41,10 @@ const AuthForm = () => {
 
     return (
         <form className="surface d-flex flex-column gap-1 bank__auth" onSubmit={handleSubmit} noValidate>
-            <h2 className="bank__account-name">{isLogin ? 'Log in' : 'Create an account'}</h2>
+            <div className="d-flex flex-column gap-0-5">
+                <span className="bank__account-type">Bank tracker</span>
+                <h1 className="bank__account-name">{isLogin ? 'Log in' : 'Create an account'}</h1>
+            </div>
             {errors.form && <p className="form__error" role="alert">{errors.form}</p>}
 
             <Input
