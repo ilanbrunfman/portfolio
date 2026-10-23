@@ -2,6 +2,8 @@
 // composition. Swap this file (and the accent tokens) to spin up another
 // brand on the same sections.
 
+import heroImage from '@/assets/images/pexels-curtis-adams-1694007-8583736.jpg'
+
 export const roofingContent = {
     brand: 'Summit Roofing',
     phone: '(555) 123-7663',
@@ -22,7 +24,7 @@ export const roofingContent = {
         primaryCta: { label: 'Get a free quote', href: '#contact' },
         secondaryCta: { label: 'View services', href: '#services' },
         trust: '15+ years · 1,200+ roofs · 4.9★ average rating',
-        bgImage: 'https://picsum.photos/1600/900?grayscale&blur=2&random=10',
+        bgImage: heroImage, // photo: Curtis Adams on Pexels
     },
 
     trust: ['Licensed & insured', 'BBB A+ accredited', 'GAF certified', '4.9★ Google rating'],

@@ -1,4 +1,4 @@
-import roofingThumb from '@/assets/thumbnails/roofing.svg'
+import roofingThumb from '@/assets/thumbnails/roofing.webp'
 import todosThumb from '@/assets/thumbnails/todos.svg'
 import isaThumb from '@/assets/thumbnails/isa.svg'
 // Bank Tracker: still poster (first frame) + a short recording played on hover
