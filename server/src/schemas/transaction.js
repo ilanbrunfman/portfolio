@@ -1,5 +1,8 @@
 import { z } from 'zod'
 
+const isDay = (value) => z.iso.date().safeParse(value).success
+const isId = (value) => Number.isInteger(value) && value > 0
+
 // GET /api/accounts/:id/transactions
 //   ?limit=50&cursor=2026-10-01_123            paging
 //   &q=coffee&type=expense&categoryId=6        filters (all optional)
@@ -21,7 +24,14 @@ export const ledgerQuery = z
         from: z.iso.date({ error: 'Use a date like 2026-10-01' }).optional(),
         to: z.iso.date({ error: 'Use a date like 2026-10-31' }).optional(),
     })
-    .refine((f) => !f.from || !f.to || f.from <= f.to, { message: "'from' must be before 'to'", path: ['to'] })
+    .refine((f) => !f.from || !f.to || f.from <= f.to, {
+        message: "'from' must be before 'to'",
+        path: ['to'],
+        // Zod skips object-level checks when any field is invalid; run this
+        // one anyway as long as the two dates themselves are fine, so all
+        // errors come back in one response
+        when: ({ value }) => isDay(value?.from ?? '') && isDay(value?.to ?? ''),
+    })
 
 // Reused by create and update
 const fields = {
@@ -83,6 +93,13 @@ const transferFields = {
 const differentAccounts = (data) =>
     data.fromAccountId === undefined || data.toAccountId === undefined || data.fromAccountId !== data.toAccountId
 
+// Same check, run even when other fields (amount, date…) are invalid
+const differentAccountsCheck = {
+    message: 'Pick two different accounts',
+    path: ['toAccountId'],
+    when: ({ value }) => isId(value?.fromAccountId) && isId(value?.toAccountId),
+}
+
 // POST /api/transfers
 export const transferCreate = z
     .object({
@@ -90,14 +107,14 @@ export const transferCreate = z
         description: transferFields.description.default('Transfer'),
         note: transferFields.note.optional(),
     })
-    .refine(differentAccounts, { message: 'Pick two different accounts', path: ['toAccountId'] })
+    .refine(differentAccounts, differentAccountsCheck)
 
 // PATCH /api/transfers/:transferId – any subset
 export const transferUpdate = z
     .object(transferFields)
     .partial()
     .refine((data) => Object.keys(data).length > 0, 'Nothing to update')
-    .refine(differentAccounts, { message: 'Pick two different accounts', path: ['toAccountId'] })
+    .refine(differentAccounts, differentAccountsCheck)
 
 export const transferParams = z.object({
     transferId: z.uuid({ error: 'Invalid transfer id' }),
