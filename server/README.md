@@ -78,6 +78,10 @@ Tests use their **own database**: your database name + `_test`
 Every test starts from empty tables (`resetDb()`), and the setup refuses to
 run against a database whose name doesn't end in `_test`.
 
+On GitHub, `.github/workflows/server-tests.yml` runs the same tests on every
+push that touches `server/` (with its own throwaway Postgres), so each commit
+gets a ✓ or ✗.
+
 `test/helpers.js` has `request`, `resetDb()`, and `createAccount()` /
 `createCategory()` / `createTransaction()` to set up data quickly.
 
