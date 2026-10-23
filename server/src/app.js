@@ -1,4 +1,7 @@
 import express from 'express'
+import cookieParser from 'cookie-parser'
+import { requireAuth } from './middleware/auth.js'
+import authRouter from './routes/auth.js'
 import healthRouter from './routes/health.js'
 import accountsRouter from './routes/accounts.js'
 import categoriesRouter from './routes/categories.js'
@@ -10,16 +13,21 @@ import summaryRouter from './routes/summary.js'
 // so tests can import the app without opening a port.
 const app = express()
 
-// Parse JSON request bodies into req.body
+// Parse JSON request bodies into req.body, and cookies into req.cookies
 app.use(express.json())
+app.use(cookieParser())
 
 // All routes live under /api
+// Public
 app.use('/api/health', healthRouter)
-app.use('/api/accounts', accountsRouter)
-app.use('/api/categories', categoriesRouter)
-app.use('/api/transactions', transactionsRouter)
-app.use('/api/transfers', transfersRouter)
-app.use('/api/summary', summaryRouter)
+app.use('/api/auth', authRouter)
+
+// Logged-in users only (requireAuth sets req.user; routes only touch that user's data)
+app.use('/api/accounts', requireAuth, accountsRouter)
+app.use('/api/categories', requireAuth, categoriesRouter)
+app.use('/api/transactions', requireAuth, transactionsRouter)
+app.use('/api/transfers', requireAuth, transfersRouter)
+app.use('/api/summary', requireAuth, summaryRouter)
 
 // Unknown /api route → 404 in JSON (not Express's default HTML page)
 app.use((req, res) => {

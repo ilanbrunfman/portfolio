@@ -33,11 +33,15 @@ async function withBalances(accounts) {
     })
 }
 
+// Every query below includes userId: req.user.id, so a user only ever sees
+// and changes their own accounts. Someone else's account → 404, as if it
+// didn't exist.
+
 // GET /api/accounts – active accounts (add ?includeArchived=true for all)
 router.get('/', validate({ query: accountListQuery }), async (req, res) => {
     const { includeArchived } = req.valid.query
     const accounts = await prisma.account.findMany({
-        where: includeArchived ? {} : { archived: false },
+        where: { userId: req.user.id, ...(!includeArchived && { archived: false }) },
         orderBy: { id: 'asc' },
     })
     res.json(await withBalances(accounts))
@@ -45,7 +49,7 @@ router.get('/', validate({ query: accountListQuery }), async (req, res) => {
 
 // GET /api/accounts/:id
 router.get('/:id', validate({ params: idParams }), async (req, res) => {
-    const account = await prisma.account.findUnique({ where: { id: req.valid.params.id } })
+    const account = await prisma.account.findFirst({ where: { id: req.valid.params.id, userId: req.user.id } })
     if (!account) throw new HttpError(404, 'Account not found')
     const [result] = await withBalances([account])
     res.json(result)
@@ -53,7 +57,7 @@ router.get('/:id', validate({ params: idParams }), async (req, res) => {
 
 // POST /api/accounts → 201 Created
 router.post('/', validate({ body: accountCreate }), async (req, res) => {
-    const account = await prisma.account.create({ data: req.valid.body })
+    const account = await prisma.account.create({ data: { ...req.valid.body, userId: req.user.id } })
     const [result] = await withBalances([account])
     res.status(201).json(result)
 })
@@ -61,9 +65,9 @@ router.post('/', validate({ body: accountCreate }), async (req, res) => {
 // PATCH /api/accounts/:id – change some fields; { archived: true } hides it
 router.patch('/:id', validate({ params: idParams, body: accountUpdate }), async (req, res) => {
     const account = await prisma.account.update({
-        where: { id: req.valid.params.id },
+        where: { id: req.valid.params.id, userId: req.user.id },
         data: req.valid.body,
-    }) // a missing id throws Prisma P2025 → 404 in the error handler
+    }) // missing or not yours → Prisma P2025 → 404 in the error handler
     const [result] = await withBalances([account])
     res.json(result)
 })
@@ -72,7 +76,7 @@ router.patch('/:id', validate({ params: idParams, body: accountUpdate }), async 
 // one page at a time (?limit=50&cursor=<nextCursor from the previous page>)
 router.get('/:id/transactions', validate({ params: idParams, query: ledgerQuery }), async (req, res) => {
     const { id } = req.valid.params
-    const exists = await prisma.account.count({ where: { id } })
+    const exists = await prisma.account.count({ where: { id, userId: req.user.id } })
     if (!exists) throw new HttpError(404, 'Account not found')
     res.json(await listLedger({ accountId: id, ...req.valid.query }))
 })

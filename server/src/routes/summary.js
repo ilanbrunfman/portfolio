@@ -7,7 +7,7 @@ import { getSummary } from '../services/summary.js'
 const router = Router()
 
 router.get('/', validate({ query: summaryQuery }), async (req, res) => {
-    res.json(await getSummary(req.valid.query.month))
+    res.json(await getSummary(req.user.id, req.valid.query.month))
 })
 
 export default router

@@ -13,7 +13,7 @@ docker compose up -d   # start PostgreSQL on localhost:5433
 nvm use                # Node 24 (from .nvmrc) – the client stays on Node 20
 npm install            # also generates the Prisma client
 npm run db:migrate     # create/update the tables
-npm run db:seed        # optional: fill in demo data
+npm run db:seed        # optional: demo data, log in as demo@bank.test / demo1234
 npm run dev            # http://localhost:4000, restarts on file changes
 ```
 
@@ -50,7 +50,8 @@ import { prisma } from '../db.js'
 const accounts = await prisma.account.findMany()
 ```
 
-Tables: `accounts`, `categories`, `transactions`. Money is whole **cents**
+Tables: `users`, `sessions`, `accounts` (each has a `userId` owner),
+`categories` (shared), `transactions`. Money is whole **cents**
 (`1250` = 12.50). Balances aren't stored; they're computed from
 `openingBalance` + the account's transactions.
 
@@ -82,7 +83,9 @@ On GitHub, `.github/workflows/server-tests.yml` runs the same tests on every
 push that touches `server/` (with its own throwaway Postgres), so each commit
 gets a ✓ or ✗.
 
-`test/helpers.js` has `request`, `resetDb()`, and `createAccount()` /
+`test/helpers.js` has `request` (logged in as a fresh test user after
+`resetDb()`), `anonymous` (no cookie), `signUp(email)` for a second user,
+`resetDb()`, and `createAccount()` /
 `createCategory()` / `createTransaction()` to set up data quickly.
 
 ## Client
@@ -116,6 +119,29 @@ test/
   helpers.js      request, resetDb, createAccount/Category/Transaction
   *.test.js       one file per area (health, accounts, …)
 ```
+
+## Login
+
+Everything except `/api/health` and `/api/auth/*` needs a login.
+
+- **Sign up / log in** with email + password. Passwords are hashed with
+  Node's built-in `scrypt` (`src/lib/password.js`); only the hash is stored.
+- A login creates a **session**: the browser gets a random token in the
+  `bank_session` cookie (`httpOnly`, so page scripts can't read it; `Secure`
+  in production), and the `sessions` table stores only its SHA-256 hash.
+  Sessions last 30 days; logging out deletes it.
+- `requireAuth` (`src/middleware/auth.js`) puts the user on `req.user`, and
+  **every query is limited to that user's accounts**. Another user's
+  account, transaction or transfer answers 404, as if it didn't exist.
+- A failed login always says "Email or password is incorrect", so it doesn't
+  reveal which emails have accounts.
+
+| Method | Path | Body | Returns |
+|--------|------|------|---------|
+| POST | `/api/auth/signup` | `{ email, password }` (8+ chars) | 201 `{ user }` + cookie (409 if the email is taken) |
+| POST | `/api/auth/login` | `{ email, password }` | `{ user }` + cookie (401 if wrong) |
+| POST | `/api/auth/logout` | | 204, cookie cleared |
+| GET | `/api/auth/me` | | `{ user: { id, email } }` (401 if not logged in) |
 
 ## Endpoints
 
@@ -175,9 +201,13 @@ deleted; `PATCH { "archived": true }` hides them from the default list.
 
 ### Try it with curl
 
+Log in first; `-c`/`-b` save and send the session cookie:
+
 ```bash
-curl localhost:4000/api/accounts
-curl -X POST localhost:4000/api/accounts \
+curl -c /tmp/bank.cookies -H 'Content-Type: application/json' \
+  -d '{"email":"demo@bank.test","password":"demo1234"}' localhost:4000/api/auth/login
+curl -b /tmp/bank.cookies localhost:4000/api/accounts
+curl -b /tmp/bank.cookies -X POST localhost:4000/api/accounts \
   -H 'Content-Type: application/json' \
   -d '{"name":"Travel fund","type":"SAVINGS","openingBalance":50000}'
 ```

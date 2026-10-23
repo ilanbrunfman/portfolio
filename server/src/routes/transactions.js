@@ -23,9 +23,9 @@ async function assertCategory(categoryId) {
     if (!found) throw new HttpError(400, 'Validation failed', { fields: { categoryId: 'Unknown category' } })
 }
 
-/** The transaction, or 404 */
-async function findTransaction(id) {
-    const transaction = await prisma.transaction.findUnique({ where: { id } })
+/** The transaction if it's in one of the user's accounts, or 404 */
+async function findTransaction(id, userId) {
+    const transaction = await prisma.transaction.findFirst({ where: { id, account: { userId } } })
     if (!transaction) throw new HttpError(404, 'Transaction not found')
     return transaction
 }
@@ -34,7 +34,7 @@ async function findTransaction(id) {
 router.post('/', validate({ body: transactionCreate }), async (req, res) => {
     const body = req.valid.body
 
-    const account = await prisma.account.findUnique({ where: { id: body.accountId } })
+    const account = await prisma.account.findFirst({ where: { id: body.accountId, userId: req.user.id } })
     if (!account) throw new HttpError(400, 'Validation failed', { fields: { accountId: 'Unknown account' } })
     // 409 Conflict: the request is fine, but the account's state doesn't allow it
     if (account.archived) throw new HttpError(409, 'This account is archived. Restore it to add transactions.')
@@ -47,7 +47,7 @@ router.post('/', validate({ body: transactionCreate }), async (req, res) => {
 // PATCH /api/transactions/:id
 router.patch('/:id', validate({ params: idParams, body: transactionUpdate }), async (req, res) => {
     const { id } = req.valid.params
-    const existing = await findTransaction(id)
+    const existing = await findTransaction(id, req.user.id)
     if (existing.transferId) {
         throw new HttpError(409, 'This is one side of a transfer. Edit it with PATCH /api/transfers/:transferId.')
     }
@@ -66,7 +66,7 @@ router.patch('/:id', validate({ params: idParams, body: transactionUpdate }), as
 // so the database never holds half a transfer.
 router.delete('/:id', validate({ params: idParams }), async (req, res) => {
     const { id } = req.valid.params
-    const existing = await findTransaction(id)
+    const existing = await findTransaction(id, req.user.id)
 
     if (existing.transferId) {
         await prisma.transaction.deleteMany({ where: { transferId: existing.transferId } })

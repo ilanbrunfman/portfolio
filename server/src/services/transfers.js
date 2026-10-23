@@ -25,11 +25,11 @@ export function toTransferJson(out, inn) {
 }
 
 /**
- * Both accounts must exist (400) and be active (409).
+ * Both accounts must be the user's (400 'Unknown account' otherwise) and active (409).
  * @param {import('../generated/prisma/client.ts').Prisma.TransactionClient} tx
  */
-async function assertOpenAccounts(tx, { fromAccountId, toAccountId }) {
-    const accounts = await tx.account.findMany({ where: { id: { in: [fromAccountId, toAccountId] } } })
+async function assertOpenAccounts(tx, userId, { fromAccountId, toAccountId }) {
+    const accounts = await tx.account.findMany({ where: { id: { in: [fromAccountId, toAccountId] }, userId } })
     const byId = new Map(accounts.map((a) => [a.id, a]))
 
     const fields = {}
@@ -41,9 +41,9 @@ async function assertOpenAccounts(tx, { fromAccountId, toAccountId }) {
     if (archived) throw new HttpError(409, `${archived.name} is archived. Restore it to use it in a transfer.`)
 }
 
-/** The two rows of a transfer, or 404 */
-async function findPair(tx, transferId) {
-    const rows = await tx.transaction.findMany({ where: { transferId } })
+/** The two rows of one of the user's transfers, or 404 */
+async function findPair(tx, transferId, userId) {
+    const rows = await tx.transaction.findMany({ where: { transferId, account: { userId } } })
     const out = rows.find((r) => r.amount < 0)
     const inn = rows.find((r) => r.amount > 0)
     if (rows.length !== 2 || !out || !inn) throw new HttpError(404, 'Transfer not found')
@@ -51,12 +51,13 @@ async function findPair(tx, transferId) {
 }
 
 /**
- * Create both sides of a transfer.
+ * Create both sides of a transfer between two of the user's accounts.
+ * @param {number} userId
  * @param {{ fromAccountId: number, toAccountId: number, amount: number, date: string, description: string, note?: string|null }} input
  */
-export async function createTransfer(input) {
+export async function createTransfer(userId, input) {
     return prisma.$transaction(async (tx) => {
-        await assertOpenAccounts(tx, input)
+        await assertOpenAccounts(tx, userId, input)
 
         const shared = {
             transferId: randomUUID(),
@@ -72,20 +73,21 @@ export async function createTransfer(input) {
     })
 }
 
-/** @param {string} transferId */
-export async function getTransfer(transferId) {
-    const { out, inn } = await findPair(prisma, transferId)
+/** @param {number} userId  @param {string} transferId */
+export async function getTransfer(userId, transferId) {
+    const { out, inn } = await findPair(prisma, transferId, userId)
     return toTransferJson(out, inn)
 }
 
 /**
  * Change any of: fromAccountId, toAccountId, amount, date, description, note.
+ * @param {number} userId
  * @param {string} transferId
  * @param {object} changes
  */
-export async function updateTransfer(transferId, changes) {
+export async function updateTransfer(userId, transferId, changes) {
     return prisma.$transaction(async (tx) => {
-        const { out, inn } = await findPair(tx, transferId)
+        const { out, inn } = await findPair(tx, transferId, userId)
 
         const fromAccountId = changes.fromAccountId ?? out.accountId
         const toAccountId = changes.toAccountId ?? inn.accountId
@@ -93,8 +95,8 @@ export async function updateTransfer(transferId, changes) {
             throw new HttpError(400, 'Validation failed', { fields: { toAccountId: 'Pick two different accounts' } })
         }
         // Old and new accounts must all be active
-        await assertOpenAccounts(tx, { fromAccountId: out.accountId, toAccountId: inn.accountId })
-        await assertOpenAccounts(tx, { fromAccountId, toAccountId })
+        await assertOpenAccounts(tx, userId, { fromAccountId: out.accountId, toAccountId: inn.accountId })
+        await assertOpenAccounts(tx, userId, { fromAccountId, toAccountId })
 
         const amount = changes.amount ?? inn.amount
         const shared = {
@@ -108,8 +110,8 @@ export async function updateTransfer(transferId, changes) {
     })
 }
 
-/** @param {string} transferId */
-export async function deleteTransfer(transferId) {
-    const { count } = await prisma.transaction.deleteMany({ where: { transferId } })
+/** @param {number} userId  @param {string} transferId */
+export async function deleteTransfer(userId, transferId) {
+    const { count } = await prisma.transaction.deleteMany({ where: { transferId, account: { userId } } })
     if (count === 0) throw new HttpError(404, 'Transfer not found')
 }

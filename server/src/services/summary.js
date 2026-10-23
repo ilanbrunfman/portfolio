@@ -15,9 +15,10 @@ const addMonths = (month, n) => {
  * moving between your own accounts) and archived accounts are left out.
  * All amounts are positive cents.
  *
- * @param {string} month  'YYYY-MM'
+ * @param {number} userId  only this user's accounts
+ * @param {string} month   'YYYY-MM'
  */
-export async function getSummary(month) {
+export async function getSummary(userId, month) {
     const start = new Date(`${month}-01T00:00:00Z`)
     const end = new Date(`${addMonths(month, 1)}-01T00:00:00Z`)
     const trendStart = `${addMonths(month, -(TREND_MONTHS - 1))}-01`
@@ -30,7 +31,7 @@ export async function getSummary(month) {
                 transferId: null,
                 amount: { lt: 0 },
                 date: { gte: start, lt: end },
-                account: { archived: false },
+                account: { archived: false, userId },
             },
             _sum: { amount: true },
             _count: { _all: true },
@@ -47,7 +48,7 @@ export async function getSummary(month) {
             LEFT JOIN transactions t
                 ON date_trunc('month', t.date) = m
                AND t."transferId" IS NULL
-               AND t."accountId" IN (SELECT id FROM accounts WHERE NOT archived)
+               AND t."accountId" IN (SELECT id FROM accounts WHERE NOT archived AND "userId" = ${userId})
             GROUP BY m
             ORDER BY m
         `,
