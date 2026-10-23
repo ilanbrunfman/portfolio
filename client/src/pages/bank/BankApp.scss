@@ -1,7 +1,16 @@
 // Bank tracker – page-level visuals (layout is utility classes in the markup)
 .bank {
     &__title {
-        margin: 0;
+        margin-block: 0; // only top/bottom, so the mr-auto utility still applies
+    }
+
+    &__user {
+        font-size: 0.9rem;
+    }
+
+    // Login / sign-up card
+    &__auth {
+        max-width: 420px;
     }
 
     &__home {
