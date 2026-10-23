@@ -13,6 +13,10 @@ import summaryRouter from './routes/summary.js'
 // so tests can import the app without opening a port.
 const app = express()
 
+// In production the API sits behind the host's proxy (Render). Trust it, so
+// Express sees the original HTTPS request (needed for Secure cookies).
+if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1)
+
 // Parse JSON request bodies into req.body, and cookies into req.cookies
 app.use(express.json())
 app.use(cookieParser())

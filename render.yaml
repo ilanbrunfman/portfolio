@@ -1,0 +1,17 @@
+# Render "Blueprint": describes the bank API service so Render can create it
+# from this file (Dashboard → New → Blueprint → pick this repo).
+services:
+  - type: web
+    name: bank-api
+    runtime: node
+    plan: free
+    rootDir: server
+    branch: feature/bank-tracker
+    buildCommand: npm ci          # also runs prisma generate (postinstall)
+    startCommand: npm run start:prod   # prisma migrate deploy, then start Express
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false   # secret: Render asks you to paste it (Neon connection string)
