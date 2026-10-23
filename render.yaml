@@ -5,6 +5,7 @@ services:
     name: bank-api
     runtime: node
     plan: free
+    region: ohio   # same region as the Neon database (AWS us-east-2, Ohio)
     rootDir: server
     branch: feature/bank-tracker
     buildCommand: npm ci          # also runs prisma generate (postinstall)
