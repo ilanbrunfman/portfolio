@@ -1,85 +1,12 @@
+// Navigation and its reserved space come from SideNavLayout
+// (components/layout/side-nav); this only centers the page in what's left.
 .todos {
-    display: flex;
-    align-items: flex-start;
-    gap: 2rem;
-
-    // Shared height of the fixed bottom tab bar on mobile: the nav is pinned
-    // to this exact value and the content reserves the same space below it, so
-    // the two can never overlap. Includes the iOS home-indicator inset.
-    @media (max-width: 768px) {
-        --todos-nav-height: calc(3.5rem + env(safe-area-inset-bottom));
-    }
-
-    &__nav {
-        position: fixed;
-        z-index: 2;
-        top: 0;
-        left: 0;
-        height: 100svh;
-        flex: 0 0 auto;
-        display: flex;
-        flex-direction: column;
-        gap: 1.0rem;
-        width: auto; // 160px;
-        border-right: 1px solid var(--border);
-        padding: 1.0rem;
-
-        // Mobile: a fixed bottom tab bar instead of a full-height sidebar.
-        @media (max-width: 768px) {
-            top: auto;
-            bottom: 0;
-            right: 0;
-            width: 100%;
-            height: var(--todos-nav-height);
-            flex-direction: row;
-            align-items: center;
-            justify-content: space-around;
-            gap: 0;
-            background: var(--bg);
-            border-right: none;
-            border-top: 1px solid var(--border);
-            // Reserve the home-indicator inset at the bottom; the icons sit in
-            // the 3.5rem above it.
-            padding: 0 1rem env(safe-area-inset-bottom);
-        }
-    }
-
-    &__link {
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-        text-decoration: none;
-        font-weight: 500;
-        padding: 10px;
-        border-radius: 20px;
-        color: var(--text);
-
-        &:hover {
-            background: var(--accent-bg);
-            color: var(--text-h);
-        }
-
-        &--active {
-            background: var(--accent);
-            color: #fff;
-        }
-    }
-
     &__content {
         flex: 1 1 auto;
-        min-width: 0;
-        height: 100svh;
-
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
         padding-inline: 1.25rem;
-
-        // Shrink to the space above the fixed bottom tab bar so content centers
-        // in the visible area and never overlaps it.
-        @media (max-width: 768px) {
-            height: calc(100svh - var(--todos-nav-height));
-        }
     }
 }

@@ -1,39 +1,30 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { useTodos } from '@/pages/todos/context/TodoContext'
-
-import Icon from '@/components/ui/icon/Icon'
+import SideNavLayout from '@/components/layout/side-nav/SideNavLayout'
 import styles from './Todos.module.scss'
 
+/**
+ * Todos layout: the shared icon navigation (sidebar on tablet/desktop,
+ * bottom bar on phones) + the current page, centered.
+ */
 const Todos = () => {
     const { todos } = useTodos()
     const { pathname } = useLocation()
-    const getLinkClass = ({ isActive }) =>
-        isActive ? `${styles.todos__link} ${styles['todos__link--active']}` : styles.todos__link
+
+    const links = [
+        { to: '/', icon: 'IconHome', label: 'Portfolio home', end: true },
+        // The list only makes sense once there's something in it
+        ...(todos.length > 0 ? [{ to: '/todos', icon: 'IconListBullets', label: 'Recent todos', end: true }] : []),
+        // No "new" link while already on the new-todo page
+        ...(pathname !== '/todos/new' ? [{ to: '/todos/new', icon: 'IconPlus', label: 'New todo', end: true }] : []),
+    ]
 
     return (
-        <div className={styles.todos}>
-            <nav className={styles.todos__nav}>
-                <NavLink to="/" end className={getLinkClass}>
-                    <Icon name="IconHome" size={18} />
-                    {/* <span>New</span> */}
-                </NavLink>
-                { todos.length > 0 && (
-                    <NavLink to="/todos" end className={getLinkClass}>
-                        <Icon name="IconListBullets" size={18} />
-                        {/* <span>Recent</span> */}
-                    </NavLink>
-                ) }
-                { pathname !== '/todos/new' && (
-                    <NavLink to="/todos/new" end className={getLinkClass}>
-                        <Icon name="IconPlus" size={18} />
-                        {/* <span>New</span> */}
-                    </NavLink>
-                ) }
-            </nav>
+        <SideNavLayout label="Todos" links={links}>
             <div className={styles.todos__content}>
                 <Outlet />
             </div>
-        </div>
+        </SideNavLayout>
     )
 }
 
