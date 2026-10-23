@@ -23,8 +23,10 @@
         overflow-wrap: anywhere;
     }
 
-    // "Waking up the server…" / "Can't reach the server"
-    &__waking {
+    // "Can't reach the bank API" card
+    &__notice {
+        box-sizing: border-box;
+        width: 100%;
         max-width: 420px;
 
         p {
