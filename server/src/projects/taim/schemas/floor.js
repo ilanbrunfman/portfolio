@@ -32,11 +32,15 @@ export const orderCreate = z.discriminatedUnion(
         z.object({
             type: z.literal('TAKEOUT'),
             customerName: z.string({ error: 'Name is required' }).trim().min(1, 'Name is required').max(40, 'Max 40 characters'),
-            // To call when it's ready: digits, spaces and dashes, an optional + in front
+            // Optional, to call when it's ready. If given: digits, spaces and
+            // dashes, an optional + in front. Empty → saved as no phone.
             customerPhone: z
-                .string({ error: 'Phone is required' })
+                .string({ error: 'Enter a phone number, e.g. 050-123-4567' })
                 .trim()
-                .regex(/^\+?\d[\d -]{5,18}\d$/, 'Enter a phone number, e.g. 050-123-4567'),
+                .refine((phone) => phone === '' || /^\+?\d[\d -]{5,18}\d$/.test(phone), 'Enter a phone number, e.g. 050-123-4567')
+                .nullable()
+                .optional()
+                .transform((phone) => phone || null),
         }),
     ],
     { error: 'Type must be TABLE or TAKEOUT' }

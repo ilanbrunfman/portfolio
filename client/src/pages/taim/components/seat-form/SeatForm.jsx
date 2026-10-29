@@ -3,8 +3,8 @@ import Input from '@/components/ui/form/input/Input'
 import Button from '@/components/ui/button/Button'
 
 /**
- * Seat a table (how many guests?) or start a take-out (whose name and
- * phone number, to call when it's ready?).
+ * Seat a table (how many guests?) or start a take-out (whose name, and
+ * optionally a phone number to call when it's ready?).
  * Meant to sit inside a <Modal>.
  *
  * @param {object} props
@@ -29,10 +29,7 @@ const SeatForm = ({ table, onSave, onNeedsCleaning, onDone }) => {
             if (!Number.isInteger(data) || data < 1) return setErrors({ [field]: 'Enter how many guests, e.g. 2' })
         } else {
             data = { customerName: value.trim(), customerPhone: phone.trim() }
-            const found = {}
-            if (!data.customerName) found.customerName = 'Name is required'
-            if (!data.customerPhone) found.customerPhone = 'Phone is required'
-            if (Object.keys(found).length > 0) return setErrors(found)
+            if (!data.customerName) return setErrors({ customerName: 'Name is required' })
         }
 
         setSaving(true)
@@ -89,7 +86,7 @@ const SeatForm = ({ table, onSave, onNeedsCleaning, onDone }) => {
                         autoFocus
                     />
                     <Input
-                        label="Phone"
+                        label="Phone (optional)"
                         hint="To call when the order is ready."
                         value={phone}
                         onChange={(e) => { setPhone(e.target.value); setErrors({}) }}

@@ -304,7 +304,7 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | POST | `/api/taim/tables/:id/needs-cleaning` | | The table, back to needing cleaning ("not clean enough"; 409 while it has guests) |
 | GET | `/api/taim/orders` | `?status=OPEN` (default) or `CLOSED` | Orders with their dishes and `total`; open ones oldest first |
 | GET | `/api/taim/orders/:id` | | One order: `table` or `customerName` + `customerPhone`, `guests`, `openedBy`, `items` (name, price, status), `total` |
-| POST | `/api/taim/orders` | `{ type: 'TABLE', tableId, guests }` or `{ type: 'TAKEOUT', customerName, customerPhone }` | 201 + the order (409 if the table is already seated or needs cleaning) |
+| POST | `/api/taim/orders` | `{ type: 'TABLE', tableId, guests }` or `{ type: 'TAKEOUT', customerName, customerPhone? }` | 201 + the order (409 if the table is already seated or needs cleaning) |
 | PATCH | `/api/taim/orders/:id` | `{ tableId?, guests? }` | Fix a seating: move to another ready table and/or change guests (409 if fewer guests than a seat with dishes) |
 | DELETE | `/api/taim/orders/:id` | | 204, undo a seating or take-out; only while it has no dishes (409 otherwise) |
 | POST | `/api/taim/orders/:id/items` | `{ items: [{ menuItemId, quantity?, seat? }] }` | 201 + the order; one row per dish (`NEW`, not sent yet), price copied from the menu (409 if a dish is sold out or the bill is closed) |

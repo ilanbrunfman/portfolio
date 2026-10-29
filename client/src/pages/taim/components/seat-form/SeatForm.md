@@ -4,8 +4,9 @@ Starts an order from the Floor, inside a `Modal`:
 
 - **With a table:** "Guests" (prefilled with 2, or fewer for a smaller
   table; the hint shows the table's seats) and a **Seat T4** button.
-- **Without one (`table={null}`):** "Name for the order", **Phone** (to
-  call when it's ready; the server checks it looks like a phone number) and
+- **Without one (`table={null}`):** "Name for the order", **Phone
+  (optional)** (to call when it's ready; if given, the server checks it
+  looks like a phone number) and
   **Start take-out**. `onSave` gets `{ customerName, customerPhone }`.
 
 With `onNeedsCleaning`, a table also gets **Not clean? Needs cleaning** on

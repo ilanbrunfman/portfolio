@@ -118,7 +118,7 @@ model Order {
   table         DiningTable? @relation(fields: [tableId], references: [id], onDelete: Restrict)
   guests        Int?
   customerName  String?
-  customerPhone String? // take-out only; required by the API for new take-outs
+  customerPhone String? // take-out only, optional
   status        OrderStatus  @default(OPEN)
   openedById    Int
   openedBy      Staff        @relation(fields: [openedById], references: [id], onDelete: Restrict)

@@ -71,9 +71,11 @@ describe('seating and take-out (seatTable: Manager, Host, Waiter)', () => {
         expect(res.body).toMatchObject({ type: 'TAKEOUT', table: null, guests: null, customerName: 'Maya', customerPhone: '+972 50-123-4567' })
     })
 
-    it('a take-out needs a phone number that looks like one', async () => {
-        const missing = await waiter.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya' }).expect(400)
-        expect(missing.body.fields).toEqual({ customerPhone: 'Phone is required' })
+    it('the phone is optional, but must look like a phone number when given', async () => {
+        for (const phone of [undefined, '', '   ', null]) {
+            const res = await waiter.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya', customerPhone: phone }).expect(201)
+            expect(res.body.customerPhone).toBeNull()
+        }
         for (const phone of ['abc', '12', '050-12x-4567']) {
             const res = await waiter.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya', customerPhone: phone }).expect(400)
             expect(res.body.fields).toEqual({ customerPhone: 'Enter a phone number, e.g. 050-123-4567' })
@@ -92,7 +94,7 @@ describe('seating and take-out (seatTable: Manager, Host, Waiter)', () => {
         const noTable = await host.post('/api/taim/orders').send({ type: 'TABLE', tableId: 999, guests: 2 }).expect(400)
         expect(noTable.body.fields).toEqual({ tableId: 'Table not found' })
         const noName = await host.post('/api/taim/orders').send({ type: 'TAKEOUT' }).expect(400)
-        expect(noName.body.fields).toEqual({ customerName: 'Name is required', customerPhone: 'Phone is required' })
+        expect(noName.body.fields).toEqual({ customerName: 'Name is required' })
         await host.post('/api/taim/orders').send({ type: 'DELIVERY' }).expect(400)
     })
 
