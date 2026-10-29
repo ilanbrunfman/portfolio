@@ -37,6 +37,53 @@
         }
     }
 
+    // Header row with actions (the `actions` prop): toggle · actions · chevron.
+    // The toggle button's ::after covers the whole row, so the row is one
+    // big click target; the actions sit above it (z-index) and stay clickable.
+    &__head {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 8px;
+        transition: background 0.15s ease;
+
+        &:hover {
+            background: var(--accent-bg);
+        }
+
+        > .accordion__header {
+            flex: 1 1 auto;
+            min-width: 0;
+
+            &:hover {
+                background: transparent;
+            }
+
+            &::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+            }
+        }
+
+        > .accordion__chevron {
+            margin-right: 10px;
+            color: var(--text-h);
+            pointer-events: none;
+        }
+    }
+
+    &__actions {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        gap: 4px;
+    }
+
     // Chevron points right when collapsed, down when the section is open.
     &__chevron {
         flex-shrink: 0;
@@ -47,7 +94,8 @@
 
     // Child selectors (>): an open item turns only its own chevron and opens
     // only its own panel, so accordions can be nested inside a panel
-    &__item.is-open > &__header > &__chevron {
+    &__item.is-open > &__header > &__chevron,
+    &__item.is-open > &__head > &__chevron {
         transform: rotate(90deg);
     }
 
@@ -82,6 +130,7 @@
 
     @media (prefers-reduced-motion: reduce) {
         &__panel,
+        &__head,
         &__chevron {
             transition: none;
         }
