@@ -26,7 +26,7 @@
         cursor: default;
     }
 
-    // Free: green outline and word
+    // Ready: green
     &.is-free {
         border-color: rgba(34, 160, 107, 0.6);
 
@@ -35,15 +35,23 @@
         }
     }
 
-    // Taken: neutral, the accent on hover
-    &.is-taken:hover {
-        border-color: var(--accent);
+    // Needs cleaning: yellow
+    &.is-cleaning {
+        border-color: rgba(214, 158, 46, 0.75);
+        background: rgba(214, 158, 46, 0.08);
+
+        &:hover:not(:disabled) {
+            border-color: #d69e2e;
+        }
     }
 
-    // A dish came back: red
-    &.is-alert {
-        border-color: rgba(229, 72, 77, 0.7);
-        background: rgba(229, 72, 77, 0.08);
+    // Dining: grey (the neutral border), the accent on hover
+    &.is-dining {
+        background: var(--social-bg);
+
+        &:hover:not(:disabled) {
+            border-color: var(--accent);
+        }
     }
 
     &__label {
@@ -67,7 +75,17 @@
         font-weight: 700;
     }
 
+    &__cleaning {
+        color: #d69e2e;
+        font-weight: 700;
+    }
+
+    // "1 came back": a small red tag
     &__alert {
+        align-self: flex-start;
+        padding: 0.05rem 0.5rem;
+        border-radius: 999px;
+        background: rgba(229, 72, 77, 0.15);
         color: #e5484d;
         font-size: 0.8rem;
         font-weight: 700;

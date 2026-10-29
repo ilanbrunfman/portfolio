@@ -3,9 +3,11 @@ import { minutesSince } from '@/pages/taim/hooks/useNow'
 import './TableCard.scss'
 
 /**
- * One table on the Floor, as a button. Free: label and seats, outlined in
- * green. Taken: guests, minutes since seated, dishes and the bill so far;
- * red when a dish came back.
+ * One table on the Floor, as a button, in one of three colours:
+ *   green  = ready: free and clean, can be seated
+ *   yellow = needs cleaning: the guests left, not cleaned yet
+ *   grey   = dining: guests, minutes since seated, dishes and the bill so far
+ * A small red tag shows when a dish came back.
  *
  * @param {object} props
  * @param {object} props.table       A table from GET /api/taim/tables (order = its open order or null).
@@ -15,7 +17,7 @@ import './TableCard.scss'
  */
 const TableCard = ({ table, now, onClick, disabled = false }) => {
     const { order } = table
-    const state = !order ? 'is-free' : order.cameBack > 0 ? 'is-alert' : 'is-taken'
+    const state = order ? 'is-dining' : table.needsCleaning ? 'is-cleaning' : 'is-free'
 
     return (
         <button
@@ -25,8 +27,10 @@ const TableCard = ({ table, now, onClick, disabled = false }) => {
             disabled={disabled}
             aria-label={
                 order
-                    ? `${table.label}, taken: ${order.guests} guests, ${formatMoney(order.total)}`
-                    : `${table.label}, free, ${table.seats} seats`
+                    ? `${table.label}, dining: ${order.guests} guests, ${formatMoney(order.total)}`
+                    : table.needsCleaning
+                        ? `${table.label}, needs cleaning`
+                        : `${table.label}, ready, ${table.seats} seats`
             }
         >
             <span className="d-flex justify-between align-items-baseline gap-0-5">
@@ -47,8 +51,10 @@ const TableCard = ({ table, now, onClick, disabled = false }) => {
                         </span>
                     )}
                 </>
+            ) : table.needsCleaning ? (
+                <span className="table-card__cleaning">Needs cleaning</span>
             ) : (
-                <span className="table-card__free">Free</span>
+                <span className="table-card__free">Ready</span>
             )}
         </button>
     )

@@ -22,8 +22,9 @@ export function useOrder(orderId) {
 
     const reload = useCallback(() => setAttempt((n) => n + 1), [])
 
-    const addDish = useCallback(async (menuItemId) => {
-        setOrder(await api(`/orders/${orderId}/items`, { method: 'POST', body: { items: [{ menuItemId, quantity: 1 }] } }))
+    /** Add one dish; `seat` = the guest's seat number, or null for shared / take-out */
+    const addDish = useCallback(async (menuItemId, seat = null) => {
+        setOrder(await api(`/orders/${orderId}/items`, { method: 'POST', body: { items: [{ menuItemId, quantity: 1, seat }] } }))
     }, [orderId])
 
     const removeDish = useCallback(async (itemId) => {
@@ -34,5 +35,15 @@ export function useOrder(orderId) {
         setOrder(await api(`/orders/${orderId}/close`, { method: 'POST' }))
     }, [orderId])
 
-    return { order, error, reload, addDish, removeDish, close }
+    /** Fix a seating: { tableId?, guests? } */
+    const update = useCallback(async (data) => {
+        setOrder(await api(`/orders/${orderId}`, { method: 'PATCH', body: data }))
+    }, [orderId])
+
+    /** Undo a seating (only while it has no dishes); the order is gone afterwards */
+    const undo = useCallback(async () => {
+        await api(`/orders/${orderId}`, { method: 'DELETE' })
+    }, [orderId])
+
+    return { order, error, reload, addDish, removeDish, close, update, undo }
 }

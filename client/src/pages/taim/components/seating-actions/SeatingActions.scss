@@ -1,0 +1,8 @@
+// Seating fixes – visuals only (layout is utility classes in the markup)
+.seating-actions {
+    // The move form, opened in place under the buttons
+    &__move {
+        box-sizing: border-box;
+        box-shadow: none;
+    }
+}

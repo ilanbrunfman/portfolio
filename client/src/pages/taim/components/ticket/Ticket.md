@@ -4,6 +4,10 @@ The bill of one Ta'im order: a title ("T2 · 3 guests" or "Take-out · Maya"),
 when and by whom it was opened, each dish with its kitchen status
 (**Preparing**, **Sent out**, **Came back**) and price, and the total.
 
+At a table the dishes are grouped by seat (**Seat 1**, **Seat 2**, …, then
+**Shared**), so whoever brings the food knows who gets what. A take-out is
+one list.
+
 - A dish that **came back** is crossed out: it isn't on the bill (it counts
   as money lost instead). The total comes from the server, which leaves
   those dishes out.

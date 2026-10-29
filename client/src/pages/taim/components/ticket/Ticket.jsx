@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Button from '@/components/ui/button/Button'
 import { formatMoney } from '@/pages/taim/utils/money'
 import { useNow, minutesSince } from '@/pages/taim/hooks/useNow'
-import { orderTitle } from '@/pages/taim/utils/orders'
+import { orderTitle, groupBySeat } from '@/pages/taim/utils/orders'
 import './Ticket.scss'
 
 const STATUS = {
@@ -12,7 +12,8 @@ const STATUS = {
 }
 
 /**
- * The bill of one order: its dishes with their kitchen status, the total,
+ * The bill of one order: its dishes (grouped by seat at a table, so the
+ * runner knows who gets what) with their kitchen status, the total,
  * and (when allowed) remove buttons and "Close bill". Used on the Order
  * screen and in the Floor's bill dialog.
  *
@@ -56,29 +57,34 @@ const Ticket = ({ order, onRemove, onClose, className = '' }) => {
             {order.items.length === 0 ? (
                 <p className="form__hint">No dishes yet.</p>
             ) : (
-                <ul className="ticket__lines">
-                    {order.items.map((item) => (
-                        <li key={item.id} className={`ticket__line d-flex align-items-start gap-0-5 ${STATUS[item.status].className}`}>
-                            <div className="ticket__dish d-flex flex-column">
-                                <span className="ticket__name">{item.name}</span>
-                                <span className={`ticket__status ${STATUS[item.status].className}`}>{STATUS[item.status].label}</span>
-                            </div>
-                            <span className="ticket__price">{formatMoney(item.price)}</span>
-                            {onRemove && isOpen && item.status === 'PREPARING' && (
-                                <button
-                                    type="button"
-                                    className="ticket__remove"
-                                    onClick={() => run(item.id, () => onRemove(item.id))}
-                                    disabled={busy !== null}
-                                    aria-label={`Remove ${item.name}`}
-                                    title="Remove (only while it's being prepared)"
-                                >
-                                    ×
-                                </button>
-                            )}
-                        </li>
-                    ))}
-                </ul>
+                groupBySeat(order).map((group) => (
+                    <div key={group.key} className="ticket__group">
+                        {group.title && <h4 className="ticket__seat">{group.title}</h4>}
+                        <ul className="ticket__lines">
+                            {group.items.map((item) => (
+                                <li key={item.id} className={`ticket__line d-flex align-items-start gap-0-5 ${STATUS[item.status].className}`}>
+                                    <div className="ticket__dish d-flex flex-column">
+                                        <span className="ticket__name">{item.name}</span>
+                                        <span className={`ticket__status ${STATUS[item.status].className}`}>{STATUS[item.status].label}</span>
+                                    </div>
+                                    <span className="ticket__price">{formatMoney(item.price)}</span>
+                                    {onRemove && isOpen && item.status === 'PREPARING' && (
+                                        <button
+                                            type="button"
+                                            className="ticket__remove"
+                                            onClick={() => run(item.id, () => onRemove(item.id))}
+                                            disabled={busy !== null}
+                                            aria-label={`Remove ${item.name}`}
+                                            title="Remove (only while it's being prepared)"
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ))
             )}
 
             <div className="ticket__total d-flex justify-between">
