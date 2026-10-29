@@ -3,30 +3,36 @@ import Input from '@/components/ui/form/input/Input'
 import Button from '@/components/ui/button/Button'
 
 /**
- * Seat a table (how many guests?) or start a take-out (whose name?).
+ * Seat a table (how many guests?) or start a take-out (whose name and
+ * phone number, to call when it's ready?).
  * Meant to sit inside a <Modal>.
  *
  * @param {object} props
  * @param {object|null} props.table          The free table to seat, or null for a take-out.
- * @param {(value: number|string) => Promise} props.onSave  Guests (table) or name (take-out); throws on failure.
+ * @param {(value: number|{ customerName, customerPhone }) => Promise} props.onSave  Guests (table) or name + phone (take-out); throws on failure.
  * @param {() => Promise} [props.onNeedsCleaning]  Table only: "Not clean? Needs cleaning" sends it back to yellow.
  * @param {() => void} props.onDone          Called after saving, and on Cancel.
  */
 const SeatForm = ({ table, onSave, onNeedsCleaning, onDone }) => {
     const isTable = Boolean(table)
     const [value, setValue] = useState(isTable ? String(Math.min(2, table.seats)) : '')
+    const [phone, setPhone] = useState('')
     const [errors, setErrors] = useState({})
     const [saving, setSaving] = useState(false)
     const field = isTable ? 'guests' : 'customerName'
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        let data = value.trim()
+        let data
         if (isTable) {
-            data = Number(data)
+            data = Number(value.trim())
             if (!Number.isInteger(data) || data < 1) return setErrors({ [field]: 'Enter how many guests, e.g. 2' })
-        } else if (!data) {
-            return setErrors({ [field]: 'Name is required' })
+        } else {
+            data = { customerName: value.trim(), customerPhone: phone.trim() }
+            const found = {}
+            if (!data.customerName) found.customerName = 'Name is required'
+            if (!data.customerPhone) found.customerPhone = 'Phone is required'
+            if (Object.keys(found).length > 0) return setErrors(found)
         }
 
         setSaving(true)
@@ -71,16 +77,30 @@ const SeatForm = ({ table, onSave, onNeedsCleaning, onDone }) => {
                     autoFocus
                 />
             ) : (
-                <Input
-                    label="Name for the order"
-                    value={value}
-                    onChange={(e) => { setValue(e.target.value); setErrors({}) }}
-                    error={errors.customerName}
-                    maxLength={40}
-                    autoComplete="off"
-                    placeholder="e.g. Maya"
-                    autoFocus
-                />
+                <>
+                    <Input
+                        label="Name for the order"
+                        value={value}
+                        onChange={(e) => { setValue(e.target.value); setErrors({}) }}
+                        error={errors.customerName}
+                        maxLength={40}
+                        autoComplete="off"
+                        placeholder="e.g. Maya"
+                        autoFocus
+                    />
+                    <Input
+                        label="Phone"
+                        hint="To call when the order is ready."
+                        value={phone}
+                        onChange={(e) => { setPhone(e.target.value); setErrors({}) }}
+                        error={errors.customerPhone}
+                        type="tel"
+                        inputMode="tel"
+                        autoComplete="off"
+                        maxLength={20}
+                        placeholder="e.g. 050-123-4567"
+                    />
+                </>
             )}
 
             <div className="d-flex flex-wrap justify-end gap-0-5">

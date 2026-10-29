@@ -37,9 +37,9 @@ export function useFloor() {
         return order
     }, [reload])
 
-    /** Start a take-out → the new order */
-    const startTakeout = useCallback(async (customerName) => {
-        const order = await api('/orders', { method: 'POST', body: { type: 'TAKEOUT', customerName } })
+    /** Start a take-out ({ customerName, customerPhone }) → the new order */
+    const startTakeout = useCallback(async ({ customerName, customerPhone }) => {
+        const order = await api('/orders', { method: 'POST', body: { type: 'TAKEOUT', customerName, customerPhone } })
         reload()
         return order
     }, [reload])

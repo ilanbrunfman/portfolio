@@ -115,6 +115,7 @@ const Floor = () => {
                                     <button type="button" className="floor__takeout d-flex justify-between gap-0-5" onClick={() => openOrder(order.id, 'TAKEOUT')}>
                                         <span className="d-flex flex-column">
                                             <strong>{order.customerName}</strong>
+                                            {order.customerPhone && <span className="form__hint">{order.customerPhone}</span>}
                                             <span className="form__hint">
                                                 {order.items.length} {order.items.length === 1 ? 'dish' : 'dishes'} · {minutesSince(order.openedAt, now)} min
                                             </span>
@@ -144,7 +145,7 @@ const Floor = () => {
                     />
                 )}
                 {dialog?.kind === 'takeout' && (
-                    <SeatForm table={null} onSave={async (name) => afterSeat(await floor.startTakeout(name))} onDone={close} />
+                    <SeatForm table={null} onSave={async (data) => afterSeat(await floor.startTakeout(data))} onDone={close} />
                 )}
             </Modal>
 

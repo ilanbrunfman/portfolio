@@ -47,8 +47,12 @@ const SeatingActions = ({ order, onUpdate, onUndo }) => {
                 {canUndo &&
                     (confirmUndo ? (
                         <>
-                            <Button size="sm" onClick={undo} disabled={busy}>{busy ? 'Undoing…' : 'Yes, undo seating'}</Button>
-                            <Button size="sm" variant="ghost" onClick={() => setConfirmUndo(false)} disabled={busy}>Keep</Button>
+                            <Button size="sm" onClick={undo} disabled={busy}>
+                                {busy ? 'Cancelling…' : order.type === 'TABLE' ? 'Yes, undo seating' : 'Yes, cancel take-out'}
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setConfirmUndo(false)} disabled={busy}>
+                                {order.type === 'TABLE' ? 'Keep seating' : 'Keep it'}
+                            </Button>
                         </>
                     ) : (
                         <Button size="sm" variant="ghost" onClick={() => setConfirmUndo(true)}>

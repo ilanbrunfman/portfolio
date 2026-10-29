@@ -64,6 +64,10 @@ const Ticket = ({ order, onEditItem, onSend, onClose, className = '' }) => {
                 <span className="form__hint">
                     {isOpen ? `Opened ${minutesSince(order.openedAt, now)} min ago by ${order.openedBy.name}` : 'Bill closed'}
                 </span>
+                {order.customerPhone && (
+                    // A link, so a tap calls the customer on a phone
+                    <a className="ticket__phone" href={`tel:${order.customerPhone.replace(/[\s-]/g, '')}`}>{order.customerPhone}</a>
+                )}
             </header>
 
             {error && <p className="form__error" role="alert">{error}</p>}

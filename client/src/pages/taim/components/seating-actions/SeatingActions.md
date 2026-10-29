@@ -10,7 +10,8 @@ Lets a host (or waiter, or manager) fix a seating mistake:
   form. It opens in place rather than in a dialog, because on the Floor
   this already sits inside the bill dialog.
 - **Undo seating** / **Cancel take-out**: only while nothing has been
-  ordered. It asks once more ("Yes, undo seating" / "Keep"), then sends
+  ordered. It asks once more ("Yes, undo seating" / "Keep seating", or for a
+  take-out "Yes, cancel take-out" / "Keep it"), then sends
   `DELETE /api/taim/orders/:id`. After that the order is gone and the
   table is green again.
 
