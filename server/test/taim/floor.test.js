@@ -186,6 +186,18 @@ describe('cleaning (cleanTable: Manager, Host, Waiter)', () => {
         await seat(host).expect(201)
     })
 
+    it('a ready table can be sent back to cleaning, and then cannot be seated', async () => {
+        const res = await host.post(`/api/taim/tables/${t1.id}/needs-cleaning`).expect(200)
+        expect(res.body).toMatchObject({ label: 'T1', needsCleaning: true, order: null })
+        expect((await seat(waiter).expect(409)).body.error).toBe('T1 needs cleaning first')
+
+        await waiter.post(`/api/taim/tables/${t1.id}/clean`).expect(200)
+        await seat(waiter).expect(201)
+        const dining = await host.post(`/api/taim/tables/${t1.id}/needs-cleaning`).expect(409)
+        expect(dining.body.error).toBe('T1 still has guests')
+        await (await as('COOK')).post(`/api/taim/tables/${t2.id}/needs-cleaning`).expect(403)
+    })
+
     it('Cook and Chef cannot mark a table clean; a table with guests is not "clean"', async () => {
         await closeT1()
         await (await as('COOK')).post(`/api/taim/tables/${t1.id}/clean`).expect(403)

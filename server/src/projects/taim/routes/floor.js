@@ -108,14 +108,24 @@ router.patch('/tables/:id', allow('setUpTables'), validate({ params: idParams, b
     res.json(table)
 })
 
-// POST /api/taim/tables/:id/clean – guests have left and the table is clean
-router.post('/tables/:id/clean', allow('cleanTable'), validate({ params: idParams }), async (req, res) => {
-    const { id } = req.valid.params
+/** Set a table's cleaning flag; 404 if it doesn't exist, 409 while it has guests */
+async function setNeedsCleaning(id, needsCleaning) {
     const table = await prisma.diningTable.findUnique({ where: { id }, include: { orders: { where: { status: 'OPEN' }, select: { id: true } } } })
     if (!table) throw new HttpError(404, 'Table not found')
     if (table.orders.length > 0) throw new HttpError(409, `${table.label} still has guests`)
-    const updated = await prisma.diningTable.update({ where: { id }, data: { needsCleaning: false } })
-    res.json({ ...updated, order: null })
+    const updated = await prisma.diningTable.update({ where: { id }, data: { needsCleaning } })
+    return { ...updated, order: null }
+}
+
+// POST /api/taim/tables/:id/clean – guests have left and the table is clean
+router.post('/tables/:id/clean', allow('cleanTable'), validate({ params: idParams }), async (req, res) => {
+    res.json(await setNeedsCleaning(req.valid.params.id, false))
+})
+
+// POST /api/taim/tables/:id/needs-cleaning – a "ready" table isn't clean
+// enough after all: back to yellow, so someone comes back to it
+router.post('/tables/:id/needs-cleaning', allow('cleanTable'), validate({ params: idParams }), async (req, res) => {
+    res.json(await setNeedsCleaning(req.valid.params.id, true))
 })
 
 // ---------- orders ----------

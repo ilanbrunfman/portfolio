@@ -300,6 +300,7 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | POST | `/api/taim/tables` | `{ label, seats }` | 201, added at the end of the floor (Manager; 409 if the label exists) |
 | PATCH | `/api/taim/tables/:id` | `{ label?, seats? }` | The updated table (Manager) |
 | POST | `/api/taim/tables/:id/clean` | | The table, ready again (409 while it still has guests) |
+| POST | `/api/taim/tables/:id/needs-cleaning` | | The table, back to needing cleaning ("not clean enough"; 409 while it has guests) |
 | GET | `/api/taim/orders` | `?status=OPEN` (default) or `CLOSED` | Orders with their dishes and `total`; open ones oldest first |
 | GET | `/api/taim/orders/:id` | | One order: `table` or `customerName`, `guests`, `openedBy`, `items` (name, price, status), `total` |
 | POST | `/api/taim/orders` | `{ type: 'TABLE', tableId, guests }` or `{ type: 'TAKEOUT', customerName }` | 201 + the order (409 if the table is already seated or needs cleaning) |
