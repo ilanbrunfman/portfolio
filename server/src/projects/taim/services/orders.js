@@ -3,7 +3,8 @@ import { HttpError } from '../../../shared/lib/httpError.js'
 
 // What every order response includes from the database
 export const ORDER_INCLUDE = {
-    table: { select: { id: true, label: true } },
+    // For combined tables, the others of the group too (for the label)
+    table: { select: { id: true, label: true, joined: { select: { label: true }, orderBy: { position: 'asc' } } } },
     openedBy: { select: { id: true, name: true } },
     items: {
         select: { id: true, menuItemId: true, price: true, seat: true, status: true, createdAt: true, firedAt: true, round: true, sentOutAt: true, menuItem: { select: { name: true } } },
@@ -23,7 +24,8 @@ export function toOrderJson(order) {
         id: order.id,
         type: order.type,
         status: order.status,
-        table: order.table,
+        // "T1", or "T1 + T4 + T7" for combined tables
+        table: order.table && { id: order.table.id, label: [order.table, ...order.table.joined].map((t) => t.label).join(' + ') },
         guests: order.guests,
         customerName: order.customerName,
         customerPhone: order.customerPhone,

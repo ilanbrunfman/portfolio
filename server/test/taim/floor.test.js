@@ -423,6 +423,7 @@ describe('combining tables (combineTables: Manager, Host)', () => {
         expect(joinedSeat.body.error).toBe('T3 is combined with T1: seat T1 instead')
 
         const order = (await seat(host, t1, 8).expect(201)).body
+        expect(order.table).toEqual({ id: t1.id, label: 'T1 + T3' })
         const res = await addDishes(waiter, order.id, [{ menuItemId: hummus.id, seat: 8 }]).expect(201)
         expect(res.body.items[0].seat).toBe(8)
     })
