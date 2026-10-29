@@ -6,7 +6,7 @@ import SideNavLayout from '@/components/layout/side-nav/SideNavLayout'
 import Button from '@/components/ui/button/Button'
 import './TaimApp.scss'
 
-const HOME_LINK = { to: '/', icon: 'IconHome', label: 'Portfolio home', end: true }
+const HOME_LINK = { to: '/', icon: 'IconHome', label: 'Portfolio home', shortLabel: 'Home', end: true }
 
 /**
  * Ta'im layout (/taim/*): icon nav (sidebar on tablet/desktop, bottom bar
@@ -40,7 +40,7 @@ const TaimShell = () => {
     const { staff, screens } = session
     const links = SCREENS
         .filter((screen) => screens.includes(screen.id))
-        .map((screen) => ({ to: `/taim/${screen.id}`, icon: screen.icon, label: screen.label }))
+        .map((screen) => ({ to: `/taim/${screen.id}`, icon: screen.icon, label: screen.label, shortLabel: screen.shortLabel }))
 
     // key: picking someone else starts their screens fresh
     return (
@@ -48,7 +48,7 @@ const TaimShell = () => {
             key={staff.id}
             label="Ta'im"
             links={[HOME_LINK, ...links]}
-            actions={[{ icon: 'IconSignOut', label: 'Switch person', onClick: switchPerson }]}
+            actions={[{ icon: 'IconSignOut', label: 'Switch person', shortLabel: 'Switch', onClick: switchPerson }]}
         >
             <div className="taim container d-flex flex-column gap-2 py-2">
                 <header className="d-flex flex-wrap justify-between align-items-baseline gap-0-5">
