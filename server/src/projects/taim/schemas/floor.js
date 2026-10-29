@@ -61,6 +61,11 @@ export const orderUpdate = z
     .partial()
     .refine((data) => Object.keys(data).length > 0, 'Nothing to update')
 
+// PATCH /api/taim/orders/:id/items/:itemId – move a dish to another seat (null = shared)
+export const orderItemUpdate = z.object({
+    seat: positiveInt('Seat must be a whole number above 0').nullable(),
+})
+
 // GET /api/taim/orders?status=OPEN|CLOSED
 export const orderListQuery = z.object({
     status: z.enum(['OPEN', 'CLOSED'], { error: 'Status must be OPEN or CLOSED' }).default('OPEN'),

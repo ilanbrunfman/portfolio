@@ -306,6 +306,7 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | PATCH | `/api/taim/orders/:id` | `{ tableId?, guests? }` | Fix a seating: move to another ready table and/or change guests (409 if fewer guests than a seat with dishes) |
 | DELETE | `/api/taim/orders/:id` | | 204, undo a seating or take-out; only while it has no dishes (409 otherwise) |
 | POST | `/api/taim/orders/:id/items` | `{ items: [{ menuItemId, quantity?, seat? }] }` | 201 + the order; one row per dish, price copied from the menu (409 if a dish is sold out or the bill is closed) |
+| PATCH | `/api/taim/orders/:id/items/:itemId` | `{ seat }` (a number, or `null` = shared) | The order with the dish moved to that seat; any time while the bill is open |
 | DELETE | `/api/taim/orders/:id/items/:itemId` | | The order without that dish; only while it's still `PREPARING` (409 otherwise) |
 | POST | `/api/taim/orders/:id/close` | | The closed order; the table now needs cleaning (409 if already closed) |
 

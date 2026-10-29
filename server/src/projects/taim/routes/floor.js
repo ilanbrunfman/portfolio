@@ -4,7 +4,7 @@ import { validate } from '../../../shared/middleware/validate.js'
 import { HttpError } from '../../../shared/lib/httpError.js'
 import { idParams } from '../../../shared/schemas/common.js'
 import { allow } from '../middleware/staff.js'
-import { tableCreate, tableUpdate, orderCreate, orderUpdate, orderItemsAdd, orderListQuery, orderItemParams } from '../schemas/floor.js'
+import { tableCreate, tableUpdate, orderCreate, orderUpdate, orderItemsAdd, orderItemUpdate, orderListQuery, orderItemParams } from '../schemas/floor.js'
 import { ORDER_INCLUDE, billTotal, getOrder, requireOpenOrder, toOrderJson } from '../services/orders.js'
 
 // The floor (tables) and orders. Everyone picked can read them; changing
@@ -37,6 +37,18 @@ async function requireReadyTable(tableId, db = prisma) {
 const tableTaken = (err) => {
     if (err.code === 'P2002') throw new HttpError(409, 'This table is already seated')
     throw err
+}
+
+/**
+ * Seats: a take-out has none; at a table, seat 1…guests (null = shared).
+ * A seat that doesn't fit → 400 under `field`.
+ */
+function checkSeat(order, seat, field) {
+    if (seat === null) return
+    if (order.type === 'TAKEOUT') throw new HttpError(400, 'Validation failed', { fields: { [field]: 'Take-out dishes have no seat' } })
+    if (seat > order.guests) {
+        throw new HttpError(400, 'Validation failed', { fields: { [field]: `Seat ${seat} doesn't exist: the table has ${order.guests} guests` } })
+    }
 }
 
 // GET /api/taim/tables – every table in floor order; `order` is its open
@@ -167,14 +179,7 @@ router.post('/orders/:id/items', allow('addDishes'), validate({ params: idParams
     const order = await prisma.$transaction(async (tx) => {
         const current = await requireOpenOrder(id, tx)
 
-        // Seats: a take-out has none; at a table, seat 1…guests (or null = shared)
-        for (const { seat } of items) {
-            if (seat === null) continue
-            if (current.type === 'TAKEOUT') throw new HttpError(400, 'Validation failed', { fields: { items: 'Take-out dishes have no seat' } })
-            if (seat > current.guests) {
-                throw new HttpError(400, 'Validation failed', { fields: { items: `Seat ${seat} doesn't exist: the table has ${current.guests} guests` } })
-            }
-        }
+        for (const { seat } of items) checkSeat(current, seat, 'items')
 
         const ids = [...new Set(items.map((item) => item.menuItemId))]
         const dishes = await tx.menuItem.findMany({ where: { id: { in: ids } } })
@@ -195,6 +200,18 @@ router.post('/orders/:id/items', allow('addDishes'), validate({ params: idParams
         return getOrder(id, tx)
     })
     res.status(201).json(order)
+})
+
+// PATCH /api/taim/orders/:id/items/:itemId { seat } – the dish is for
+// another guest (or shared). Any time while the bill is open, whatever the
+// kitchen status: it only changes who gets it.
+router.patch('/orders/:id/items/:itemId', allow('addDishes'), validate({ params: orderItemParams, body: orderItemUpdate }), async (req, res) => {
+    const { id, itemId } = req.valid.params
+    const order = await requireOpenOrder(id)
+    checkSeat(order, req.valid.body.seat, 'seat')
+    const { count } = await prisma.orderItem.updateMany({ where: { id: itemId, orderId: id }, data: { seat: req.valid.body.seat } })
+    if (count === 0) throw new HttpError(404, 'Dish not found on this order')
+    res.json(await getOrder(id))
 })
 
 // DELETE /api/taim/orders/:id/items/:itemId – take back a dish added by

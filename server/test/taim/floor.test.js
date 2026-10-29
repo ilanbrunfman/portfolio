@@ -254,6 +254,25 @@ describe('seat numbers on dishes', () => {
         expect(res.body.items.map((i) => [i.name, i.seat])).toEqual([['Hummus', null], ['Shakshuka', 1], ['Hummus', 3], ['Hummus', 3]])
     })
 
+    it('moves a dish to another seat or to shared, even after it was sent out', async () => {
+        const order = (await seat(host, t2, 3).expect(201)).body
+        const [dish] = (await addDishes(waiter, order.id, [{ menuItemId: hummus.id, seat: 1 }]).expect(201)).body.items
+        await prisma.orderItem.update({ where: { id: dish.id }, data: { status: 'SENT_OUT', sentOutAt: new Date() } })
+
+        const url = `/api/taim/orders/${order.id}/items/${dish.id}`
+        expect((await waiter.patch(url).send({ seat: 3 }).expect(200)).body.items[0].seat).toBe(3)
+        expect((await waiter.patch(url).send({ seat: null }).expect(200)).body.items[0].seat).toBeNull()
+
+        const bad = await waiter.patch(url).send({ seat: 4 }).expect(400)
+        expect(bad.body.fields).toEqual({ seat: "Seat 4 doesn't exist: the table has 3 guests" })
+        await waiter.patch(url).send({}).expect(400)
+        await waiter.patch(`/api/taim/orders/${order.id}/items/999`).send({ seat: 1 }).expect(404)
+        await host.patch(url).send({ seat: 2 }).expect(403)
+
+        await host.post(`/api/taim/orders/${order.id}/close`).expect(200)
+        await waiter.patch(url).send({ seat: 2 }).expect(409)
+    })
+
     it('refuses a seat the table does not have, and seats on a take-out', async () => {
         const order = (await seat(host, t2, 3).expect(201)).body
         const res = await addDishes(waiter, order.id, [{ menuItemId: hummus.id, seat: 4 }]).expect(400)
