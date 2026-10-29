@@ -1,5 +1,6 @@
 // Ta'im demo data: one staff member per role (the people on the
-// "Who are you?" screen) and a small menu. Prices are cents.
+// "Who are you?" screen), a small menu, 8 tables and a few open orders so
+// the floor isn't empty. Prices are cents.
 //
 // ⚠ Wipes all Ta'im rows first.
 
@@ -36,10 +37,24 @@ export const MENU = [
     ]],
 ]
 
+// label, seats – in floor order
+export const TABLES = [
+    ['T1', 2], ['T2', 4], ['T3', 2], ['T4', 4],
+    ['T5', 6], ['T6', 6], ['T7', 4], ['T8', 8],
+]
+
+// Orders open right now: [table or take-out name, guests, opened by, minutes ago, dishes]
+// A dish name with " ✓" has already been sent out by the kitchen.
+const OPEN_ORDERS = [
+    ['T2', 3, 'Lior', 34, ['Hummus with pita ✓', 'Shakshuka', 'Sabich ✓', 'Lemonana ✓']],
+    ['T5', 6, 'Lior', 12, ['Kebab', 'Sabich', 'Falafel plate', 'Mint tea', 'Mint tea']],
+    ['Maya', null, 'Dana', 9, ['Falafel plate', 'Hummus with pita']],
+]
+
 /** @param {import('../../src/generated/prisma/client.ts').PrismaClient} prisma */
 export async function seedTaim(prisma) {
     // Start clean: empty the tables and restart ids at 1
-    await prisma.$executeRaw`TRUNCATE TABLE taim.menu_items, taim.categories, taim.staff RESTART IDENTITY CASCADE`
+    await prisma.$executeRaw`TRUNCATE TABLE taim.order_items, taim.orders, taim.dining_tables, taim.menu_items, taim.categories, taim.staff RESTART IDENTITY CASCADE`
 
     await prisma.staff.createMany({ data: STAFF })
 
@@ -51,5 +66,33 @@ export async function seedTaim(prisma) {
         dishCount += items.length
     }
 
-    console.log(`Ta'im: ${STAFF.length} staff (${STAFF.map((s) => s.name).join(', ')}), ${MENU.length} categories, ${dishCount} dishes`)
+    await prisma.diningTable.createMany({ data: TABLES.map(([label, seats], i) => ({ label, seats, position: i + 1 })) })
+
+    // A few open orders, with prices copied from the menu like the API does
+    const staffId = Object.fromEntries((await prisma.staff.findMany()).map((p) => [p.name, p.id]))
+    const tableId = Object.fromEntries((await prisma.diningTable.findMany()).map((t) => [t.label, t.id]))
+    const dish = Object.fromEntries((await prisma.menuItem.findMany()).map((d) => [d.name, d]))
+    for (const [where, guests, by, minutesAgo, dishes] of OPEN_ORDERS) {
+        const openedAt = new Date(Date.now() - minutesAgo * 60_000)
+        const isTable = where in tableId
+        await prisma.order.create({
+            data: {
+                type: isTable ? 'TABLE' : 'TAKEOUT',
+                tableId: isTable ? tableId[where] : null,
+                guests: isTable ? guests : null,
+                customerName: isTable ? null : where,
+                openedById: staffId[by],
+                openedAt,
+                items: {
+                    create: dishes.map((entry) => {
+                        const sent = entry.endsWith(' ✓')
+                        const { id, price } = dish[entry.replace(' ✓', '')]
+                        return { menuItemId: id, price, status: sent ? 'SENT_OUT' : 'PREPARING', createdAt: openedAt, sentOutAt: sent ? new Date() : null }
+                    }),
+                },
+            },
+        })
+    }
+
+    console.log(`Ta'im: ${STAFF.length} staff (${STAFF.map((s) => s.name).join(', ')}), ${MENU.length} categories, ${dishCount} dishes, ${TABLES.length} tables, ${OPEN_ORDERS.length} open orders`)
 }
