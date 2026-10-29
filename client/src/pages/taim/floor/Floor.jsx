@@ -19,7 +19,8 @@ import './Floor.scss'
  * /taim/floor – every table and the open take-outs, for the Manager, Host
  * and Waiter. Tables are green (ready), yellow (needs cleaning) or grey
  * (dining). A tap does what the person's role allows:
- *   ready table    → seat it (seatTable); a Waiter or Manager then goes to the order
+ *   ready table    → seat it (seatTable); a Waiter or Manager then goes to the order.
+ *                    Not clean enough? "Needs cleaning" turns it yellow again.
  *   needs cleaning → "Mark as clean" (cleanTable)
  *   dining table   → its order (addDishes: Waiter, Manager) or its bill (Host),
  *                    where a seating mistake can be fixed (move, undo)
@@ -135,6 +136,7 @@ const Floor = () => {
                     <SeatForm
                         table={dialog.table}
                         onSave={async (guests) => afterSeat(await floor.seatTable(dialog.table.id, guests))}
+                        onNeedsCleaning={can('cleanTable') ? () => floor.markNeedsCleaning(dialog.table.id) : undefined}
                         onDone={close}
                     />
                 )}

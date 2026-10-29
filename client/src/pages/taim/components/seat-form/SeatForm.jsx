@@ -9,9 +9,10 @@ import Button from '@/components/ui/button/Button'
  * @param {object} props
  * @param {object|null} props.table          The free table to seat, or null for a take-out.
  * @param {(value: number|string) => Promise} props.onSave  Guests (table) or name (take-out); throws on failure.
+ * @param {() => Promise} [props.onNeedsCleaning]  Table only: "Not clean? Needs cleaning" sends it back to yellow.
  * @param {() => void} props.onDone          Called after saving, and on Cancel.
  */
-const SeatForm = ({ table, onSave, onDone }) => {
+const SeatForm = ({ table, onSave, onNeedsCleaning, onDone }) => {
     const isTable = Boolean(table)
     const [value, setValue] = useState(isTable ? String(Math.min(2, table.seats)) : '')
     const [errors, setErrors] = useState({})
@@ -37,6 +38,17 @@ const SeatForm = ({ table, onSave, onDone }) => {
             // is already seated") on top
             const { _: general, ...fields } = err.fields ?? {}
             setErrors({ ...fields, form: Object.keys(fields).length ? general : (general ?? err.message) })
+            setSaving(false)
+        }
+    }
+
+    const markNeedsCleaning = async () => {
+        setSaving(true)
+        try {
+            await onNeedsCleaning()
+            onDone()
+        } catch (err) {
+            setErrors({ form: err.message })
             setSaving(false)
         }
     }
@@ -72,6 +84,11 @@ const SeatForm = ({ table, onSave, onDone }) => {
             )}
 
             <div className="d-flex flex-wrap justify-end gap-0-5">
+                {isTable && onNeedsCleaning && (
+                    <Button variant="ghost" className="mr-auto" onClick={markNeedsCleaning} disabled={saving}>
+                        Not clean? Needs cleaning
+                    </Button>
+                )}
                 <Button variant="ghost" onClick={onDone} disabled={saving}>Cancel</Button>
                 <Button type="submit" disabled={saving}>
                     {saving ? 'Saving…' : isTable ? `Seat ${table.label}` : 'Start take-out'}

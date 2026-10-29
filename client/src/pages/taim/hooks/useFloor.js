@@ -60,5 +60,11 @@ export function useFloor() {
         reload()
     }, [reload])
 
-    return { tables, takeouts, error, reload, seatTable, startTakeout, createTable, closeOrder, cleanTable }
+    /** A "ready" table isn't clean enough: back to needing cleaning */
+    const markNeedsCleaning = useCallback(async (tableId) => {
+        await api(`/tables/${tableId}/needs-cleaning`, { method: 'POST' })
+        reload()
+    }, [reload])
+
+    return { tables, takeouts, error, reload, seatTable, startTakeout, createTable, closeOrder, cleanTable, markNeedsCleaning }
 }

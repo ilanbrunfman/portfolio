@@ -7,6 +7,11 @@ Starts an order from the Floor, inside a `Modal`:
 - **Without one (`table={null}`):** "Name for the order" and **Start
   take-out**.
 
+With `onNeedsCleaning`, a table also gets **Not clean? Needs cleaning** on
+the left: if the table isn't clean enough after all, it goes back to yellow
+on the Floor (`POST /api/taim/tables/:id/needs-cleaning`), so someone comes
+back to it.
+
 If someone else seated the table a moment earlier, the server answers
 "This table is already seated" and the form shows it on top.
 
@@ -23,4 +28,5 @@ If someone else seated the table a moment earlier, the server answers
 |----------|-------------------------------|-------------|
 | `table`  | `object \| null`              | The free table to seat, or `null` for a take-out. |
 | `onSave` | `(value) => Promise`          | Gets the guest count (number) or the name (text); throws on failure. |
+| `onNeedsCleaning` | `() => Promise`      | Optional, table only: send it back to needing cleaning. |
 | `onDone` | `() => void`                  | Called after saving, and on Cancel. |
