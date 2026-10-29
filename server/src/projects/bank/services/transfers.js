@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { prisma } from '../db.js'
-import { HttpError } from '../lib/httpError.js'
-import { toDate, toDay } from '../lib/dates.js'
+import { prisma } from '../../../shared/db.js'
+import { HttpError } from '../../../shared/lib/httpError.js'
+import { toDate, toDay } from '../../../shared/lib/dates.js'
 
 /**
  * A transfer is two transaction rows sharing a transferId:
@@ -26,7 +26,7 @@ export function toTransferJson(out, inn) {
 
 /**
  * Both accounts must be the user's (400 'Unknown account' otherwise) and active (409).
- * @param {import('../generated/prisma/client.ts').Prisma.TransactionClient} tx
+ * @param {import('../../../generated/prisma/client.ts').Prisma.TransactionClient} tx
  */
 async function assertOpenAccounts(tx, userId, { fromAccountId, toAccountId }) {
     const accounts = await tx.account.findMany({ where: { id: { in: [fromAccountId, toAccountId] }, userId } })

@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { prisma } from '../db.js'
+import { prisma } from '../../../shared/db.js'
 
 export const SESSION_COOKIE = 'bank_session'
 const SESSION_DAYS = 30

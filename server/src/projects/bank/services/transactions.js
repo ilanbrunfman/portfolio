@@ -1,6 +1,6 @@
-import { Prisma } from '../generated/prisma/client.ts'
-import { prisma } from '../db.js'
-import { toDay } from '../lib/dates.js'
+import { Prisma } from '../../../generated/prisma/client.ts'
+import { prisma } from '../../../shared/db.js'
+import { toDay } from '../../../shared/lib/dates.js'
 
 /**
  * Transactions as the API sends them:

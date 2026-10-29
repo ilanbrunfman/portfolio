@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { cents } from './common.js'
+import { cents } from '../../../shared/schemas/common.js'
 
 export const ACCOUNT_TYPES = ['CHECKING', 'SAVINGS', 'CREDIT', 'CASH']
 

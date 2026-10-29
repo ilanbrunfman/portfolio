@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { prisma } from '../db.js'
+import { prisma } from '../../../shared/db.js'
 
 // GET /api/categories – all categories, income first, then by name
 const router = Router()

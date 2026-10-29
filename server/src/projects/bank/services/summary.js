@@ -1,4 +1,4 @@
-import { prisma } from '../db.js'
+import { prisma } from '../../../shared/db.js'
 
 const TREND_MONTHS = 6
 

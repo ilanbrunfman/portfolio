@@ -1,11 +1,11 @@
 import { Router } from 'express'
-import { prisma } from '../db.js'
-import { validate } from '../middleware/validate.js'
-import { HttpError } from '../lib/httpError.js'
-import { idParams } from '../schemas/common.js'
+import { prisma } from '../../../shared/db.js'
+import { validate } from '../../../shared/middleware/validate.js'
+import { HttpError } from '../../../shared/lib/httpError.js'
+import { idParams } from '../../../shared/schemas/common.js'
 import { transactionCreate, transactionUpdate } from '../schemas/transaction.js'
 import { toTransactionJson } from '../services/transactions.js'
-import { toDate } from '../lib/dates.js'
+import { toDate } from '../../../shared/lib/dates.js'
 
 const router = Router()
 

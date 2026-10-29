@@ -1,4 +1,4 @@
-import { HttpError } from '../lib/httpError.js'
+import { HttpError } from '../../../shared/lib/httpError.js'
 import { SESSION_COOKIE, findSessionUser } from '../services/auth.js'
 
 /**

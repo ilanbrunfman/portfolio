@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import supertest from 'supertest'
-import app from '../src/app.js'
+import app from '../../src/app.js'
 import { request, anonymous, resetDb, signUp, PASSWORD, prisma, createAccount, createTransaction } from './helpers.js'
 
 beforeEach(resetDb)

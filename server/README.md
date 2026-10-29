@@ -43,10 +43,10 @@ client in `src/generated/prisma/` (not committed, rebuilt on `npm install`).
 | `npm run db:reset` | Drop everything, re-run all migrations, then seed (**deletes data**) |
 | `npm run db:studio` | Open Prisma Studio, a browser UI to view/edit rows |
 
-Code imports the shared client from `src/db.js`:
+Code imports the shared client from `src/shared/db.js`:
 
 ```js
-import { prisma } from '../db.js'
+import { prisma } from '../../../shared/db.js'
 const accounts = await prisma.account.findMany()
 ```
 
@@ -83,7 +83,7 @@ On GitHub, `.github/workflows/server-tests.yml` runs the same tests on every
 push that touches `server/` (with its own throwaway Postgres), so each commit
 gets a ✓ or ✗.
 
-`test/helpers.js` has `request` (logged in as a fresh test user after
+`test/bank/helpers.js` has `request` (logged in as a fresh test user after
 `resetDb()`), `anonymous` (no cookie), `signUp(email)` for a second user,
 `resetDb()`, and `createAccount()` /
 `createCategory()` / `createTransaction()` to set up data quickly.
@@ -107,30 +107,43 @@ prisma/
   migrations/       SQL history, one folder per change
 src/
   index.js        starts the server (reads PORT)
-  db.js           the shared Prisma client
-  app.js          builds the Express app: JSON parsing, routes, 404, errors
-  routes/         one file per resource (health, accounts, …)
-  schemas/        Zod schemas: what each endpoint accepts
-  middleware/     validate() – checks requests against a schema
-  services/       database logic shared by routes (e.g. the ledger query)
-  lib/            HttpError, date helpers
+  app.js          builds the Express app: JSON parsing, mounts each project, 404, errors
+  shared/         used by every project
+    db.js         the shared Prisma client
+    routes/       health
+    middleware/   validate() (checks requests against a schema), 404 + error handler
+    schemas/      Zod pieces used everywhere (ids, cents)
+    lib/          HttpError, date helpers
+  projects/
+    bank/         the bank tracker
+      index.js    all bank routes as one router
+      routes/     one file per resource (accounts, transactions, …)
+      schemas/    Zod schemas: what each endpoint accepts
+      services/   database logic shared by routes (e.g. the ledger query)
+      middleware/ requireAuth
+      lib/        password hashing
 test/
   globalSetup.js  migrates the test database before the run
-  helpers.js      request, resetDb, createAccount/Category/Transaction
-  *.test.js       one file per area (health, accounts, …)
+  health.test.js  shared routes
+  bank/
+    helpers.js    request, resetDb, createAccount/Category/Transaction
+    *.test.js     one file per area (accounts, transactions, …)
 ```
+
+Each project lives in its own folder under `src/projects/` and only imports
+from `shared/` and from itself, so projects never depend on each other.
 
 ## Login
 
 Everything except `/api/health` and `/api/auth/*` needs a login.
 
 - **Sign up / log in** with email + password. Passwords are hashed with
-  Node's built-in `scrypt` (`src/lib/password.js`); only the hash is stored.
+  Node's built-in `scrypt` (`src/projects/bank/lib/password.js`); only the hash is stored.
 - A login creates a **session**: the browser gets a random token in the
   `bank_session` cookie (`httpOnly`, so page scripts can't read it; `Secure`
   in production), and the `sessions` table stores only its SHA-256 hash.
   Sessions last 30 days; logging out deletes it.
-- `requireAuth` (`src/middleware/auth.js`) puts the user on `req.user`, and
+- `requireAuth` (`src/projects/bank/middleware/auth.js`) puts the user on `req.user`, and
   **every query is limited to that user's accounts**. Another user's
   account, transaction or transfer answers 404, as if it didn't exist.
 - A failed login always says "Email or password is incorrect", so it doesn't
@@ -194,7 +207,7 @@ case-insensitive), `type` (`income`, `expense`, `transfer`), `categoryId`,
 for everything that matches, not just the page. Filtering happens after the
 running balance is computed, so each row still shows the real balance.
 **Running balance** is computed in SQL with a window function
-(`SUM(amount) OVER (ORDER BY date, id)`), see `src/services/transactions.js`.
+(`SUM(amount) OVER (ORDER BY date, id)`), see `src/projects/bank/services/transactions.js`.
 
 `type` is `CHECKING`, `SAVINGS`, `CREDIT` or `CASH`. Accounts aren't
 deleted; `PATCH { "archived": true }` hides them from the default list.

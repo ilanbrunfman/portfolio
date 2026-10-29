@@ -13,8 +13,8 @@ try {
     // env already set (prisma db seed / hosting platform)
 }
 
-const { prisma } = await import('../src/db.js')
-const { hashPassword } = await import('../src/lib/password.js')
+const { prisma } = await import('../src/shared/db.js')
+const { hashPassword } = await import('../src/projects/bank/lib/password.js')
 
 const DEMO_USER = { email: 'demo@bank.test', password: 'demo1234' }
 

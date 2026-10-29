@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { validate } from '../middleware/validate.js'
+import { validate } from '../../../shared/middleware/validate.js'
 import { transferCreate, transferUpdate, transferParams } from '../schemas/transaction.js'
 import { createTransfer, getTransfer, updateTransfer, deleteTransfer } from '../services/transfers.js'
 

@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { validate } from '../middleware/validate.js'
+import { validate } from '../../../shared/middleware/validate.js'
 import { summaryQuery } from '../schemas/summary.js'
 import { getSummary } from '../services/summary.js'
 
