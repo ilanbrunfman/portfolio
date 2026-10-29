@@ -1,29 +1,24 @@
-// Bank tracker database schema.
+// Bank tracker tables, all in the Postgres schema "bank" (bank.accounts, …).
 // Change a model → run `npm run db:migrate` → Prisma writes a SQL migration
 // in prisma/migrations and regenerates the client.
 //
 // Money is stored as whole cents (Int): 1250 = 12.50. One currency for the app.
 // Balances are never stored – they're computed from openingBalance + transactions.
 
-generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
-}
-
-datasource db {
-  provider = "postgresql"
-}
-
 enum AccountType {
   CHECKING
   SAVINGS
   CREDIT
   CASH
+
+  @@schema("bank")
 }
 
 enum CategoryKind {
   INCOME
   EXPENSE
+
+  @@schema("bank")
 }
 
 model User {
@@ -35,6 +30,7 @@ model User {
   sessions     Session[]
 
   @@map("users")
+  @@schema("bank")
 }
 
 // One row per logged-in browser. The cookie holds a random token; only its
@@ -48,6 +44,7 @@ model Session {
 
   @@index([userId])
   @@map("sessions")
+  @@schema("bank")
 }
 
 model Account {
@@ -65,6 +62,7 @@ model Account {
 
   @@index([userId])
   @@map("accounts")
+  @@schema("bank")
 }
 
 model Category {
@@ -75,6 +73,7 @@ model Category {
   transactions Transaction[]
 
   @@map("categories")
+  @@schema("bank")
 }
 
 model Transaction {
@@ -95,4 +94,5 @@ model Transaction {
   @@index([accountId, date])
   @@index([transferId])
   @@map("transactions")
+  @@schema("bank")
 }

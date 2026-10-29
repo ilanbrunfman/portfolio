@@ -31,7 +31,13 @@ machine. It only listens on localhost.
 
 ## Prisma (tables and queries)
 
-The tables are described in `prisma/schema.prisma`. Prisma turns changes into
+The tables are described in `prisma/schema/`: `schema.prisma` holds the
+shared settings, and each project has its own file (`bank.prisma`, …).
+Each project's tables also live in their own **Postgres schema**, a named
+folder of tables inside the one database: the bank's are `bank.accounts`,
+`bank.transactions`, and so on. Raw SQL names them that way too.
+
+Prisma turns changes into
 SQL migration files (`prisma/migrations/`, committed) and generates a typed
 client in `src/generated/prisma/` (not committed, rebuilt on `npm install`).
 
@@ -102,7 +108,9 @@ docker-compose.yml  local PostgreSQL container
 vitest.config.js    test settings (points tests at the _test database)
 prisma.config.js    Prisma settings (loads .env, schema + migrations paths)
 prisma/
-  schema.prisma     the tables
+  schema/
+    schema.prisma   shared settings (generator, database, list of schemas)
+    bank.prisma     the bank tables (Postgres schema "bank")
   seed.js           demo data
   migrations/       SQL history, one folder per change
 src/

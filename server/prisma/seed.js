@@ -79,7 +79,7 @@ const SHOPS = {
 
 async function main() {
     // Start clean: empty the tables and restart ids at 1
-    await prisma.$executeRaw`TRUNCATE TABLE "transactions", "accounts", "categories", "sessions", "users" RESTART IDENTITY CASCADE`
+    await prisma.$executeRaw`TRUNCATE TABLE bank.transactions, bank.accounts, bank.categories, bank.sessions, bank.users RESTART IDENTITY CASCADE`
 
     const user = await prisma.user.create({
         data: { email: DEMO_USER.email, passwordHash: await hashPassword(DEMO_USER.password) },

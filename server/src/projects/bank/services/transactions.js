@@ -79,11 +79,11 @@ const ledgerCte = (accountId) => Prisma.sql`
             c.color AS "categoryColor",
             other."accountId" AS "counterpartAccountId",
             (a."openingBalance" + SUM(t.amount) OVER (ORDER BY t.date, t.id))::int AS "runningBalance"
-        FROM transactions t
-        JOIN accounts a ON a.id = t."accountId"
-        LEFT JOIN categories c ON c.id = t."categoryId"
+        FROM bank.transactions t
+        JOIN bank.accounts a ON a.id = t."accountId"
+        LEFT JOIN bank.categories c ON c.id = t."categoryId"
         -- for a transfer: the other side's row (same transferId, different id)
-        LEFT JOIN transactions other ON other."transferId" = t."transferId" AND other.id <> t.id
+        LEFT JOIN bank.transactions other ON other."transferId" = t."transferId" AND other.id <> t.id
         WHERE t."accountId" = ${accountId}
     )`
 

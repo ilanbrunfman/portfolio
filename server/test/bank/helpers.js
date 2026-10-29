@@ -22,7 +22,7 @@ export { prisma }
 /** Empty every table, restart ids at 1, and log `request` in as a fresh user – call in beforeEach */
 export async function resetDb() {
     if (!process.env.DATABASE_URL.includes('_test')) throw new Error('resetDb() only runs on a _test database')
-    await prisma.$executeRaw`TRUNCATE TABLE "transactions", "accounts", "categories", "sessions", "users" RESTART IDENTITY CASCADE`
+    await prisma.$executeRaw`TRUNCATE TABLE bank.transactions, bank.accounts, bank.categories, bank.sessions, bank.users RESTART IDENTITY CASCADE`
     request = await signUp('owner@test.dev')
 }
 

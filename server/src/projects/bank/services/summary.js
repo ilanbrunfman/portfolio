@@ -45,10 +45,10 @@ export async function getSummary(userId, month) {
                 COALESCE(SUM(t.amount) FILTER (WHERE t.amount > 0), 0)::int AS income,
                 COALESCE(-SUM(t.amount) FILTER (WHERE t.amount < 0), 0)::int AS spent
             FROM generate_series(${trendStart}::date, ${`${month}-01`}::date, interval '1 month') AS m
-            LEFT JOIN transactions t
+            LEFT JOIN bank.transactions t
                 ON date_trunc('month', t.date) = m
                AND t."transferId" IS NULL
-               AND t."accountId" IN (SELECT id FROM accounts WHERE NOT archived AND "userId" = ${userId})
+               AND t."accountId" IN (SELECT id FROM bank.accounts WHERE NOT archived AND "userId" = ${userId})
             GROUP BY m
             ORDER BY m
         `,

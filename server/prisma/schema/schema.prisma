@@ -1,0 +1,13 @@
+// Shared Prisma settings. Each project's tables live in their own file in
+// this folder (bank.prisma, …) and in their own Postgres schema – a named
+// folder of tables inside the one database, e.g. bank.accounts.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["bank"]
+}
