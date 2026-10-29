@@ -45,9 +45,10 @@ export const TABLES = [
 
 // Orders open right now: [table or take-out name, guests, opened by, minutes ago, dishes]
 // In a dish: " #2" = for seat 2 (none = shared), " ✓" = already sent out,
-// " ○" = on the bill but not sent to the kitchen yet.
+// " ○" = on the bill but not sent to the kitchen yet, " r2" = sent in the
+// order's 2nd round (15 minutes after the 1st; no "r" = round 1).
 const OPEN_ORDERS = [
-    ['T2', 3, 'Lior', 34, ['Hummus with pita ✓', 'Shakshuka #1', 'Sabich #2 ✓', 'Lemonana #3 ✓']],
+    ['T2', 3, 'Lior', 34, ['Hummus with pita ✓', 'Lemonana #3 ✓', 'Shakshuka #1 r2', 'Sabich #2 r2 ✓']],
     ['T5', 6, 'Lior', 12, ['Kebab #1', 'Sabich #2', 'Falafel plate #3', 'Mint tea #4', 'Mint tea #5', 'Malabi #6 ○']],
     ['Maya', null, 'Dana', 9, ['Falafel plate', 'Hummus with pita']],
 ]
@@ -93,12 +94,14 @@ export async function seedTaim(prisma) {
                     create: dishes.map((entry) => {
                         const sent = entry.endsWith(' ✓')
                         const notSent = entry.endsWith(' ○')
-                        const [, name, seat] = entry.replace(/ [✓○]$/, '').match(/^(.+?)(?: #(\d+))?$/)
+                        const [, name, seat, round] = entry.replace(/ [✓○]$/, '').match(/^(.+?)(?: #(\d+))?(?: r(\d+))?$/)
                         const { id, price } = dish[name]
+                        const r = notSent ? null : Number(round ?? 1)
+                        const firedAt = r ? new Date(openedAt.getTime() + (r - 1) * 15 * 60_000) : null
                         return {
-                            menuItemId: id, price, seat: seat ? Number(seat) : null, createdAt: openedAt,
+                            menuItemId: id, price, seat: seat ? Number(seat) : null, createdAt: firedAt ?? openedAt,
                             status: notSent ? 'NEW' : sent ? 'SENT_OUT' : 'PREPARING',
-                            firedAt: notSent ? null : openedAt,
+                            firedAt, round: r,
                             sentOutAt: sent ? new Date() : null,
                         }
                     }),

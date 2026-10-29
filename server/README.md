@@ -307,7 +307,7 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | PATCH | `/api/taim/orders/:id` | `{ tableId?, guests? }` | Fix a seating: move to another ready table and/or change guests (409 if fewer guests than a seat with dishes) |
 | DELETE | `/api/taim/orders/:id` | | 204, undo a seating or take-out; only while it has no dishes (409 otherwise) |
 | POST | `/api/taim/orders/:id/items` | `{ items: [{ menuItemId, quantity?, seat? }] }` | 201 + the order; one row per dish (`NEW`, not sent yet), price copied from the menu (409 if a dish is sold out or the bill is closed) |
-| POST | `/api/taim/orders/:id/send` | | Send every dish not sent yet to the kitchen (`NEW` → `PREPARING`, `firedAt` set); 409 if there's nothing new |
+| POST | `/api/taim/orders/:id/send` | | Send every dish not sent yet to the kitchen as the order's next `round` (`NEW` → `PREPARING`, `firedAt` set); 409 if there's nothing new |
 | PATCH | `/api/taim/orders/:id/items/:itemId` | `{ seat }` (a number, or `null` = shared) | The order with the dish moved to that seat; any time while the bill is open |
 | DELETE | `/api/taim/orders/:id/items/:itemId` | | The order without that dish; while it's `NEW` or `PREPARING` (409 once sent out) |
 | POST | `/api/taim/orders/:id/close` | | The closed order; the table now needs cleaning (409 if already closed, or while dishes haven't been sent) |
@@ -346,7 +346,10 @@ take-outs have no seats.
 A dish's life: `NEW` (on the bill; the waiter can still change or remove
 it) → **Send to kitchen** → `PREPARING` → the kitchen sends it out →
 `SENT_OUT` → maybe `CAME_BACK` (step 6). A bill can't be closed while any
-dish is still `NEW`.
+dish is still `NEW`. Each send is a numbered **round** (1 = e.g. starters,
+2 = the mains added later…), stored on the dish, so the bill and the kitchen
+see what was ordered when; the database requires a round exactly on sent
+dishes.
 
 ```bash
 curl localhost:4000/api/taim/staff

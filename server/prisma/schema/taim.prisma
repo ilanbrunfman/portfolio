@@ -145,6 +145,7 @@ model OrderItem {
   status     DishStatus // no default: every insert says NEW (or, in the seed, later)
   createdAt  DateTime   @default(now())
   firedAt    DateTime? // when the waiter sent it to the kitchen
+  round      Int? // which "Send to kitchen" of this order: 1 = first (e.g. starters), 2 = next…
   sentOutAt  DateTime?
 
   @@index([orderId])

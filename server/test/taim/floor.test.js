@@ -129,8 +129,8 @@ describe('adding dishes (addDishes: Manager, Waiter)', () => {
     it('removes a dish not sent yet or still being prepared, but not one already sent out', async () => {
         const order = (await seat(host).expect(201)).body
         const { items } = (await addDishes(waiter, order.id, [{ menuItemId: hummus.id, quantity: 3 }]).expect(201)).body
-        await prisma.orderItem.update({ where: { id: items[1].id }, data: { status: 'PREPARING' } })
-        await prisma.orderItem.update({ where: { id: items[2].id }, data: { status: 'SENT_OUT', sentOutAt: new Date() } })
+        await prisma.orderItem.update({ where: { id: items[1].id }, data: { round: 1, status: 'PREPARING' } })
+        await prisma.orderItem.update({ where: { id: items[2].id }, data: { round: 1, status: 'SENT_OUT', sentOutAt: new Date() } })
 
         await waiter.delete(`/api/taim/orders/${order.id}/items/${items[0].id}`).expect(200)
         const res = await waiter.delete(`/api/taim/orders/${order.id}/items/${items[1].id}`).expect(200)
@@ -146,7 +146,7 @@ describe('closing the bill (closeBill: Manager, Host, Waiter)', () => {
         const order = (await seat(host).expect(201)).body
         const { items } = (await addDishes(waiter, order.id, [{ menuItemId: hummus.id }, { menuItemId: shakshuka.id }]).expect(201)).body
         await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200)
-        await prisma.orderItem.update({ where: { id: items[1].id }, data: { status: 'CAME_BACK' } })
+        await prisma.orderItem.update({ where: { id: items[1].id }, data: { round: 1, status: 'CAME_BACK' } })
 
         const res = await host.post(`/api/taim/orders/${order.id}/close`).expect(200)
         expect(res.body).toMatchObject({ status: 'CLOSED', total: 900, closedAt: expect.any(String) })
@@ -272,7 +272,7 @@ describe('seat numbers on dishes', () => {
     it('moves a dish to another seat or to shared, even after it was sent out', async () => {
         const order = (await seat(host, t2, 3).expect(201)).body
         const [dish] = (await addDishes(waiter, order.id, [{ menuItemId: hummus.id, seat: 1 }]).expect(201)).body.items
-        await prisma.orderItem.update({ where: { id: dish.id }, data: { status: 'SENT_OUT', sentOutAt: new Date() } })
+        await prisma.orderItem.update({ where: { id: dish.id }, data: { round: 1, status: 'SENT_OUT', sentOutAt: new Date() } })
 
         const url = `/api/taim/orders/${order.id}/items/${dish.id}`
         expect((await waiter.patch(url).send({ seat: 3 }).expect(200)).body.items[0].seat).toBe(3)
@@ -308,7 +308,7 @@ describe('sending to the kitchen (addDishes: Manager, Waiter)', () => {
         expect(tables[1].order).toMatchObject({ dishCount: 2, notSent: 2 })
 
         const res = await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200)
-        expect(res.body.items.map((i) => i.status)).toEqual(['PREPARING', 'PREPARING'])
+        expect(res.body.items.map((i) => [i.status, i.round])).toEqual([['PREPARING', 1], ['PREPARING', 1]])
         expect(res.body.items.every((i) => i.firedAt)).toBe(true)
 
         // the floor shows the food is coming: 2 in the kitchen, for seats 1 and 2
@@ -318,12 +318,13 @@ describe('sending to the kitchen (addDishes: Manager, Waiter)', () => {
         // a second round: only the new dish is sent
         await addDishes(waiter, order.id, [{ menuItemId: hummus.id, seat: 3 }]).expect(201)
         const again = await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200)
-        expect(again.body.items.map((i) => i.status)).toEqual(['PREPARING', 'PREPARING', 'PREPARING'])
+        expect(again.body.items.map((i) => i.round)).toEqual([1, 1, 2]) // the added dish is round 2
 
         // seat 1's dish is served; shared dishes come last in the waiting list
-        await prisma.orderItem.update({ where: { id: again.body.items[0].id }, data: { status: 'SENT_OUT', sentOutAt: new Date() } })
+        await prisma.orderItem.update({ where: { id: again.body.items[0].id }, data: { round: 1, status: 'SENT_OUT', sentOutAt: new Date() } })
         await addDishes(waiter, order.id, [{ menuItemId: shakshuka.id }]).expect(201)
-        await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200)
+        const third = await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200)
+        expect(third.body.items.map((i) => i.round)).toEqual([1, 1, 2, 3])
         const later = (await host.get('/api/taim/tables').expect(200)).body[1].order
         expect(later).toMatchObject({ inKitchen: 3, waitingSeats: [2, 3, null] })
     })
@@ -345,5 +346,15 @@ describe('sending to the kitchen (addDishes: Manager, Waiter)', () => {
 
         await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200)
         await host.post(`/api/taim/orders/${order.id}/close`).expect(200)
+    })
+})
+
+describe('the database ties rounds to sending', () => {
+    it('a dish not sent has no round; a sent one must have one', async () => {
+        const order = (await seat(host).expect(201)).body
+        const { items } = (await addDishes(waiter, order.id, [{ menuItemId: hummus.id }]).expect(201)).body
+        expect(items[0].round).toBeNull()
+        await expect(prisma.orderItem.update({ where: { id: items[0].id }, data: { round: 1 } })).rejects.toThrow(/order_items_round_when_sent/)
+        await expect(prisma.orderItem.update({ where: { id: items[0].id }, data: { status: 'PREPARING' } })).rejects.toThrow(/order_items_round_when_sent/)
     })
 })

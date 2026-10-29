@@ -6,7 +6,7 @@ export const ORDER_INCLUDE = {
     table: { select: { id: true, label: true } },
     openedBy: { select: { id: true, name: true } },
     items: {
-        select: { id: true, menuItemId: true, price: true, seat: true, status: true, createdAt: true, firedAt: true, sentOutAt: true, menuItem: { select: { name: true } } },
+        select: { id: true, menuItemId: true, price: true, seat: true, status: true, createdAt: true, firedAt: true, round: true, sentOutAt: true, menuItem: { select: { name: true } } },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     },
 }

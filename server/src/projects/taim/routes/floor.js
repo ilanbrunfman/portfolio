@@ -235,15 +235,19 @@ router.patch('/orders/:id/items/:itemId', allow('addDishes'), validate({ params:
 })
 
 // POST /api/taim/orders/:id/send – send every dish not sent yet to the
-// kitchen (NEW → PREPARING), all at once; more rounds can follow
+// kitchen (NEW → PREPARING), all at once, as the order's next round
+// (1 = first send, e.g. starters; 2 = the mains 20 minutes later…)
 router.post('/orders/:id/send', allow('addDishes'), validate({ params: idParams }), async (req, res) => {
     const { id } = req.valid.params
-    await requireOpenOrder(id)
-    const { count } = await prisma.orderItem.updateMany({
-        where: { orderId: id, status: 'NEW' },
-        data: { status: 'PREPARING', firedAt: new Date() },
+    await prisma.$transaction(async (tx) => {
+        await requireOpenOrder(id, tx)
+        const { _max } = await tx.orderItem.aggregate({ where: { orderId: id }, _max: { round: true } })
+        const { count } = await tx.orderItem.updateMany({
+            where: { orderId: id, status: 'NEW' },
+            data: { status: 'PREPARING', firedAt: new Date(), round: (_max.round ?? 0) + 1 },
+        })
+        if (count === 0) throw new HttpError(409, 'Nothing new to send: add dishes first')
     })
-    if (count === 0) throw new HttpError(409, 'Nothing new to send: add dishes first')
     res.json(await getOrder(id))
 })
 
