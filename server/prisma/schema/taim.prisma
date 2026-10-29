@@ -1,0 +1,62 @@
+// Ta'im (restaurant app) tables, all in the Postgres schema "taim" (taim.staff, …).
+// Change a model → run `npm run db:migrate`.
+//
+// Money will be whole cents (Int), like the bank tracker.
+
+// What a staff member may do is decided by their role (see
+// src/projects/taim/roles.js). Owner and Manager are one role.
+enum StaffRole {
+  MANAGER
+  CHEF
+  COOK
+  HOST
+  WAITER
+
+  @@schema("taim")
+}
+
+// The people on the "Who are you?" screen. There are no passwords: picking
+// a person is the login, and the server checks their role on every request.
+model Staff {
+  id        Int       @id @default(autoincrement())
+  name      String
+  role      StaffRole
+  createdAt DateTime  @default(now())
+
+  @@map("staff")
+  @@schema("taim")
+}
+
+// A section of the menu: Starters, Mains, … shown in `position` order.
+// (Named MenuCategory because the bank already has a Category model.)
+model MenuCategory {
+  id       Int        @id @default(autoincrement())
+  name     String     @unique
+  position Int // 1, 2, 3… menu order
+  items    MenuItem[]
+
+  @@map("categories")
+  @@schema("taim")
+}
+
+// One dish. Dishes are hidden, never deleted (old orders still point to
+// them); a hidden dish is "sold out" and doesn't show on the Order screen.
+// `position` is the dish's place in its category (1 = top); new dishes go
+// to the top and the Chef can drag them into any order.
+model MenuItem {
+  id          Int          @id @default(autoincrement())
+  categoryId  Int
+  // Restrict: a category with dishes can't be deleted
+  category    MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  name        String       @unique
+  description String?
+  price       Int // cents: 1400 = 14.00
+  position    Int // 1, 2, 3… within the category
+  hidden      Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([categoryId, position])
+  @@map("menu_items")
+  @@schema("taim")
+}

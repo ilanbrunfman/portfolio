@@ -1,0 +1,67 @@
+// Ta'im – page-level visuals (layout is utility classes in the markup)
+
+// Ta'im's accent (paprika) replaces the site's purple inside the app,
+// including the side nav. display: contents keeps this wrapper out of the
+// layout; the variables still pass down to everything inside.
+.taim-theme {
+    display: contents;
+    --accent: #c7401f;
+    --accent-bg: rgba(199, 64, 31, 0.1);
+    --accent-border: rgba(199, 64, 31, 0.5);
+
+    @media (prefers-color-scheme: dark) {
+        --accent: #ff8a66;
+        --accent-bg: rgba(255, 138, 102, 0.15);
+        --accent-border: rgba(255, 138, 102, 0.5);
+    }
+}
+
+.taim {
+    // The .container sits inside the layout's content column
+    &.container {
+        box-sizing: border-box;
+        width: 100%;
+    }
+
+    &__title {
+        margin: 0;
+        font-size: clamp(1.6rem, 1.1rem + 2vw, 2.4rem);
+        line-height: 1.1;
+    }
+
+    &__heading {
+        margin: 0;
+        font-size: 1.4rem;
+    }
+
+    // Fills the screen next to / above the nav and centers its card
+    &__center {
+        flex: 1 1 auto;
+        padding: 1.5rem;
+    }
+
+    &__who {
+        font-size: 0.95rem;
+        color: var(--text-h);
+    }
+
+    // Small uppercase label in the accent colour: "TA'IM", "CHEF"
+    &__eyebrow {
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--accent);
+    }
+
+    // "Can't reach the API" and "coming soon" cards
+    &__notice {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 520px;
+
+        p {
+            margin: 0;
+        }
+    }
+}

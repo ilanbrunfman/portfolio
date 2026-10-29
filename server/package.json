@@ -14,6 +14,8 @@
     "db:migrate": "prisma migrate dev && prisma generate",
     "db:generate": "prisma generate",
     "db:seed": "prisma db seed",
+    "db:seed:bank": "node prisma/seed.js bank",
+    "db:seed:taim": "node prisma/seed.js taim",
     "db:reset": "prisma migrate reset --force && prisma generate && prisma db seed",
     "db:studio": "prisma studio",
     "test": "vitest run",

@@ -53,6 +53,7 @@ import { AccordionItem } from '@/components/ui/accordion/Accordion'
 | `defaultOpen` | `boolean`                 | `false` | Initial state when uncontrolled |
 | `open`        | `boolean`                 | —       | Controlled open state (pass with `onToggle`) |
 | `onToggle`    | `(next: boolean) => void` | —       | Called with the requested state in controlled mode |
+| `actions`     | `ReactNode`               | —       | Buttons in the header row, left of the chevron (see below) |
 
 ---
 
@@ -102,6 +103,47 @@ const [openId, setOpenId] = useState('faq-1')
             <p>{faq.answer}</p>
         </Accordion.Item>
     ))}
+</Accordion>
+```
+
+---
+
+## Actions in the header
+
+`title` sits inside the header `<button>`, so it can't hold buttons. Pass
+them as `actions` instead: they're shown in the header row, left of the
+chevron, outside the toggle. The toggle's click area still covers the whole
+row, so clicking anywhere except an action opens or closes the section.
+
+```jsx
+<Accordion.Item
+    title="Starters"
+    actions={<Button size="sm" variant="ghost" onClick={rename}>Rename</Button>}
+>
+    …
+</Accordion.Item>
+```
+
+Without `actions` the markup is unchanged (the chevron sits inside the
+button), so existing styles keep working.
+
+---
+
+## Nested accordions
+
+An `Accordion` can sit inside another item's panel (e.g. menu categories,
+each opening to its dishes). Each item opens only its own panel, so
+opening a parent doesn't open its children. Keep interactive controls
+(buttons, checkboxes) inside the panel, not in `title`: the header is
+itself a `<button>`.
+
+```jsx
+<Accordion>
+    <Accordion.Item title="Starters" defaultOpen>
+        <Accordion>
+            <Accordion.Item title="Hummus with pita">Tahini, olive oil, warm pita</Accordion.Item>
+        </Accordion>
+    </Accordion.Item>
 </Accordion>
 ```
 

@@ -1,6 +1,9 @@
 # Server
 
-Express API for the bank tracker (`/bank` in the client).
+One Express API for the portfolio's full-stack projects:
+
+- **Bank tracker** (`/bank` in the client): routes under `/api/bank`
+- **Ta'im**, a restaurant app (`/taim` in the client): routes under `/api/taim`
 
 ## Run it
 
@@ -32,7 +35,7 @@ machine. It only listens on localhost.
 ## Prisma (tables and queries)
 
 The tables are described in `prisma/schema/`: `schema.prisma` holds the
-shared settings, and each project has its own file (`bank.prisma`, …).
+shared settings, and each project has its own file (`bank.prisma`, `taim.prisma`).
 Each project's tables also live in their own **Postgres schema**, a named
 folder of tables inside the one database: the bank's are `bank.accounts`,
 `bank.transactions`, and so on. Raw SQL names them that way too.
@@ -45,7 +48,8 @@ client in `src/generated/prisma/` (not committed, rebuilt on `npm install`).
 |---------|--------------|
 | `npm run db:migrate` | After editing the schema: write a migration, apply it, regenerate the client |
 | `npm run db:generate` | Regenerate the client only |
-| `npm run db:seed` | Replace all rows with demo data (**deletes existing rows**) |
+| `npm run db:seed` | Replace all rows with demo data, every project (**deletes existing rows**) |
+| `npm run db:seed:bank` / `db:seed:taim` | The same, for one project only (the other keeps its rows) |
 | `npm run db:reset` | Drop everything, re-run all migrations, then seed (**deletes data**) |
 | `npm run db:studio` | Open Prisma Studio, a browser UI to view/edit rows |
 
@@ -61,12 +65,19 @@ Tables: `users`, `sessions`, `accounts` (each has a `userId` owner),
 (`1250` = 12.50). Balances aren't stored; they're computed from
 `openingBalance` + the account's transactions.
 
-### Demo data (`prisma/seed.js`)
+### Demo data (`prisma/seeds/`)
 
-4 accounts (checking, savings, credit card, cash), 13 categories and about
+`prisma/seed.js` runs one seed per project from `prisma/seeds/`; each
+empties only its own tables first.
+
+**Bank** (`seeds/bank.js`): 4 accounts (checking, savings, credit card, cash), 13 categories and about
 4 months of transactions ending today: salary, rent, bills, subscriptions,
 daily spending, and transfers (monthly savings, ATM withdrawals, credit card
 payments). It uses a fixed random seed, so every run gives the same data.
+
+**Ta'im** (`seeds/taim.js`): one staff member per role: Noa (Manager),
+Avi (Chef), Yossi (Cook), Dana (Host), Lior (Waiter); and a menu of 4
+categories and 13 dishes (Schnitzel starts sold out).
 
 ## Tests
 
@@ -111,7 +122,9 @@ prisma/
   schema/
     schema.prisma   shared settings (generator, database, list of schemas)
     bank.prisma     the bank tables (Postgres schema "bank")
-  seed.js           demo data
+    taim.prisma     the Ta'im tables (Postgres schema "taim")
+  seed.js           runs the demo data seeds
+  seeds/            one seed per project (bank.js, taim.js)
   migrations/       SQL history, one folder per change
 src/
   index.js        starts the server (reads PORT)
@@ -130,18 +143,27 @@ src/
       services/   database logic shared by routes (e.g. the ledger query)
       middleware/ requireAuth
       lib/        password hashing
+    taim/         Ta'im, the restaurant app
+      index.js    all Ta'im routes as one router
+      roles.js    who may do what: rights and screens per role
+      routes/     staff, session, menu
+      schemas/    Zod schemas
+      middleware/ requireStaff + allow(right)
 test/
   globalSetup.js  migrates the test database before the run
   health.test.js  shared routes
   bank/
     helpers.js    request, resetDb, createAccount/Category/Transaction
     *.test.js     one file per area (accounts, transactions, …)
+  taim/
+    helpers.js    resetTaim, as(role)
+    *.test.js     session, roles, menu
 ```
 
 Each project lives in its own folder under `src/projects/` and only imports
 from `shared/` and from itself, so projects never depend on each other.
 
-## Login
+## Bank tracker: login
 
 Everything except `/api/health` and `/api/bank/auth/*` needs a login.
 
@@ -164,7 +186,7 @@ Everything except `/api/health` and `/api/bank/auth/*` needs a login.
 | POST | `/api/bank/auth/logout` | | 204, cookie cleared |
 | GET | `/api/bank/auth/me` | | `{ user: { id, email } }` (401 if not logged in) |
 
-## Endpoints
+## Bank tracker: endpoints
 
 All money values are whole **cents**. Errors always look like
 `{ "error": "message" }`; validation errors add `fields`:
@@ -231,4 +253,64 @@ curl -b /tmp/bank.cookies localhost:4000/api/bank/accounts
 curl -b /tmp/bank.cookies -X POST localhost:4000/api/bank/accounts \
   -H 'Content-Type: application/json' \
   -d '{"name":"Travel fund","type":"SAVINGS","openingBalance":50000}'
+```
+
+## Ta'im: staff and roles
+
+Ta'im has no passwords: on the "Who are you?" screen you pick a staff
+member, and the `taim_staff` cookie (`httpOnly`, path `/api/taim`)
+remembers who. What that person may do depends on their **role**, and the
+server checks it on every request:
+
+- `requireStaff` (who are you?) loads the picked person onto `req.staff`,
+  or answers **401** if nobody was picked.
+- `allow(right)` (may your role do this?) answers **403** if the role
+  doesn't have that right.
+
+The rights live in one place, `src/projects/taim/roles.js`:
+
+| Right | Manager | Chef | Cook | Host | Waiter |
+|---|:-:|:-:|:-:|:-:|:-:|
+| `editMenu`: dishes and prices | ✓ | ✓ | | | |
+| `setUpTables`: add, rename, seats | ✓ | | | | |
+| `seatTable`: seat or start take-out | ✓ | | | ✓ | ✓ |
+| `addDishes`: add dishes to an order | ✓ | | | | ✓ |
+| `advanceDish`: preparing → sent out | ✓ | ✓ | ✓ | | |
+| `markCameBack`: a dish came back | ✓ | ✓ | | | ✓ |
+| `closeBill`: close the bill | ✓ | | | ✓ | ✓ |
+| `seeLosses`: the losses summary | ✓ | ✓ | | | |
+
+| Method | Path | Body | Returns |
+|--------|------|------|---------|
+| GET | `/api/taim/staff` | | Everyone to pick from, Manager first: `[{ id, name, role }]` |
+| POST | `/api/taim/session` | `{ staffId }` | `{ staff, rights, screens }` + cookie (404 if no such person) |
+| GET | `/api/taim/session` | | The picked person: `{ staff, rights, screens }` (401 if nobody) |
+| DELETE | `/api/taim/session` | | 204, cookie cleared (switch person) |
+| GET | `/api/taim/menu` | | Categories in menu order, each with its `items` in `position` order (hidden ones marked `hidden: true`) |
+| POST | `/api/taim/categories` | `{ name }` | 201, added at the end of the menu (409 if the name exists) |
+| PATCH | `/api/taim/categories/:id` | `{ name }` | The renamed category |
+| DELETE | `/api/taim/categories/:id` | | 204, only when it has no dishes (409 otherwise) |
+| POST | `/api/taim/menu-items` | `{ categoryId, name, price, description?, hidden? }` | 201 + the dish, at the top of its category (409 if the name exists) |
+| PATCH | `/api/taim/menu-items/:id` | any of those fields | The updated dish; `{ hidden: true }` = sold out; a new `categoryId` puts it at the top there |
+| PUT | `/api/taim/categories/:id/dish-order` | `{ dishIds }`, top first | The category's dishes in their new order (400 unless the list is exactly that category's dishes) |
+
+`rights` and `screens` are the role's entries from `roles.js`, so the
+client can show only the screens that person may use.
+
+Everything except `/staff` and `/session` needs a picked person (401).
+Changing the menu needs `editMenu` (403 for Cook, Host, Waiter). Dishes are
+never deleted, only hidden, because orders will point to them; a price
+must be above 0, which the database itself also enforces (a `CHECK` rule
+added by hand to the migration).
+
+Each dish has a `position` in its category (1 = top). Adding a dish shifts
+the others down one and takes position 1, in one transaction; saving a new
+order after a drag rewrites every position of that category in one
+transaction, so a half-saved order can't happen.
+
+```bash
+curl localhost:4000/api/taim/staff
+curl -c /tmp/taim.cookies -H 'Content-Type: application/json' \
+  -d '{"staffId":3}' localhost:4000/api/taim/session
+curl -b /tmp/taim.cookies localhost:4000/api/taim/session
 ```
