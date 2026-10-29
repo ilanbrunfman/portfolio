@@ -1,10 +1,14 @@
 import { useParams } from 'react-router-dom'
 import { useStaff } from '@/pages/taim/context/StaffContext'
 import { SCREENS, ROLE_LABELS } from '@/pages/taim/data/screens'
+import MenuEditor from '@/pages/taim/menu/MenuEditor'
+
+// Screens that are built so far; the rest show what they will do
+const BUILT = { menu: MenuEditor }
 
 /**
- * /taim/:screen – one Ta'im screen. The real screens arrive in later
- * build steps; until then each shows what it will do.
+ * /taim/:screen – one Ta'im screen. Screens not built yet show what
+ * they will do and which build step brings them.
  * A screen the role can't use says so (the server refuses its data too).
  */
 const ScreenPage = () => {
@@ -32,6 +36,9 @@ const ScreenPage = () => {
             </div>
         )
     }
+
+    const Built = BUILT[screen.id]
+    if (Built) return <Built />
 
     return (
         <div className="taim__notice surface d-flex flex-column gap-1">

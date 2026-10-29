@@ -1,0 +1,69 @@
+// Menu editor – visuals only (layout is utility classes in the markup)
+.menu-editor {
+    &__category {
+        box-sizing: border-box;
+    }
+
+    &__category-name {
+        margin: 0;
+        font-size: 1.1rem;
+        color: var(--text-h);
+    }
+
+    &__dishes {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    // One row per dish: text takes the free space, then price, toggle, Edit
+    &__dish {
+        padding: 0.6rem 0;
+        border-top: 1px solid var(--border);
+
+        &:first-child {
+            border-top: 0;
+        }
+
+        &.is-sold-out .menu-editor__dish-text,
+        &.is-sold-out .menu-editor__price {
+            opacity: 0.55;
+        }
+    }
+
+    &__dish-text {
+        flex: 1 1 14rem;
+        min-width: 0;
+    }
+
+    &__dish-name {
+        color: var(--text-h);
+        font-weight: 600;
+    }
+
+    &__price {
+        min-width: 4.5rem;
+        text-align: right;
+        color: var(--text-h);
+        font-variant-numeric: tabular-nums;
+
+        // Phones: the row wraps under the dish name, so line up on the left
+        @media (max-width: 600px) {
+            min-width: 0;
+            text-align: left;
+        }
+    }
+
+    &__tag {
+        margin-left: 0.5rem;
+        padding: 0.05rem 0.5rem;
+        border-radius: 999px;
+        background: var(--accent-bg);
+        color: var(--accent);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        vertical-align: 0.1em;
+    }
+}
