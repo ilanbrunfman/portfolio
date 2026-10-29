@@ -6,7 +6,7 @@ import SideNavLayout from '@/components/layout/side-nav/SideNavLayout'
 import Button from '@/components/ui/button/Button'
 import './BankApp.scss'
 
-const HOME_LINK = { to: '/', icon: 'IconHome', label: 'Portfolio home', end: true }
+const HOME_LINK = { to: '/', icon: 'IconHome', label: 'Portfolio home', shortLabel: 'Home', end: true }
 const ACCOUNTS_LINK = { to: '/bank', icon: 'IconCards', label: 'Accounts' }
 
 /**

@@ -12,11 +12,11 @@ const Todos = () => {
     const { pathname } = useLocation()
 
     const links = [
-        { to: '/', icon: 'IconHome', label: 'Portfolio home', end: true },
+        { to: '/', icon: 'IconHome', label: 'Portfolio home', shortLabel: 'Home', end: true },
         // The list only makes sense once there's something in it
-        ...(todos.length > 0 ? [{ to: '/todos', icon: 'IconListBullets', label: 'Recent todos', end: true }] : []),
+        ...(todos.length > 0 ? [{ to: '/todos', icon: 'IconListBullets', label: 'Recent todos', shortLabel: 'Recent', end: true }] : []),
         // No "new" link while already on the new-todo page
-        ...(pathname !== '/todos/new' ? [{ to: '/todos/new', icon: 'IconPlus', label: 'New todo', end: true }] : []),
+        ...(pathname !== '/todos/new' ? [{ to: '/todos/new', icon: 'IconPlus', label: 'New todo', shortLabel: 'New', end: true }] : []),
     ]
 
     return (
