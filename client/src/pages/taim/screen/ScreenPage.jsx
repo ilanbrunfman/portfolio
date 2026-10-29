@@ -2,9 +2,14 @@ import { useParams } from 'react-router-dom'
 import { useStaff } from '@/pages/taim/context/StaffContext'
 import { SCREENS, ROLE_LABELS } from '@/pages/taim/data/screens'
 import MenuEditor from '@/pages/taim/menu/MenuEditor'
+import Floor from '@/pages/taim/floor/Floor'
+import OrderList from '@/pages/taim/order/OrderList'
+import OrderPage from '@/pages/taim/order/OrderPage'
 
 // Screens that are built so far; the rest show what they will do
-const BUILT = { menu: MenuEditor }
+const BUILT = { floor: Floor, order: OrderList, menu: MenuEditor }
+// Screens with a detail page (/taim/order/:orderId)
+const DETAIL = { order: OrderPage }
 
 /**
  * /taim/:screen – one Ta'im screen. Screens not built yet show what
@@ -12,7 +17,10 @@ const BUILT = { menu: MenuEditor }
  * A screen the role can't use says so (the server refuses its data too).
  */
 const ScreenPage = () => {
-    const { screen: id } = useParams()
+    const params = useParams()
+    // /taim/order/12 has no :screen param; it's the order screen's detail page
+    const id = params.screen ?? 'order'
+    const detail = params.orderId !== undefined
     const { session } = useStaff()
     const screen = SCREENS.find((s) => s.id === id)
 
@@ -37,7 +45,7 @@ const ScreenPage = () => {
         )
     }
 
-    const Built = BUILT[screen.id]
+    const Built = detail ? DETAIL[screen.id] : BUILT[screen.id]
     if (Built) return <Built />
 
     return (

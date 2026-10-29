@@ -1,0 +1,103 @@
+// The bill of one order – visuals only (layout is utility classes in the markup)
+.ticket {
+    box-sizing: border-box;
+
+    p {
+        margin: 0;
+    }
+
+    &__title {
+        margin: 0;
+        font-size: 1.1rem;
+        color: var(--text-h);
+    }
+
+    &__lines {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    &__line {
+        padding: 0.5rem 0;
+        border-top: 1px dashed var(--border);
+
+        &:first-child {
+            border-top: 0;
+        }
+
+        // A dish that came back isn't on the bill
+        &.is-back .ticket__name,
+        &.is-back .ticket__price {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+    }
+
+    &__dish {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    &__name {
+        color: var(--text-h);
+        font-weight: 600;
+    }
+
+    // Small coloured status word under the dish name
+    &__status {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+
+        &.is-preparing {
+            color: #b7791f;
+        }
+
+        &.is-sent {
+            color: #22a06b;
+        }
+
+        &.is-back {
+            color: #e5484d;
+        }
+    }
+
+    &__price {
+        color: var(--text-h);
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__remove {
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: none;
+        color: var(--text);
+        font: inherit;
+        line-height: 1;
+        cursor: pointer;
+
+        &:hover:not(:disabled) {
+            border-color: #e5484d;
+            color: #e5484d;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 1px;
+        }
+    }
+
+    &__total {
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border);
+        color: var(--text-h);
+        font-size: 1.1rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+}

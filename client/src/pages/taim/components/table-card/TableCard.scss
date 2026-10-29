@@ -1,0 +1,85 @@
+// One table on the Floor – visuals only (layout is utility classes in the markup)
+.table-card {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 7rem;
+    padding: 0.85rem 1rem;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+
+    &:hover:not(:disabled) {
+        transform: translateY(-2px);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+
+    &:disabled {
+        cursor: default;
+    }
+
+    // Free: green outline and word
+    &.is-free {
+        border-color: rgba(34, 160, 107, 0.6);
+
+        &:hover:not(:disabled) {
+            border-color: #22a06b;
+        }
+    }
+
+    // Taken: neutral, the accent on hover
+    &.is-taken:hover {
+        border-color: var(--accent);
+    }
+
+    // A dish came back: red
+    &.is-alert {
+        border-color: rgba(229, 72, 77, 0.7);
+        background: rgba(229, 72, 77, 0.08);
+    }
+
+    &__label {
+        font-size: 1.4rem;
+        font-weight: 700;
+        line-height: 1;
+        color: var(--text-h);
+    }
+
+    &__seats {
+        font-size: 0.8rem;
+    }
+
+    &__meta {
+        font-size: 0.9rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__free {
+        color: #22a06b;
+        font-weight: 700;
+    }
+
+    &__alert {
+        color: #e5484d;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        transition: none;
+
+        &:hover:not(:disabled) {
+            transform: none;
+        }
+    }
+}
