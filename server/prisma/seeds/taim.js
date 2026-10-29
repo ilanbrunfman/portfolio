@@ -43,11 +43,13 @@ export async function seedTaim(prisma) {
 
     await prisma.staff.createMany({ data: STAFF })
 
-    let dishes = 0
+    let dishCount = 0
     for (const [index, [name, items]] of MENU.entries()) {
-        await prisma.menuCategory.create({ data: { name, position: index + 1, items: { create: items } } })
-        dishes += items.length
+        // Dishes keep the order they're listed in (position 1 = top)
+        const dishes = items.map((item, i) => ({ ...item, position: i + 1 }))
+        await prisma.menuCategory.create({ data: { name, position: index + 1, items: { create: dishes } } })
+        dishCount += items.length
     }
 
-    console.log(`Ta'im: ${STAFF.length} staff (${STAFF.map((s) => s.name).join(', ')}), ${MENU.length} categories, ${dishes} dishes`)
+    console.log(`Ta'im: ${STAFF.length} staff (${STAFF.map((s) => s.name).join(', ')}), ${MENU.length} categories, ${dishCount} dishes`)
 }

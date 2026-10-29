@@ -40,3 +40,11 @@ export const menuItemCreate = z.object({
 
 // PATCH /api/taim/menu-items/:id – any subset (hidden: true = sold out)
 export const menuItemUpdate = z.object(dishFields).partial().refine(nothingToUpdate, 'Nothing to update')
+
+// PUT /api/taim/categories/:id/dish-order – the category's dish ids, top first
+export const dishOrder = z.object({
+    dishIds: z
+        .array(z.number().int('Invalid dish id').positive('Invalid dish id'), { error: 'Send the dish ids in their new order' })
+        .min(1, 'Send the dish ids in their new order')
+        .refine((ids) => new Set(ids).size === ids.length, 'Each dish can appear only once'),
+})

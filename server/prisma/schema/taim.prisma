@@ -41,6 +41,8 @@ model MenuCategory {
 
 // One dish. Dishes are hidden, never deleted (old orders still point to
 // them); a hidden dish is "sold out" and doesn't show on the Order screen.
+// `position` is the dish's place in its category (1 = top); new dishes go
+// to the top and the Chef can drag them into any order.
 model MenuItem {
   id          Int          @id @default(autoincrement())
   categoryId  Int
@@ -49,11 +51,12 @@ model MenuItem {
   name        String       @unique
   description String?
   price       Int // cents: 1400 = 14.00
+  position    Int // 1, 2, 3… within the category
   hidden      Boolean      @default(false)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  @@index([categoryId])
+  @@index([categoryId, position])
   @@map("menu_items")
   @@schema("taim")
 }

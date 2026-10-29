@@ -286,12 +286,13 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | POST | `/api/taim/session` | `{ staffId }` | `{ staff, rights, screens }` + cookie (404 if no such person) |
 | GET | `/api/taim/session` | | The picked person: `{ staff, rights, screens }` (401 if nobody) |
 | DELETE | `/api/taim/session` | | 204, cookie cleared (switch person) |
-| GET | `/api/taim/menu` | | Categories in menu order, each with its `items` (hidden ones marked `hidden: true`) |
+| GET | `/api/taim/menu` | | Categories in menu order, each with its `items` in `position` order (hidden ones marked `hidden: true`) |
 | POST | `/api/taim/categories` | `{ name }` | 201, added at the end of the menu (409 if the name exists) |
 | PATCH | `/api/taim/categories/:id` | `{ name }` | The renamed category |
 | DELETE | `/api/taim/categories/:id` | | 204, only when it has no dishes (409 otherwise) |
-| POST | `/api/taim/menu-items` | `{ categoryId, name, price, description?, hidden? }` | 201 + the dish (409 if the name exists) |
-| PATCH | `/api/taim/menu-items/:id` | any of those fields | The updated dish; `{ hidden: true }` = sold out |
+| POST | `/api/taim/menu-items` | `{ categoryId, name, price, description?, hidden? }` | 201 + the dish, at the top of its category (409 if the name exists) |
+| PATCH | `/api/taim/menu-items/:id` | any of those fields | The updated dish; `{ hidden: true }` = sold out; a new `categoryId` puts it at the top there |
+| PUT | `/api/taim/categories/:id/dish-order` | `{ dishIds }`, top first | The category's dishes in their new order (400 unless the list is exactly that category's dishes) |
 
 `rights` and `screens` are the role's entries from `roles.js`, so the
 client can show only the screens that person may use.
@@ -301,6 +302,11 @@ Changing the menu needs `editMenu` (403 for Cook, Host, Waiter). Dishes are
 never deleted, only hidden, because orders will point to them; a price
 must be above 0, which the database itself also enforces (a `CHECK` rule
 added by hand to the migration).
+
+Each dish has a `position` in its category (1 = top). Adding a dish shifts
+the others down one and takes position 1, in one transaction; saving a new
+order after a drag rewrites every position of that category in one
+transaction, so a half-saved order can't happen.
 
 ```bash
 curl localhost:4000/api/taim/staff

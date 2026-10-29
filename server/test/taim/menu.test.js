@@ -11,7 +11,7 @@ beforeEach(async () => {
         data: {
             name: 'Mains',
             position: 1,
-            items: { create: [{ name: 'Shakshuka', price: 1400 }, { name: 'Schnitzel', price: 1800, hidden: true }] },
+            items: { create: [{ name: 'Shakshuka', price: 1400, position: 1 }, { name: 'Schnitzel', price: 1800, hidden: true, position: 2 }] },
         },
     })
 })
@@ -30,8 +30,8 @@ describe('GET /api/taim/menu', () => {
 
         expect(res.body.map((c) => c.name)).toEqual(['Starters', 'Mains'])
         expect(res.body[1].items).toEqual([
-            { id: expect.any(Number), categoryId: mains.id, name: 'Shakshuka', description: null, price: 1400, hidden: false },
-            { id: expect.any(Number), categoryId: mains.id, name: 'Schnitzel', description: null, price: 1800, hidden: true },
+            { id: expect.any(Number), categoryId: mains.id, name: 'Shakshuka', description: null, price: 1400, hidden: false, position: 1 },
+            { id: expect.any(Number), categoryId: mains.id, name: 'Schnitzel', description: null, price: 1800, hidden: true, position: 2 },
         ])
     })
 })
@@ -58,7 +58,7 @@ describe('who may change the menu', () => {
 describe('POST /api/taim/menu-items', () => {
     it('creates a dish, trimming text and saving an empty description as none', async () => {
         const res = await chef.post('/api/taim/menu-items').send(newDish({ name: '  Sabich ', description: '  ' })).expect(201)
-        expect(res.body).toEqual({ id: expect.any(Number), categoryId: mains.id, name: 'Sabich', description: null, price: 1200, hidden: false })
+        expect(res.body).toEqual({ id: expect.any(Number), categoryId: mains.id, name: 'Sabich', description: null, price: 1200, hidden: false, position: 1 })
     })
 
     it('rejects a missing name, a zero price and cents with decimals', async () => {
@@ -81,7 +81,7 @@ describe('POST /api/taim/menu-items', () => {
 
 describe('the database itself refuses a free dish', () => {
     it('even when the API is bypassed', async () => {
-        await expect(prisma.menuItem.create({ data: { categoryId: mains.id, name: 'Free', price: 0 } })).rejects.toThrow(/menu_items_price_positive/)
+        await expect(prisma.menuItem.create({ data: { categoryId: mains.id, name: 'Free', price: 0, position: 3 } })).rejects.toThrow(/menu_items_price_positive/)
     })
 })
 
@@ -118,5 +118,69 @@ describe('categories', () => {
 
         const empty = await chef.post('/api/taim/categories').send({ name: 'Specials' }).expect(201)
         await chef.delete(`/api/taim/categories/${empty.body.id}`).expect(204)
+    })
+})
+
+describe('dish order', () => {
+    const names = async (agent = chef) => {
+        const res = await agent.get('/api/taim/menu').expect(200)
+        return res.body.find((c) => c.id === mains.id).items.map((d) => d.name)
+    }
+    const idsOf = async (...wanted) => {
+        const dishes = await prisma.menuItem.findMany({ where: { categoryId: mains.id } })
+        return wanted.map((name) => dishes.find((d) => d.name === name).id)
+    }
+
+    it('lists dishes by position, and a new dish goes to the top', async () => {
+        expect(await names()).toEqual(['Shakshuka', 'Schnitzel'])
+        await chef.post('/api/taim/menu-items').send(newDish()).expect(201)
+        expect(await names()).toEqual(['Sabich', 'Shakshuka', 'Schnitzel'])
+    })
+
+    it('saves a new order for the whole category', async () => {
+        await chef.post('/api/taim/menu-items').send(newDish()).expect(201)
+        const ids = await idsOf('Schnitzel', 'Sabich', 'Shakshuka')
+        const res = await chef.put(`/api/taim/categories/${mains.id}/dish-order`).send({ dishIds: ids }).expect(200)
+
+        expect(res.body.map((d) => [d.name, d.position])).toEqual([['Schnitzel', 1], ['Sabich', 2], ['Shakshuka', 3]])
+        expect(await names(await as('WAITER'))).toEqual(['Schnitzel', 'Sabich', 'Shakshuka'])
+    })
+
+    it('refuses a list that is not exactly the category\'s dishes, and changes nothing', async () => {
+        const [shakshuka, schnitzel] = await idsOf('Shakshuka', 'Schnitzel')
+        const desserts = await prisma.menuCategory.create({
+            data: { name: 'Desserts', position: 2, items: { create: [{ name: 'Malabi', price: 700, position: 1 }] } },
+            include: { items: true },
+        })
+        const url = `/api/taim/categories/${mains.id}/dish-order`
+
+        for (const dishIds of [[schnitzel], [schnitzel, shakshuka, desserts.items[0].id], [schnitzel, 999]]) {
+            const res = await chef.put(url).send({ dishIds }).expect(400)
+            expect(res.body.fields).toEqual({ dishIds: 'Send every dish of this category exactly once' })
+        }
+        const dup = await chef.put(url).send({ dishIds: [schnitzel, schnitzel] }).expect(400)
+        expect(dup.body.fields).toEqual({ dishIds: 'Each dish can appear only once' })
+
+        expect(await names()).toEqual(['Shakshuka', 'Schnitzel'])
+    })
+
+    it('answers 404 for a category that does not exist, 403 for a Cook', async () => {
+        const ids = await idsOf('Schnitzel', 'Shakshuka')
+        await chef.put('/api/taim/categories/999/dish-order').send({ dishIds: ids }).expect(404)
+        const cook = await as('COOK')
+        await cook.put(`/api/taim/categories/${mains.id}/dish-order`).send({ dishIds: ids }).expect(403)
+        expect(await names()).toEqual(['Shakshuka', 'Schnitzel'])
+    })
+
+    it('a dish moved to another category lands at its top', async () => {
+        const desserts = await prisma.menuCategory.create({
+            data: { name: 'Desserts', position: 2, items: { create: [{ name: 'Malabi', price: 700, position: 1 }] } },
+        })
+        const [shakshuka] = await idsOf('Shakshuka')
+        const res = await chef.patch(`/api/taim/menu-items/${shakshuka}`).send({ categoryId: desserts.id }).expect(200)
+        expect(res.body).toMatchObject({ categoryId: desserts.id, position: 1 })
+
+        const menu = (await chef.get('/api/taim/menu').expect(200)).body
+        expect(menu.find((c) => c.id === desserts.id).items.map((d) => d.name)).toEqual(['Shakshuka', 'Malabi'])
     })
 })
