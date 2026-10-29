@@ -7,6 +7,23 @@ export const orderTitle = (order) =>
         : `Take-out · ${order.customerName}`
 
 /**
+ * The seats a dish can be for: Seat 1…N and Shared at a table, none for a
+ * take-out. Values are strings for RadioGroup: '1', '2', … 'shared'.
+ * @returns {{ value: string, label: string }[]}
+ */
+export const seatOptions = (order) =>
+    order.type === 'TABLE'
+        ? [
+              ...Array.from({ length: order.guests }, (_, i) => ({ value: String(i + 1), label: `Seat ${i + 1}` })),
+              { value: 'shared', label: 'Shared' },
+          ]
+        : []
+
+/** RadioGroup value ↔ API seat: 'shared' ↔ null, '2' ↔ 2 */
+export const seatFromValue = (value) => (value === 'shared' || value === null ? null : Number(value))
+export const valueFromSeat = (seat) => (seat === null ? 'shared' : String(seat))
+
+/**
  * A table order's dishes grouped by seat, for the runner: Seat 1, Seat 2…
  * then Shared (dishes with no seat). A take-out is one group with no title.
  * @returns {{ key: string, title: string|null, items: object[] }[]}

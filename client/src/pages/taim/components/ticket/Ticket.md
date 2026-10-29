@@ -11,8 +11,10 @@ one list.
 - A dish that **came back** is crossed out: it isn't on the bill (it counts
   as money lost instead). The total comes from the server, which leaves
   those dishes out.
-- With `onRemove`, a **×** button appears on dishes that are still being
-  prepared (the server refuses others).
+- With `onEditItem`, every dish line is one button (the Order screen opens
+  the dish editor: change seat, remove).
+- Otherwise, with `onRemove`, a **×** button appears on dishes that are
+  still being prepared (the server refuses others).
 - With `onClose`, a **Close bill** button appears; it asks once more
   ("Close bill · $40.00" / "Not yet") before closing.
 - Errors from either action show at the top of the ticket.
@@ -34,6 +36,7 @@ The title comes from `orderTitle(order)` in `utils/orders.js`.
 | Prop        | Type                         | Description |
 |-------------|------------------------------|-------------|
 | `order`     | `object`                     | An order from the API (`items`, `total`, `openedBy`, …). |
-| `onRemove`  | `(itemId) => Promise`        | Optional. Remove a dish that's still being prepared. |
+| `onEditItem` | `(item) => void`            | Optional. Makes each dish line tappable. |
+| `onRemove`  | `(itemId) => Promise`        | Optional. A × to remove a dish that's still being prepared (not used with `onEditItem`). |
 | `onClose`   | `() => Promise`              | Optional. Close the bill. |
 | `className` | `string`                     | Extra classes on the section. |

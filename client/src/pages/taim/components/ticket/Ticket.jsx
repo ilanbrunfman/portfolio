@@ -19,11 +19,12 @@ const STATUS = {
  *
  * @param {object} props
  * @param {object} props.order                     An order from the API (items, total, …).
- * @param {(itemId: number) => Promise} [props.onRemove]  Remove a dish (shown only while it's preparing).
+ * @param {(item: object) => void} [props.onEditItem]  Makes each dish tappable (e.g. to change its seat or remove it).
+ * @param {(itemId: number) => Promise} [props.onRemove]  Remove a dish with a × (shown only while it's preparing; not with onEditItem).
  * @param {() => Promise} [props.onClose]          Close the bill (asks to confirm first).
  * @param {string} [props.className]
  */
-const Ticket = ({ order, onRemove, onClose, className = '' }) => {
+const Ticket = ({ order, onEditItem, onRemove, onClose, className = '' }) => {
     const now = useNow()
     const [confirming, setConfirming] = useState(false)
     const [busy, setBusy] = useState(null) // 'close' | item id
@@ -61,13 +62,34 @@ const Ticket = ({ order, onRemove, onClose, className = '' }) => {
                     <div key={group.key} className="ticket__group">
                         {group.title && <h4 className="ticket__seat">{group.title}</h4>}
                         <ul className="ticket__lines">
-                            {group.items.map((item) => (
+                            {group.items.map((item) => {
+                                const content = (
+                                    <>
+                                        <span className="ticket__dish d-flex flex-column">
+                                            <span className="ticket__name">{item.name}</span>
+                                            <span className={`ticket__status ${STATUS[item.status].className}`}>{STATUS[item.status].label}</span>
+                                        </span>
+                                        <span className="ticket__price">{formatMoney(item.price)}</span>
+                                    </>
+                                )
+                                // Tappable lines: the whole line is one button
+                                if (onEditItem && isOpen) {
+                                    return (
+                                        <li key={item.id} className={`ticket__line ${STATUS[item.status].className}`}>
+                                            <button
+                                                type="button"
+                                                className="ticket__line-button d-flex align-items-start gap-0-5"
+                                                onClick={() => onEditItem(item)}
+                                                aria-label={`${item.name}, ${STATUS[item.status].label}, ${formatMoney(item.price)}. Edit`}
+                                            >
+                                                {content}
+                                            </button>
+                                        </li>
+                                    )
+                                }
+                                return (
                                 <li key={item.id} className={`ticket__line d-flex align-items-start gap-0-5 ${STATUS[item.status].className}`}>
-                                    <div className="ticket__dish d-flex flex-column">
-                                        <span className="ticket__name">{item.name}</span>
-                                        <span className={`ticket__status ${STATUS[item.status].className}`}>{STATUS[item.status].label}</span>
-                                    </div>
-                                    <span className="ticket__price">{formatMoney(item.price)}</span>
+                                    {content}
                                     {onRemove && isOpen && item.status === 'PREPARING' && (
                                         <button
                                             type="button"
@@ -81,7 +103,8 @@ const Ticket = ({ order, onRemove, onClose, className = '' }) => {
                                         </button>
                                     )}
                                 </li>
-                            ))}
+                                )
+                            })}
                         </ul>
                     </div>
                 ))

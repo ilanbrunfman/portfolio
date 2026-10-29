@@ -5,6 +5,10 @@ import { useOrder } from '@/pages/taim/hooks/useOrder'
 import { useMenu } from '@/pages/taim/hooks/useMenu'
 import Ticket from '@/pages/taim/components/ticket/Ticket'
 import SeatingActions from '@/pages/taim/components/seating-actions/SeatingActions'
+import DishDetails from '@/pages/taim/components/dish-details/DishDetails'
+import BillItemEditor from '@/pages/taim/components/bill-item-editor/BillItemEditor'
+import Modal from '@/components/ui/modal/Modal'
+import { seatOptions, seatFromValue } from '@/pages/taim/utils/orders'
 import Tabs from '@/components/ui/tabs/Tabs'
 import RadioGroup from '@/components/ui/form/radio/RadioGroup'
 import Button from '@/components/ui/button/Button'
@@ -13,22 +17,23 @@ import './Order.scss'
 
 /**
  * /taim/order/:orderId – take an order, like a POS terminal: the menu by
- * category (in the Chef's order) on one side, the bill on the other. A tap
- * on a dish adds it straight away (the kitchen sees it in step 5); a dish
- * added by mistake can be removed while it's still being prepared.
- * Sold-out dishes are shown but can't be tapped. At a table, pick the seat
- * first ("For: Seat 2"), so each dish is marked for the guest who ordered
- * it; Shared is for the table.
+ * category (in the Chef's order) on one side, the bill on the other.
+ * A tap on a dish opens its details (description, so the waiter can
+ * describe it) with "For" (seat), "How many" and Add. At a table the seat
+ * picked above the menu is the default; Shared is for the whole table.
+ * A tap on a dish on the bill opens its editor: another seat (any time),
+ * or remove (while it's still being prepared).
  */
 const OrderPage = () => {
     const orderId = Number(useParams().orderId)
     const navigate = useNavigate()
     const { can } = useStaff()
-    const { order, error, addDish, removeDish, close, update, undo } = useOrder(orderId)
+    const { order, error, addDish, moveDish, removeDish, close, update, undo } = useOrder(orderId)
     const menu = useMenu()
     const [category, setCategory] = useState(null) // null = the first one
-    const [adding, setAdding] = useState(null) // id of the dish being added
     const [seat, setSeat] = useState('1') // '1', '2'… or 'shared'
+    const [details, setDetails] = useState(null) // the dish whose details are open
+    const [editing, setEditing] = useState(null) // the bill line being edited
     const [message, setMessage] = useState('')
 
     if (error && !order) {
@@ -47,26 +52,19 @@ const OrderPage = () => {
     const atTable = order.type === 'TABLE'
     // The picked seat, unless guests were reduced below it
     const seatValue = atTable && seat !== 'shared' && Number(seat) > order.guests ? '1' : seat
-    const seatOptions = atTable
-        ? [
-              ...Array.from({ length: order.guests }, (_, i) => ({ value: String(i + 1), label: `Seat ${i + 1}` })),
-              { value: 'shared', label: 'Shared' },
-          ]
-        : []
+    const seats = seatOptions(order)
 
-    const handleAdd = async (dish) => {
-        setAdding(dish.id)
-        setMessage('')
+    // From the details popup; errors are shown there
+    const handleAdd = async (dish, { seat: value, quantity }) => {
+        const forSeat = atTable ? seatFromValue(value) : null
         try {
-            const forSeat = atTable && seatValue !== 'shared' ? Number(seatValue) : null
-            await addDish(dish.id, forSeat)
-            setMessage(`Added ${dish.name}${forSeat ? ` for seat ${forSeat}` : atTable ? ' (shared)' : ''}`)
+            await addDish(dish.id, forSeat, quantity)
         } catch (err) {
-            setMessage(err.message)
             menu.reload() // e.g. it was just marked sold out
-        } finally {
-            setAdding(null)
+            throw err
         }
+        if (atTable) setSeat(value) // the next dish defaults to the same guest
+        setMessage(`Added ${quantity > 1 ? `${quantity} × ` : ''}${dish.name}${forSeat ? ` for seat ${forSeat}` : atTable ? ' for the table' : ''}`)
     }
 
     return (
@@ -88,7 +86,7 @@ const OrderPage = () => {
                         {atTable && (
                             <RadioGroup
                                 label="For"
-                                options={seatOptions}
+                                options={seats}
                                 value={seatValue}
                                 onChange={setSeat}
                                 direction="row"
@@ -109,10 +107,9 @@ const OrderPage = () => {
                                             <li key={dish.id}>
                                                 <button
                                                     type="button"
-                                                    className="order-page__dish d-flex flex-column justify-between gap-0-5"
-                                                    onClick={() => handleAdd(dish)}
-                                                    disabled={dish.hidden || adding === dish.id}
-                                                    aria-label={dish.hidden ? `${dish.name}, sold out` : `Add ${dish.name}, ${formatMoney(dish.price)}`}
+                                                    className={`order-page__dish d-flex flex-column justify-between gap-0-5 ${dish.hidden ? 'is-sold-out' : ''}`}
+                                                    onClick={() => setDetails(dish)}
+                                                    aria-label={`${dish.name}, ${dish.hidden ? 'sold out' : formatMoney(dish.price)}. Details`}
                                                 >
                                                     <span className="order-page__dish-name">{dish.name}</span>
                                                     <span className="order-page__dish-price">
@@ -131,10 +128,34 @@ const OrderPage = () => {
                 <Ticket
                     order={order}
                     className="order-page__ticket"
-                    onRemove={can('addDishes') ? removeDish : undefined}
+                    onEditItem={can('addDishes') ? setEditing : undefined}
                     onClose={can('closeBill') ? async () => { await close(); navigate('/taim/floor') } : undefined}
                 />
             </div>
+
+            <Modal isOpen={Boolean(details)} onClose={() => setDetails(null)} title={details?.name} size="sm">
+                {details && (
+                    <DishDetails
+                        dish={details}
+                        seats={seats}
+                        seat={seatValue}
+                        onAdd={(choice) => handleAdd(details, choice)}
+                        onDone={() => setDetails(null)}
+                    />
+                )}
+            </Modal>
+
+            <Modal isOpen={Boolean(editing)} onClose={() => setEditing(null)} title={editing?.name} size="sm">
+                {editing && (
+                    <BillItemEditor
+                        item={editing}
+                        seats={seats}
+                        onMove={(value) => moveDish(editing.id, seatFromValue(value))}
+                        onRemove={() => removeDish(editing.id)}
+                        onDone={() => setEditing(null)}
+                    />
+                )}
+            </Modal>
         </div>
     )
 }

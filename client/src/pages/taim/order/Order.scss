@@ -83,11 +83,11 @@
         cursor: pointer;
         transition: border-color 0.15s ease, transform 0.1s ease;
 
-        &:hover:not(:disabled) {
+        &:hover {
             border-color: var(--accent);
         }
 
-        &:active:not(:disabled) {
+        &:active {
             transform: scale(0.97);
         }
 
@@ -96,9 +96,9 @@
             outline-offset: 2px;
         }
 
-        &:disabled {
-            cursor: default;
-            opacity: 0.45;
+        // Sold out: still opens its details, shown faded
+        &.is-sold-out {
+            opacity: 0.5;
         }
     }
 
@@ -120,7 +120,7 @@
         &__dish {
             transition: none;
 
-            &:active:not(:disabled) {
+            &:active {
                 transform: none;
             }
         }
