@@ -32,7 +32,7 @@ machine. It only listens on localhost.
 ## Prisma (tables and queries)
 
 The tables are described in `prisma/schema/`: `schema.prisma` holds the
-shared settings, and each project has its own file (`bank.prisma`, …).
+shared settings, and each project has its own file (`bank.prisma`, `taim.prisma`).
 Each project's tables also live in their own **Postgres schema**, a named
 folder of tables inside the one database: the bank's are `bank.accounts`,
 `bank.transactions`, and so on. Raw SQL names them that way too.
@@ -45,7 +45,8 @@ client in `src/generated/prisma/` (not committed, rebuilt on `npm install`).
 |---------|--------------|
 | `npm run db:migrate` | After editing the schema: write a migration, apply it, regenerate the client |
 | `npm run db:generate` | Regenerate the client only |
-| `npm run db:seed` | Replace all rows with demo data (**deletes existing rows**) |
+| `npm run db:seed` | Replace all rows with demo data, every project (**deletes existing rows**) |
+| `npm run db:seed:bank` / `db:seed:taim` | The same, for one project only (the other keeps its rows) |
 | `npm run db:reset` | Drop everything, re-run all migrations, then seed (**deletes data**) |
 | `npm run db:studio` | Open Prisma Studio, a browser UI to view/edit rows |
 
@@ -61,12 +62,18 @@ Tables: `users`, `sessions`, `accounts` (each has a `userId` owner),
 (`1250` = 12.50). Balances aren't stored; they're computed from
 `openingBalance` + the account's transactions.
 
-### Demo data (`prisma/seed.js`)
+### Demo data (`prisma/seeds/`)
 
-4 accounts (checking, savings, credit card, cash), 13 categories and about
+`prisma/seed.js` runs one seed per project from `prisma/seeds/`; each
+empties only its own tables first.
+
+**Bank** (`seeds/bank.js`): 4 accounts (checking, savings, credit card, cash), 13 categories and about
 4 months of transactions ending today: salary, rent, bills, subscriptions,
 daily spending, and transfers (monthly savings, ATM withdrawals, credit card
 payments). It uses a fixed random seed, so every run gives the same data.
+
+**Ta'im** (`seeds/taim.js`): one staff member per role: Noa (Manager),
+Avi (Chef), Yossi (Cook), Dana (Host), Lior (Waiter).
 
 ## Tests
 
@@ -111,7 +118,9 @@ prisma/
   schema/
     schema.prisma   shared settings (generator, database, list of schemas)
     bank.prisma     the bank tables (Postgres schema "bank")
-  seed.js           demo data
+    taim.prisma     the Ta'im tables (Postgres schema "taim")
+  seed.js           runs the demo data seeds
+  seeds/            one seed per project (bank.js, taim.js)
   migrations/       SQL history, one folder per change
 src/
   index.js        starts the server (reads PORT)

@@ -1,0 +1,28 @@
+// Ta'im (restaurant app) tables, all in the Postgres schema "taim" (taim.staff, …).
+// Change a model → run `npm run db:migrate`.
+//
+// Money will be whole cents (Int), like the bank tracker.
+
+// What a staff member may do is decided by their role (see
+// src/projects/taim/roles.js). Owner and Manager are one role.
+enum StaffRole {
+  MANAGER
+  CHEF
+  COOK
+  HOST
+  WAITER
+
+  @@schema("taim")
+}
+
+// The people on the "Who are you?" screen. There are no passwords: picking
+// a person is the login, and the server checks their role on every request.
+model Staff {
+  id        Int       @id @default(autoincrement())
+  name      String
+  role      StaffRole
+  createdAt DateTime  @default(now())
+
+  @@map("staff")
+  @@schema("taim")
+}
