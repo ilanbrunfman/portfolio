@@ -26,9 +26,12 @@ const Accordion = ({ children, className = '' }) => (
  * @param {boolean} [props.defaultOpen]            Initial state when uncontrolled.
  * @param {boolean} [props.open]                   Controlled open state.
  * @param {(next: boolean) => void} [props.onToggle] Controlled toggle handler.
+ * @param {React.ReactNode} [props.actions]        Buttons shown in the header row, left of the
+ *                                                 chevron (e.g. Rename). They sit outside the
+ *                                                 toggle button, since a button can't hold buttons.
  * @param {React.ReactNode} props.children         Collapsible content.
  */
-const AccordionItem = ({ title, defaultOpen = false, open, onToggle, children }) => {
+const AccordionItem = ({ title, defaultOpen = false, open, onToggle, actions, children }) => {
     const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen)
     const isControlled = open !== undefined
     const isOpen = isControlled ? open : uncontrolledOpen
@@ -45,19 +48,34 @@ const AccordionItem = ({ title, defaultOpen = false, open, onToggle, children })
         }
     }
 
+    const toggle = (
+        <button
+            type="button"
+            id={headerId}
+            className="accordion__header"
+            aria-expanded={isOpen}
+            aria-controls={contentId}
+            onClick={handleToggle}
+        >
+            <span className="accordion__title">{title}</span>
+            {!actions && <Icon name="IconCaretRight" size={16} className="accordion__chevron" />}
+        </button>
+    )
+
     return (
         <div className={`accordion__item${isOpen ? ' is-open' : ''}`}>
-            <button
-                type="button"
-                id={headerId}
-                className="accordion__header"
-                aria-expanded={isOpen}
-                aria-controls={contentId}
-                onClick={handleToggle}
-            >
-                <span className="accordion__title">{title}</span>
-                <Icon name="IconCaretRight" size={16} className="accordion__chevron" />
-            </button>
+            {actions ? (
+                // Row: toggle (title) · actions · chevron. The toggle's click
+                // area stretches over the whole row (see .accordion__head), so a
+                // click anywhere but on an action still opens/closes it.
+                <div className="accordion__head">
+                    {toggle}
+                    <div className="accordion__actions">{actions}</div>
+                    <Icon name="IconCaretRight" size={16} className="accordion__chevron" aria-hidden="true" />
+                </div>
+            ) : (
+                toggle
+            )}
 
             {/* Content stays mounted and animates via grid-template-rows; `inert`
                 removes it from tab order + the a11y tree while collapsed. */}
