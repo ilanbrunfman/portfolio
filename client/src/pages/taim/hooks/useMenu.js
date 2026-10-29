@@ -7,8 +7,11 @@ import { api } from '@/pages/taim/api/client'
  * so the screen always shows what's really saved. Actions throw on failure
  * (err.fields has per-field messages) so forms can show them.
  *
+ * reorderDishes is the exception: it shows the new order straight away (so
+ * a drag feels instant) and puts the old order back if the server refuses.
+ *
  * @returns {{ categories: object[]|null, error: string, reload: () => void,
- *   createCategory, renameCategory, deleteCategory, createDish, updateDish }}
+ *   createCategory, renameCategory, deleteCategory, createDish, updateDish, reorderDishes }}
  */
 export function useMenu() {
     const [categories, setCategories] = useState(null) // null = still loading
@@ -40,14 +43,15 @@ export function useMenu() {
         setCategories((list) => list.filter((c) => c.id !== id))
     }, [])
 
-    // A dish lives inside its category: put the saved copy there (moving it
-    // if its category changed)
+    // A dish lives inside its category: put the saved copy there. A dish
+    // that's new to a category (just added, or moved in) goes to the top,
+    // as the server put it.
     const placeDish = (list, dish) =>
         list.map((c) => {
             const others = c.items.filter((item) => item.id !== dish.id)
             if (c.id !== dish.categoryId) return others.length === c.items.length ? c : { ...c, items: others }
             const at = c.items.findIndex((item) => item.id === dish.id)
-            const items = at === -1 ? [...c.items, dish] : c.items.map((item) => (item.id === dish.id ? dish : item))
+            const items = at === -1 ? [dish, ...c.items] : c.items.map((item) => (item.id === dish.id ? dish : item))
             return { ...c, items }
         })
 
@@ -61,5 +65,25 @@ export function useMenu() {
         setCategories((list) => placeDish(list, dish))
     }, [])
 
-    return { categories, error, reload, createCategory, renameCategory, deleteCategory, createDish, updateDish }
+    /** New order for one category's dishes (ids, top first), e.g. after a drag */
+    const reorderDishes = useCallback(async (categoryId, dishIds) => {
+        let before
+        setCategories((list) => {
+            before = list
+            return list.map((c) => {
+                if (c.id !== categoryId) return c
+                const byId = new Map(c.items.map((item) => [item.id, item]))
+                return { ...c, items: dishIds.map((id) => byId.get(id)) }
+            })
+        })
+        try {
+            const items = await api(`/categories/${categoryId}/dish-order`, { method: 'PUT', body: { dishIds } })
+            setCategories((list) => list.map((c) => (c.id === categoryId ? { ...c, items } : c)))
+        } catch (err) {
+            setCategories(before) // the server said no: back to the saved order
+            throw err
+        }
+    }, [])
+
+    return { categories, error, reload, createCategory, renameCategory, deleteCategory, createDish, updateDish, reorderDishes }
 }

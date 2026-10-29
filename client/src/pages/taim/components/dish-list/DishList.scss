@@ -1,0 +1,120 @@
+// Sortable dish rows – visuals only (layout is utility classes in the markup)
+.dish-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    // One row per dish: handle, then the text and the price/toggle/Edit group
+    &__row {
+        position: relative;
+        padding: 0.6rem 0;
+        border-top: 1px solid var(--border);
+        background: var(--bg);
+
+        &:first-child {
+            border-top: 0;
+        }
+
+        &.is-sold-out .dish-list__text,
+        &.is-sold-out .dish-list__price {
+            opacity: 0.55;
+        }
+
+        // The row being dragged floats above the others
+        &.is-dragging {
+            z-index: 1;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+    }
+
+    // Grip: only this starts a drag, so the rest of the row scrolls normally
+    // on phones (touch-action: none stops the page scrolling while dragging)
+    &__handle {
+        flex: 0 0 auto;
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        margin-top: 0.05rem;
+        padding: 0;
+        border: 0;
+        border-radius: 6px;
+        background: none;
+        color: var(--text);
+        cursor: grab;
+        touch-action: none;
+
+        &:hover {
+            color: var(--text-h);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 1px;
+        }
+
+        .is-dragging & {
+            cursor: grabbing;
+            color: var(--accent);
+        }
+    }
+
+    &__body {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    &__text {
+        flex: 1 1 14rem;
+        min-width: 0;
+    }
+
+    &__name {
+        color: var(--text-h);
+        font-weight: 600;
+    }
+
+    // Price, "On menu" and Edit: always one line; a bit tighter in a narrow section
+    &__controls {
+        white-space: nowrap;
+
+        @container (max-width: 560px) {
+            gap: 0.75rem;
+        }
+    }
+
+    &__price {
+        min-width: 4.5rem;
+        text-align: right;
+        color: var(--text-h);
+        font-variant-numeric: tabular-nums;
+
+        // A narrow section (phone) wraps price + toggle under the dish name,
+        // so line up on the left instead of in a right-hand column. The
+        // container is the menu section around the list.
+        @container (max-width: 560px) {
+            min-width: 0;
+            text-align: left;
+        }
+    }
+
+    &__tag {
+        margin-left: 0.5rem;
+        padding: 0.05rem 0.5rem;
+        border-radius: 999px;
+        background: var(--accent-bg);
+        color: var(--accent);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        vertical-align: 0.1em;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        &__row {
+            transition: none !important;
+        }
+    }
+}

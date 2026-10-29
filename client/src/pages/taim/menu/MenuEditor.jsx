@@ -2,18 +2,16 @@ import { useState } from 'react'
 import { useMenu } from '@/pages/taim/hooks/useMenu'
 import DishForm from '@/pages/taim/components/dish-form/DishForm'
 import CategoryForm from '@/pages/taim/components/category-form/CategoryForm'
+import DishList from '@/pages/taim/components/dish-list/DishList'
 import Accordion from '@/components/ui/accordion/Accordion'
 import Modal from '@/components/ui/modal/Modal'
 import Button from '@/components/ui/button/Button'
-import Checkbox from '@/components/ui/form/checkbox/Checkbox'
-import { formatMoney } from '@/pages/taim/utils/money'
 import './MenuEditor.scss'
 
 /**
  * /taim/menu – the Manager's and Chef's menu: each category is an
- * accordion section that opens to its dishes, one row each (name,
- * description, price, "On menu" to mark it sold out, Edit). Accordion
- * headers are buttons, so the controls live inside the panels.
+ * accordion section (Rename and + Dish in its header) that opens to its
+ * dishes, one row each, dragged by a grip to reorder (see DishList).
  * (The route only renders this for roles with the editMenu right; the
  * server refuses changes from anyone else.)
  */
@@ -45,6 +43,17 @@ const MenuEditor = () => {
             setError(`${dish.name}: ${err.message}`)
         } finally {
             setToggling(null)
+        }
+    }
+
+    // Save the new order after a drag; on failure the list is already back
+    // in its old order (useMenu), so only say why
+    const reorder = async (categoryId, dishIds) => {
+        setError('')
+        try {
+            await menu.reorderDishes(categoryId, dishIds)
+        } catch (err) {
+            setError(`Couldn't save the new order: ${err.message}`)
         }
     }
 
@@ -114,32 +123,13 @@ const MenuEditor = () => {
                                 {category.items.length === 0 ? (
                                     <p className="form__hint menu-editor__empty">No dishes yet.</p>
                                 ) : (
-                                    <ul className="menu-editor__dishes">
-                                        {category.items.map((dish) => (
-                                            <li key={dish.id} className={`menu-editor__dish d-flex flex-wrap align-items-start gap-1 ${dish.hidden ? 'is-sold-out' : ''}`}>
-                                                <div className="menu-editor__dish-text d-flex flex-column">
-                                                    <span className="menu-editor__dish-name">
-                                                        {dish.name}
-                                                        {dish.hidden && <span className="menu-editor__tag">Sold out</span>}
-                                                    </span>
-                                                    {dish.description && <span className="form__hint">{dish.description}</span>}
-                                                </div>
-                                                {/* Price, toggle and Edit wrap together under the name on narrow screens */}
-                                                <div className="d-flex align-items-center gap-1">
-                                                    <span className="menu-editor__price">{formatMoney(dish.price)}</span>
-                                                    <Checkbox
-                                                        label="On menu"
-                                                        checked={!dish.hidden}
-                                                        onChange={() => toggleOnMenu(dish)}
-                                                        disabled={toggling === dish.id}
-                                                    />
-                                                    <Button size="sm" variant="ghost" onClick={() => setEditing({ kind: 'dish', item: dish })}>
-                                                        Edit
-                                                    </Button>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
+                                    <DishList
+                                        dishes={category.items}
+                                        onReorder={(dishIds) => reorder(category.id, dishIds)}
+                                        onToggle={toggleOnMenu}
+                                        onEdit={(dish) => setEditing({ kind: 'dish', item: dish })}
+                                        toggling={toggling}
+                                    />
                                 )}
                             </div>
                         </Accordion.Item>

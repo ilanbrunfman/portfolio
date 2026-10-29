@@ -1,5 +1,5 @@
 // Menu – visuals only (layout is utility classes in the markup).
-// Categories are the shared Accordion; each one opens to a list of dish rows.
+// Categories are the shared Accordion; each one opens to a DishList.
 .menu-editor {
     // A readable column: about a tablet's width, so prices stay close to
     // the dish names on wide screens
@@ -32,7 +32,7 @@
 
         > .accordion__item > .accordion__panel .accordion__panel-content {
             padding: 0 0.75rem 0.75rem;
-            // Dish rows react to the section's own width (see &__price)
+            // Dish rows react to the section's own width (DishList's price)
             container-type: inline-size;
         }
     }
@@ -67,64 +67,5 @@
 
     &__empty {
         padding: 0.25rem 0.75rem;
-    }
-
-    // ---------- dish rows ----------
-    &__dishes {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-    }
-
-    // One row per dish: text takes the free space, then price, toggle, Edit
-    &__dish {
-        padding: 0.6rem 0;
-        border-top: 1px solid var(--border);
-
-        &:first-child {
-            border-top: 0;
-        }
-
-        &.is-sold-out .menu-editor__dish-text,
-        &.is-sold-out .menu-editor__price {
-            opacity: 0.55;
-        }
-    }
-
-    &__dish-text {
-        flex: 1 1 14rem;
-        min-width: 0;
-    }
-
-    &__dish-name {
-        color: var(--text-h);
-        font-weight: 600;
-    }
-
-    &__price {
-        min-width: 4.5rem;
-        text-align: right;
-        color: var(--text-h);
-        font-variant-numeric: tabular-nums;
-
-        // A narrow section (phone) wraps price + toggle under the dish name,
-        // so line up on the left instead of in a right-hand column
-        @container (max-width: 560px) {
-            min-width: 0;
-            text-align: left;
-        }
-    }
-
-    &__tag {
-        margin-left: 0.5rem;
-        padding: 0.05rem 0.5rem;
-        border-radius: 999px;
-        background: var(--accent-bg);
-        color: var(--accent);
-        font-size: 0.7rem;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        vertical-align: 0.1em;
     }
 }
