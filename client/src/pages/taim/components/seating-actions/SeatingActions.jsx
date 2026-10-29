@@ -87,10 +87,15 @@ const MoveForm = ({ order, onSave, onDone }) => {
         return () => { cancelled = true }
     }, [])
 
+    // The chosen table (or group): its label and seats, for the guests limit
+    const chosen = tables?.find((t) => String(t.id) === tableId)
+    const picked = chosen && { label: chosen.groupLabel ?? chosen.label, seats: chosen.groupSeats ?? chosen.seats }
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         const count = Number(guests)
         if (!Number.isInteger(count) || count < 1) return setErrors({ guests: 'Enter how many guests, e.g. 2' })
+        if (picked && count > picked.seats) return setErrors({ guests: `${picked.label} has ${picked.seats} seats: seat up to ${picked.seats} guests` })
         const data = {}
         if (Number(tableId) !== order.table.id) data.tableId = Number(tableId)
         if (count !== order.guests) data.guests = count
@@ -122,13 +127,14 @@ const MoveForm = ({ order, onSave, onDone }) => {
             {errors.tableId && <p className="form__error" role="alert">{errors.tableId}</p>}
             <Input
                 label="Guests"
+                hint={picked ? `Up to ${picked.seats} at ${picked.label}.` : undefined}
                 value={guests}
                 onChange={(e) => { setGuests(e.target.value); setErrors({}) }}
                 error={errors.guests}
                 type="number"
                 inputMode="numeric"
                 min={1}
-                max={50}
+                max={picked?.seats ?? 50}
             />
             <div className="d-flex flex-wrap justify-end gap-0-5">
                 <Button variant="ghost" onClick={onDone} disabled={saving}>Cancel</Button>

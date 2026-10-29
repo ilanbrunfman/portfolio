@@ -3,7 +3,9 @@
 Starts an order from the Floor, inside a `Modal`:
 
 - **With a table:** "Guests" (prefilled with 2, or fewer for a smaller
-  table; the hint shows the table's seats) and a **Seat T4** button.
+  table) and a **Seat T4** button. Guests can't be more than the table's
+  seats – for combined tables the group's total, e.g. "Up to 10 guests (T1
+  + T4 + T7 has 10 seats)". The server checks the same.
 - **Without one (`table={null}`):** "Name for the order", **Phone
   (optional)** (to call when it's ready; if given, the server checks it
   looks like a phone number) and

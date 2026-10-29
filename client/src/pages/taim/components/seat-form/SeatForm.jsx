@@ -28,6 +28,8 @@ const SeatForm = ({ table, onSave, onNeedsCleaning, onSplit, onDone }) => {
         if (isTable) {
             data = Number(value.trim())
             if (!Number.isInteger(data) || data < 1) return setErrors({ [field]: 'Enter how many guests, e.g. 2' })
+            // No more guests than seats (combined tables: their total); the server checks too
+            if (data > table.seats) return setErrors({ [field]: `${table.label} has ${table.seats} seats: seat up to ${table.seats} guests` })
         } else {
             data = { customerName: value.trim(), customerPhone: phone.trim() }
             if (!data.customerName) return setErrors({ customerName: 'Name is required' })
@@ -65,14 +67,14 @@ const SeatForm = ({ table, onSave, onNeedsCleaning, onSplit, onDone }) => {
             {isTable ? (
                 <Input
                     label="Guests"
-                    hint={`${table.label} has ${table.seats} seats.`}
+                    hint={`Up to ${table.seats} guests (${table.label} has ${table.seats} seats).`}
                     value={value}
                     onChange={(e) => { setValue(e.target.value); setErrors({}) }}
                     error={errors.guests}
                     type="number"
                     inputMode="numeric"
                     min={1}
-                    max={50}
+                    max={table.seats}
                     autoFocus
                 />
             ) : (
