@@ -36,6 +36,11 @@ export function useOrder(orderId) {
         setOrder(await api(`/orders/${orderId}/items/${itemId}`, { method: 'DELETE' }))
     }, [orderId])
 
+    /** Send every dish not sent yet to the kitchen */
+    const send = useCallback(async () => {
+        setOrder(await api(`/orders/${orderId}/send`, { method: 'POST' }))
+    }, [orderId])
+
     const close = useCallback(async () => {
         setOrder(await api(`/orders/${orderId}/close`, { method: 'POST' }))
     }, [orderId])
@@ -50,5 +55,5 @@ export function useOrder(orderId) {
         await api(`/orders/${orderId}`, { method: 'DELETE' })
     }, [orderId])
 
-    return { order, error, reload, addDish, moveDish, removeDish, close, update, undo }
+    return { order, error, reload, addDish, moveDish, removeDish, send, close, update, undo }
 }

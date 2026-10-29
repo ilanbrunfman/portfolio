@@ -5,7 +5,8 @@ Opens when the waiter taps a dish on the bill (Order screen). Two fixes:
 - **For:** move the dish to another seat, or to Shared. Allowed any time
   while the bill is open, whatever the kitchen status: it only changes who
   gets the dish. **Save seat** is enabled once the seat changed.
-- **Remove from bill:** only while the kitchen is still preparing it; asks
+- **Remove from bill:** before it's sent to the kitchen, or while the
+  kitchen is still preparing it; asks
   once more ("Yes, remove Hummus"). Once a dish has been sent out, the
   editor says it stays on the bill: taking a cooked dish off is a loss, and
   will be recorded as "came back" with a reason (step 6), not deleted.

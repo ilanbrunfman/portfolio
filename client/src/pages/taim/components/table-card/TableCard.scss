@@ -75,6 +75,27 @@
         font-weight: 700;
     }
 
+    // How the food is coming along
+    &__progress {
+        font-size: 0.85rem;
+    }
+
+    &__not-sent {
+        color: var(--accent);
+        font-weight: 700;
+    }
+
+    &__kitchen {
+        color: #b7791f;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__served {
+        color: #22a06b;
+        font-weight: 700;
+    }
+
     &__cleaning {
         color: #d69e2e;
         font-weight: 700;

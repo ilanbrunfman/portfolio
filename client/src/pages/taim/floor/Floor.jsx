@@ -4,7 +4,7 @@ import { useStaff } from '@/pages/taim/context/StaffContext'
 import { useFloor } from '@/pages/taim/hooks/useFloor'
 import { useOrder } from '@/pages/taim/hooks/useOrder'
 import { useNow, minutesSince } from '@/pages/taim/hooks/useNow'
-import TableCard from '@/pages/taim/components/table-card/TableCard'
+import TableCard, { KitchenProgress } from '@/pages/taim/components/table-card/TableCard'
 import SeatForm from '@/pages/taim/components/seat-form/SeatForm'
 import TableForm from '@/pages/taim/components/table-form/TableForm'
 import Ticket from '@/pages/taim/components/ticket/Ticket'
@@ -12,6 +12,7 @@ import SeatingActions from '@/pages/taim/components/seating-actions/SeatingActio
 import Modal from '@/components/ui/modal/Modal'
 import Button from '@/components/ui/button/Button'
 import { formatMoney } from '@/pages/taim/utils/money'
+import { kitchenProgress } from '@/pages/taim/utils/orders'
 import './Floor.scss'
 
 /**
@@ -113,6 +114,7 @@ const Floor = () => {
                                             <span className="form__hint">
                                                 {order.items.length} {order.items.length === 1 ? 'dish' : 'dishes'} · {minutesSince(order.openedAt, now)} min
                                             </span>
+                                            <KitchenProgress order={{ dishCount: order.items.length, ...kitchenProgress(order.items) }} now={now} />
                                         </span>
                                         <span className="floor__takeout-total">{formatMoney(order.total)}</span>
                                     </button>

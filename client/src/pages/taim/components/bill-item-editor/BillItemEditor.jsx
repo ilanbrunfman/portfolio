@@ -6,8 +6,8 @@ import { valueFromSeat } from '@/pages/taim/utils/orders'
 
 /**
  * Edit one dish on the bill: move it to another seat (any time while the
- * bill is open) or remove it (only while the kitchen is still preparing
- * it). Meant to sit inside a <Modal>.
+ * bill is open) or remove it (before it's sent to the kitchen, or while the
+ * kitchen is preparing it). Meant to sit inside a <Modal>.
  *
  * @param {object} props
  * @param {object} props.item                           A dish on the order ({ name, price, seat, status }).
@@ -21,7 +21,7 @@ const BillItemEditor = ({ item, seats, onMove, onRemove, onDone }) => {
     const [confirmRemove, setConfirmRemove] = useState(false)
     const [busy, setBusy] = useState(false)
     const [error, setError] = useState('')
-    const canRemove = item.status === 'PREPARING'
+    const canRemove = item.status === 'NEW' || item.status === 'PREPARING'
     const changed = seat !== valueFromSeat(item.seat)
 
     const run = async (action) => {
@@ -40,7 +40,7 @@ const BillItemEditor = ({ item, seats, onMove, onRemove, onDone }) => {
     return (
         <div className="d-flex flex-column gap-1">
             <p className="form__hint">
-                {formatMoney(item.price)} · {item.status === 'PREPARING' ? 'being prepared' : item.status === 'SENT_OUT' ? 'sent out' : 'came back'}
+                {formatMoney(item.price)} · {{ NEW: 'not sent to the kitchen yet', PREPARING: 'in the kitchen', SENT_OUT: 'served', CAME_BACK: 'came back' }[item.status]}
             </p>
             {error && <p className="form__error" role="alert">{error}</p>}
 

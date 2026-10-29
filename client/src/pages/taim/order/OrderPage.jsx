@@ -21,14 +21,16 @@ import './Order.scss'
  * A tap on a dish opens its details (description, so the waiter can
  * describe it) with "For" (seat), "How many" and Add. At a table the seat
  * picked above the menu is the default; Shared is for the whole table.
- * A tap on a dish on the bill opens its editor: another seat (any time),
- * or remove (while it's still being prepared).
+ * Added dishes wait on the bill as "Not sent" until "Send to kitchen";
+ * more rounds can follow (desserts). A tap on a dish on the bill opens its
+ * editor: another seat (any time), or remove (until the kitchen sends it
+ * out). Closing the bill is a separate, smaller button at the end.
  */
 const OrderPage = () => {
     const orderId = Number(useParams().orderId)
     const navigate = useNavigate()
     const { can } = useStaff()
-    const { order, error, addDish, moveDish, removeDish, close, update, undo } = useOrder(orderId)
+    const { order, error, addDish, moveDish, removeDish, send, close, update, undo } = useOrder(orderId)
     const menu = useMenu()
     const [category, setCategory] = useState(null) // null = the first one
     const [seat, setSeat] = useState('1') // '1', '2'… or 'shared'
@@ -64,7 +66,13 @@ const OrderPage = () => {
             throw err
         }
         if (atTable) setSeat(value) // the next dish defaults to the same guest
-        setMessage(`Added ${quantity > 1 ? `${quantity} × ` : ''}${dish.name}${forSeat ? ` for seat ${forSeat}` : atTable ? ' for the table' : ''}`)
+        setMessage(`Added ${quantity > 1 ? `${quantity} × ` : ''}${dish.name}${forSeat ? ` for seat ${forSeat}` : atTable ? ' for the table' : ''} – not sent yet`)
+    }
+
+    const handleSend = async () => {
+        const count = order.items.filter((item) => item.status === 'NEW').length
+        await send()
+        setMessage(`Sent ${count} ${count === 1 ? 'dish' : 'dishes'} to the kitchen`)
     }
 
     return (
@@ -129,6 +137,7 @@ const OrderPage = () => {
                     order={order}
                     className="order-page__ticket"
                     onEditItem={can('addDishes') ? setEditing : undefined}
+                    onSend={can('addDishes') ? handleSend : undefined}
                     onClose={can('closeBill') ? async () => { await close(); navigate('/taim/floor') } : undefined}
                 />
             </div>

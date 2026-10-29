@@ -7,6 +7,33 @@ export const orderTitle = (order) =>
         : `Take-out · ${order.customerName}`
 
 /**
+ * Seats still waiting for food, short enough for a table card:
+ * [1] → "seat 1", [1, 3] → "seats 1, 3", [2, null] → "seat 2 + shared",
+ * [null] → "shared" (null = shared)
+ */
+export function seatsText(seats) {
+    const numbers = seats.filter((seat) => seat !== null)
+    const shared = numbers.length < seats.length
+    const text = numbers.length === 0 ? '' : `${numbers.length === 1 ? 'seat' : 'seats'} ${numbers.join(', ')}`
+    return [text, shared && 'shared'].filter(Boolean).join(' + ')
+}
+
+/**
+ * How an order's food is coming along, from its dishes (the same numbers
+ * the floor summary gives for tables): not sent, in the kitchen, since when
+ * the oldest waits, and which seats still wait.
+ */
+export function kitchenProgress(items) {
+    const cooking = items.filter((item) => item.status === 'PREPARING')
+    return {
+        notSent: items.filter((item) => item.status === 'NEW').length,
+        inKitchen: cooking.length,
+        waitingSince: cooking.reduce((oldest, item) => (!oldest || item.firedAt < oldest ? item.firedAt : oldest), null),
+        waitingSeats: [...new Set(cooking.map((item) => item.seat))].sort((a, b) => (a ?? Infinity) - (b ?? Infinity)),
+    }
+}
+
+/**
  * The seats a dish can be for: Seat 1…N and Shared at a table, none for a
  * take-out. Values are strings for RadioGroup: '1', '2', … 'shared'.
  * @returns {{ value: string, label: string }[]}

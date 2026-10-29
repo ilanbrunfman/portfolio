@@ -8,8 +8,18 @@ One table on the Ta'im Floor, drawn as a button, in one of three colours:
 - **Grey, dining:** guests and minutes since they were seated, number of
   dishes and the bill so far.
 
-When a dish came back, a small red "1 came back" tag appears on a dining
-table, so the host or manager notices.
+A dining table also shows how its food is coming along, so the waiter can
+ask the kitchen about "table 5, seat 3":
+
+- **2 not sent** (accent): dishes on the bill the kitchen doesn't have yet.
+- **In kitchen: 3 · 14 min** (amber): dishes being prepared, and how long
+  the oldest has waited; **Waiting: seat 1, seat 3, shared** under it.
+- **All served** (green): nothing left to come.
+
+When a dish came back, a small red "1 came back" tag appears too.
+
+`KitchenProgress` (the progress lines) is also exported, for the Floor's
+take-out list.
 
 The minutes keep counting because the Floor passes the current time
 (`useNow`). The screen reader label sums it up: "T2, dining: 3 guests,
