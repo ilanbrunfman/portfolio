@@ -10,11 +10,11 @@ export const UNAUTHORIZED_EVENT = 'bank:unauthorized'
  *   ('API not reachable' when the server isn't running). The error also has
  *   `status`, and `fields` for validation errors: { name: 'Name is required' }
  *
- * @param {string} path               e.g. '/health' → GET /api/health
+ * @param {string} path               e.g. '/accounts' → GET /api/bank/accounts
  * @param {RequestInit & {body?: any}} [options]  `body` may be a plain object.
  */
 export async function api(path, { body, headers, ...options } = {}) {
-    const res = await fetch(`/api${path}`, {
+    const res = await fetch(`/api/bank${path}`, {
         ...options,
         headers: { ...(body !== undefined && { 'Content-Type': 'application/json' }), ...headers },
         body: body !== undefined ? JSON.stringify(body) : undefined,

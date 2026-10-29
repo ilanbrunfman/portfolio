@@ -31,7 +31,13 @@ machine. It only listens on localhost.
 
 ## Prisma (tables and queries)
 
-The tables are described in `prisma/schema.prisma`. Prisma turns changes into
+The tables are described in `prisma/schema/`: `schema.prisma` holds the
+shared settings, and each project has its own file (`bank.prisma`, …).
+Each project's tables also live in their own **Postgres schema**, a named
+folder of tables inside the one database: the bank's are `bank.accounts`,
+`bank.transactions`, and so on. Raw SQL names them that way too.
+
+Prisma turns changes into
 SQL migration files (`prisma/migrations/`, committed) and generates a typed
 client in `src/generated/prisma/` (not committed, rebuilt on `npm install`).
 
@@ -43,10 +49,10 @@ client in `src/generated/prisma/` (not committed, rebuilt on `npm install`).
 | `npm run db:reset` | Drop everything, re-run all migrations, then seed (**deletes data**) |
 | `npm run db:studio` | Open Prisma Studio, a browser UI to view/edit rows |
 
-Code imports the shared client from `src/db.js`:
+Code imports the shared client from `src/shared/db.js`:
 
 ```js
-import { prisma } from '../db.js'
+import { prisma } from '../../../shared/db.js'
 const accounts = await prisma.account.findMany()
 ```
 
@@ -83,7 +89,7 @@ On GitHub, `.github/workflows/server-tests.yml` runs the same tests on every
 push that touches `server/` (with its own throwaway Postgres), so each commit
 gets a ✓ or ✗.
 
-`test/helpers.js` has `request` (logged in as a fresh test user after
+`test/bank/helpers.js` has `request` (logged in as a fresh test user after
 `resetDb()`), `anonymous` (no cookie), `signUp(email)` for a second user,
 `resetDb()`, and `createAccount()` /
 `createCategory()` / `createTransaction()` to set up data quickly.
@@ -102,35 +108,50 @@ docker-compose.yml  local PostgreSQL container
 vitest.config.js    test settings (points tests at the _test database)
 prisma.config.js    Prisma settings (loads .env, schema + migrations paths)
 prisma/
-  schema.prisma     the tables
+  schema/
+    schema.prisma   shared settings (generator, database, list of schemas)
+    bank.prisma     the bank tables (Postgres schema "bank")
   seed.js           demo data
   migrations/       SQL history, one folder per change
 src/
   index.js        starts the server (reads PORT)
-  db.js           the shared Prisma client
-  app.js          builds the Express app: JSON parsing, routes, 404, errors
-  routes/         one file per resource (health, accounts, …)
-  schemas/        Zod schemas: what each endpoint accepts
-  middleware/     validate() – checks requests against a schema
-  services/       database logic shared by routes (e.g. the ledger query)
-  lib/            HttpError, date helpers
+  app.js          builds the Express app: JSON parsing, mounts each project, 404, errors
+  shared/         used by every project
+    db.js         the shared Prisma client
+    routes/       health
+    middleware/   validate() (checks requests against a schema), 404 + error handler
+    schemas/      Zod pieces used everywhere (ids, cents)
+    lib/          HttpError, date helpers
+  projects/
+    bank/         the bank tracker
+      index.js    all bank routes as one router
+      routes/     one file per resource (accounts, transactions, …)
+      schemas/    Zod schemas: what each endpoint accepts
+      services/   database logic shared by routes (e.g. the ledger query)
+      middleware/ requireAuth
+      lib/        password hashing
 test/
   globalSetup.js  migrates the test database before the run
-  helpers.js      request, resetDb, createAccount/Category/Transaction
-  *.test.js       one file per area (health, accounts, …)
+  health.test.js  shared routes
+  bank/
+    helpers.js    request, resetDb, createAccount/Category/Transaction
+    *.test.js     one file per area (accounts, transactions, …)
 ```
+
+Each project lives in its own folder under `src/projects/` and only imports
+from `shared/` and from itself, so projects never depend on each other.
 
 ## Login
 
-Everything except `/api/health` and `/api/auth/*` needs a login.
+Everything except `/api/health` and `/api/bank/auth/*` needs a login.
 
 - **Sign up / log in** with email + password. Passwords are hashed with
-  Node's built-in `scrypt` (`src/lib/password.js`); only the hash is stored.
+  Node's built-in `scrypt` (`src/projects/bank/lib/password.js`); only the hash is stored.
 - A login creates a **session**: the browser gets a random token in the
   `bank_session` cookie (`httpOnly`, so page scripts can't read it; `Secure`
   in production), and the `sessions` table stores only its SHA-256 hash.
   Sessions last 30 days; logging out deletes it.
-- `requireAuth` (`src/middleware/auth.js`) puts the user on `req.user`, and
+- `requireAuth` (`src/projects/bank/middleware/auth.js`) puts the user on `req.user`, and
   **every query is limited to that user's accounts**. Another user's
   account, transaction or transfer answers 404, as if it didn't exist.
 - A failed login always says "Email or password is incorrect", so it doesn't
@@ -138,10 +159,10 @@ Everything except `/api/health` and `/api/auth/*` needs a login.
 
 | Method | Path | Body | Returns |
 |--------|------|------|---------|
-| POST | `/api/auth/signup` | `{ email, password }` (8+ chars) | 201 `{ user }` + cookie (409 if the email is taken) |
-| POST | `/api/auth/login` | `{ email, password }` | `{ user }` + cookie (401 if wrong) |
-| POST | `/api/auth/logout` | | 204, cookie cleared |
-| GET | `/api/auth/me` | | `{ user: { id, email } }` (401 if not logged in) |
+| POST | `/api/bank/auth/signup` | `{ email, password }` (8+ chars) | 201 `{ user }` + cookie (409 if the email is taken) |
+| POST | `/api/bank/auth/login` | `{ email, password }` | `{ user }` + cookie (401 if wrong) |
+| POST | `/api/bank/auth/logout` | | 204, cookie cleared |
+| GET | `/api/bank/auth/me` | | `{ user: { id, email } }` (401 if not logged in) |
 
 ## Endpoints
 
@@ -155,20 +176,20 @@ All money values are whole **cents**. Errors always look like
 | Method | Path | Body / query | Returns |
 |--------|------|--------------|---------|
 | GET | `/api/health` | | `{ status, db: 'ok' \| 'unreachable', time }` (503 if the database is down) |
-| GET | `/api/accounts` | `?includeArchived=true` | Accounts with `balance` and `transactionCount` |
-| GET | `/api/accounts/:id` | | One account (404 if missing) |
-| POST | `/api/accounts` | `{ name, type?, openingBalance?, color? }` | 201 + the new account |
-| PATCH | `/api/accounts/:id` | any of `{ name, type, openingBalance, color, archived }` | The updated account |
-| GET | `/api/accounts/:id/transactions` | `?limit=50&cursor=…` + filters below | `{ items, nextCursor, totals }`, newest first, each with `runningBalance` (and `counterpartAccountId` for transfers) |
-| POST | `/api/transactions` | `{ accountId, date, amount, description, categoryId?, note? }` | 201 + the transaction (409 if the account is archived) |
-| PATCH | `/api/transactions/:id` | any of `{ date, amount, description, categoryId, note }` | The updated transaction (409 for a transfer side) |
-| DELETE | `/api/transactions/:id` | | 204; deleting a transfer side deletes both sides |
-| POST | `/api/transfers` | `{ fromAccountId, toAccountId, amount, date, description?, note? }` | 201 + the transfer |
-| GET | `/api/transfers/:transferId` | | `{ transferId, fromAccountId, toAccountId, amount, date, description, note }` |
-| PATCH | `/api/transfers/:transferId` | any of the create fields | The updated transfer (both rows) |
-| DELETE | `/api/transfers/:transferId` | | 204, removes both rows |
-| GET | `/api/summary` | `?month=YYYY-MM` (default: this month) | `{ month, income, spent, net, byCategory, trend }` |
-| GET | `/api/categories` | | All categories (`{ id, name, kind: 'INCOME' \| 'EXPENSE', color }`), income first |
+| GET | `/api/bank/accounts` | `?includeArchived=true` | Accounts with `balance` and `transactionCount` |
+| GET | `/api/bank/accounts/:id` | | One account (404 if missing) |
+| POST | `/api/bank/accounts` | `{ name, type?, openingBalance?, color? }` | 201 + the new account |
+| PATCH | `/api/bank/accounts/:id` | any of `{ name, type, openingBalance, color, archived }` | The updated account |
+| GET | `/api/bank/accounts/:id/transactions` | `?limit=50&cursor=…` + filters below | `{ items, nextCursor, totals }`, newest first, each with `runningBalance` (and `counterpartAccountId` for transfers) |
+| POST | `/api/bank/transactions` | `{ accountId, date, amount, description, categoryId?, note? }` | 201 + the transaction (409 if the account is archived) |
+| PATCH | `/api/bank/transactions/:id` | any of `{ date, amount, description, categoryId, note }` | The updated transaction (409 for a transfer side) |
+| DELETE | `/api/bank/transactions/:id` | | 204; deleting a transfer side deletes both sides |
+| POST | `/api/bank/transfers` | `{ fromAccountId, toAccountId, amount, date, description?, note? }` | 201 + the transfer |
+| GET | `/api/bank/transfers/:transferId` | | `{ transferId, fromAccountId, toAccountId, amount, date, description, note }` |
+| PATCH | `/api/bank/transfers/:transferId` | any of the create fields | The updated transfer (both rows) |
+| DELETE | `/api/bank/transfers/:transferId` | | 204, removes both rows |
+| GET | `/api/bank/summary` | `?month=YYYY-MM` (default: this month) | `{ month, income, spent, net, byCategory, trend }` |
+| GET | `/api/bank/categories` | | All categories (`{ id, name, kind: 'INCOME' \| 'EXPENSE', color }`), income first |
 
 A transaction looks like `{ id, accountId, date: 'YYYY-MM-DD', amount, description,
 note, transferId, category: { id, name, kind, color } | null }`.
@@ -177,7 +198,7 @@ note, transferId, category: { id, name, kind, color } | null }`.
 one account, into the other; `amount` in the transfer API is always
 positive). They're created and edited inside a **database transaction**
 (`prisma.$transaction`), so both rows are written together or not at all.
-Edit them through `/api/transfers`; `PATCH /api/transactions/:id` refuses a
+Edit them through `/api/bank/transfers`; `PATCH /api/bank/transactions/:id` refuses a
 transfer side.
 
 **Summary**: real income and spending only (transfers and archived accounts
@@ -194,7 +215,7 @@ case-insensitive), `type` (`income`, `expense`, `transfer`), `categoryId`,
 for everything that matches, not just the page. Filtering happens after the
 running balance is computed, so each row still shows the real balance.
 **Running balance** is computed in SQL with a window function
-(`SUM(amount) OVER (ORDER BY date, id)`), see `src/services/transactions.js`.
+(`SUM(amount) OVER (ORDER BY date, id)`), see `src/projects/bank/services/transactions.js`.
 
 `type` is `CHECKING`, `SAVINGS`, `CREDIT` or `CASH`. Accounts aren't
 deleted; `PATCH { "archived": true }` hides them from the default list.
@@ -205,9 +226,9 @@ Log in first; `-c`/`-b` save and send the session cookie:
 
 ```bash
 curl -c /tmp/bank.cookies -H 'Content-Type: application/json' \
-  -d '{"email":"demo@bank.test","password":"demo1234"}' localhost:4000/api/auth/login
-curl -b /tmp/bank.cookies localhost:4000/api/accounts
-curl -b /tmp/bank.cookies -X POST localhost:4000/api/accounts \
+  -d '{"email":"demo@bank.test","password":"demo1234"}' localhost:4000/api/bank/auth/login
+curl -b /tmp/bank.cookies localhost:4000/api/bank/accounts
+curl -b /tmp/bank.cookies -X POST localhost:4000/api/bank/accounts \
   -H 'Content-Type: application/json' \
   -d '{"name":"Travel fund","type":"SAVINGS","openingBalance":50000}'
 ```

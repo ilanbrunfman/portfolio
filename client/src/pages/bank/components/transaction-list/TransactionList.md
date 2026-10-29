@@ -15,7 +15,7 @@ transfer), an optional note, the amount
 
 | Prop       | Type                     | Description |
 |------------|--------------------------|-------------|
-| `items`    | `object[]`               | Transactions from `GET /api/accounts/:id/transactions`, already newest first. |
+| `items`    | `object[]`               | Transactions from `GET /api/bank/accounts/:id/transactions`, already newest first. |
 | `onSelect` | `(transaction) => void`  | Optional. Rows become buttons that call it (e.g. open the edit form). |
 | `accountNames` | `Record<number, string>` | Optional. Account names by id; transfer rows then say "To X" / "From X" (uses `counterpartAccountId`), otherwise just "Transfer". |
 

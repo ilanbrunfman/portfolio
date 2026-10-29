@@ -68,7 +68,8 @@ Log in as **demo@bank.test / demo1234**, or sign up for an empty account.
 | Path | What |
 |---|---|
 | `client/src/pages/bank/` | React pages, components, contexts and hooks for `/bank` |
-| `server/src/` | Express app: routes, Zod schemas, services, middleware |
+| `server/src/projects/bank/` | The bank API: routes, Zod schemas, services, login |
+| `server/src/shared/` | What every project uses: database client, validation, errors, health check |
 | `server/prisma/` | Database schema, migrations and the seed script |
 | `server/test/` | API tests (`npm test` in `server/`, uses its own `bank_test` database) |
 | `server/README.md` | Every endpoint, the login design, and all commands |

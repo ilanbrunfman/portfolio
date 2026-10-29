@@ -47,7 +47,7 @@ export const BankProvider = ({ children }) => {
     }, [loadAccounts])
 
     /**
-     * POST /api/accounts. Throws on failure (err.fields has per-field messages).
+     * POST /api/bank/accounts. Throws on failure (err.fields has per-field messages).
      * @param {{ name: string, type?: string, openingBalance?: number, color?: string }} data
      */
     const createAccount = useCallback(async (data) => {
@@ -57,7 +57,7 @@ export const BankProvider = ({ children }) => {
     }, [])
 
     /**
-     * PATCH /api/accounts/:id with any subset of fields (incl. archived).
+     * PATCH /api/bank/accounts/:id with any subset of fields (incl. archived).
      * @param {number} id
      * @param {object} changes
      */
@@ -77,7 +77,7 @@ export const BankProvider = ({ children }) => {
     }, [])
 
     /**
-     * POST /api/transactions, then refresh that account's balance.
+     * POST /api/bank/transactions, then refresh that account's balance.
      * @param {{ accountId: number, date: string, amount: number, description: string, categoryId?: number|null, note?: string|null }} data
      */
     const createTransaction = useCallback(async (data) => {
@@ -87,7 +87,7 @@ export const BankProvider = ({ children }) => {
     }, [refreshAccount])
 
     /**
-     * PATCH /api/transactions/:id, then refresh the account's balance.
+     * PATCH /api/bank/transactions/:id, then refresh the account's balance.
      * @param {object} transaction  The existing transaction (needs id, accountId).
      * @param {object} changes
      */
@@ -98,7 +98,7 @@ export const BankProvider = ({ children }) => {
     }, [refreshAccount])
 
     /**
-     * DELETE /api/transactions/:id. A transfer deletes both sides, so the
+     * DELETE /api/bank/transactions/:id. A transfer deletes both sides, so the
      * other account is refreshed too (simplest: reload all accounts).
      * @param {object} transaction
      */
@@ -109,7 +109,7 @@ export const BankProvider = ({ children }) => {
     }, [refreshAccount, loadAccounts])
 
     /**
-     * POST /api/transfers, then refresh both accounts' balances.
+     * POST /api/bank/transfers, then refresh both accounts' balances.
      * @param {{ fromAccountId: number, toAccountId: number, amount: number, date: string, description?: string, note?: string|null }} data
      */
     const createTransfer = useCallback(async (data) => {
@@ -119,7 +119,7 @@ export const BankProvider = ({ children }) => {
     }, [refreshAccount])
 
     /**
-     * PATCH /api/transfers/:transferId. Up to four accounts can be affected
+     * PATCH /api/bank/transfers/:transferId. Up to four accounts can be affected
      * (old and new from/to), so all accounts are reloaded.
      */
     const updateTransfer = useCallback(async (transferId, changes) => {
@@ -128,7 +128,7 @@ export const BankProvider = ({ children }) => {
         return updated
     }, [loadAccounts])
 
-    /** DELETE /api/transfers/:transferId (both sides) */
+    /** DELETE /api/bank/transfers/:transferId (both sides) */
     const deleteTransfer = useCallback(async (transferId) => {
         await api(`/transfers/${transferId}`, { method: 'DELETE' })
         await loadAccounts()

@@ -8,7 +8,7 @@ to be placed inside a `Modal`.
   "From" account is disabled in "To" (and cleared from it if picked).
 - **Amount** (always positive), **Date** (today), **Description**
   (`Transfer` by default), optional **Note**.
-- Edit mode loads the transfer from `GET /api/transfers/:transferId` first,
+- Edit mode loads the transfer from `GET /api/bank/transfers/:transferId` first,
   then shows it prefilled, with **Delete** (confirm step; removes both sides).
 - Server field errors (`fromAccountId`, `toAccountId`, …) show under the
   matching control; a 409 (archived account) shows on top.

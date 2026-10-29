@@ -7,7 +7,7 @@ import { addMonths, currentMonth, formatMonth } from '@/pages/bank/utils/date'
 import './MonthSummary.scss'
 
 /**
- * One month at a glance (GET /api/summary): income, spending and net,
+ * One month at a glance (GET /api/bank/summary): income, spending and net,
  * spending by category, and a 6-month income vs spending chart.
  * Transfers between your own accounts don't count as either.
  */

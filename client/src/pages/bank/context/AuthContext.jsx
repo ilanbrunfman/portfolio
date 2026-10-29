@@ -5,7 +5,7 @@ const AuthContext = createContext(null)
 
 /**
  * Who is logged in to the bank tracker.
- * On load it asks GET /api/auth/me; the session itself is an httpOnly
+ * On load it asks GET /api/bank/auth/me; the session itself is an httpOnly
  * cookie the browser sends automatically (JavaScript can't read it).
  * status: 'checking', 'ready', or 'unreachable' (the API isn't running –
  * retry() checks again).
