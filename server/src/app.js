@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser'
 import healthRouter from './shared/routes/health.js'
 import { notFound, errorHandler } from './shared/middleware/errors.js'
 import bank from './projects/bank/index.js'
+import taim from './projects/taim/index.js'
 
 // Builds the Express app. Kept separate from index.js (which starts it)
 // so tests can import the app without opening a port.
@@ -22,6 +23,7 @@ app.use(cookieParser())
 // All routes live under /api; each project gets its own prefix
 app.use('/api/health', healthRouter)
 app.use('/api/bank', bank)
+app.use('/api/taim', taim)
 
 app.use(notFound)
 app.use(errorHandler)

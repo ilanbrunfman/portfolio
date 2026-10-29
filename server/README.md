@@ -1,6 +1,9 @@
 # Server
 
-Express API for the bank tracker (`/bank` in the client).
+One Express API for the portfolio's full-stack projects:
+
+- **Bank tracker** (`/bank` in the client): routes under `/api/bank`
+- **Ta'im**, a restaurant app (`/taim` in the client): routes under `/api/taim`
 
 ## Run it
 
@@ -139,18 +142,27 @@ src/
       services/   database logic shared by routes (e.g. the ledger query)
       middleware/ requireAuth
       lib/        password hashing
+    taim/         Ta'im, the restaurant app
+      index.js    all Ta'im routes as one router
+      roles.js    who may do what: rights and screens per role
+      routes/     staff, session
+      schemas/    Zod schemas
+      middleware/ requireStaff + allow(right)
 test/
   globalSetup.js  migrates the test database before the run
   health.test.js  shared routes
   bank/
     helpers.js    request, resetDb, createAccount/Category/Transaction
     *.test.js     one file per area (accounts, transactions, …)
+  taim/
+    helpers.js    resetTaim, as(role)
+    *.test.js     session, roles
 ```
 
 Each project lives in its own folder under `src/projects/` and only imports
 from `shared/` and from itself, so projects never depend on each other.
 
-## Login
+## Bank tracker: login
 
 Everything except `/api/health` and `/api/bank/auth/*` needs a login.
 
@@ -173,7 +185,7 @@ Everything except `/api/health` and `/api/bank/auth/*` needs a login.
 | POST | `/api/bank/auth/logout` | | 204, cookie cleared |
 | GET | `/api/bank/auth/me` | | `{ user: { id, email } }` (401 if not logged in) |
 
-## Endpoints
+## Bank tracker: endpoints
 
 All money values are whole **cents**. Errors always look like
 `{ "error": "message" }`; validation errors add `fields`:
@@ -240,4 +252,46 @@ curl -b /tmp/bank.cookies localhost:4000/api/bank/accounts
 curl -b /tmp/bank.cookies -X POST localhost:4000/api/bank/accounts \
   -H 'Content-Type: application/json' \
   -d '{"name":"Travel fund","type":"SAVINGS","openingBalance":50000}'
+```
+
+## Ta'im: staff and roles
+
+Ta'im has no passwords: on the "Who are you?" screen you pick a staff
+member, and the `taim_staff` cookie (`httpOnly`, path `/api/taim`)
+remembers who. What that person may do depends on their **role**, and the
+server checks it on every request:
+
+- `requireStaff` (who are you?) loads the picked person onto `req.staff`,
+  or answers **401** if nobody was picked.
+- `allow(right)` (may your role do this?) answers **403** if the role
+  doesn't have that right.
+
+The rights live in one place, `src/projects/taim/roles.js`:
+
+| Right | Manager | Chef | Cook | Host | Waiter |
+|---|:-:|:-:|:-:|:-:|:-:|
+| `editMenu`: dishes and prices | ✓ | ✓ | | | |
+| `setUpTables`: add, rename, seats | ✓ | | | | |
+| `seatTable`: seat or start take-out | ✓ | | | ✓ | ✓ |
+| `addDishes`: add dishes to an order | ✓ | | | | ✓ |
+| `advanceDish`: preparing → sent out | ✓ | ✓ | ✓ | | |
+| `markCameBack`: a dish came back | ✓ | ✓ | | | ✓ |
+| `closeBill`: close the bill | ✓ | | | ✓ | ✓ |
+| `seeLosses`: the losses summary | ✓ | ✓ | | | |
+
+| Method | Path | Body | Returns |
+|--------|------|------|---------|
+| GET | `/api/taim/staff` | | Everyone to pick from, Manager first: `[{ id, name, role }]` |
+| POST | `/api/taim/session` | `{ staffId }` | `{ staff, rights, screens }` + cookie (404 if no such person) |
+| GET | `/api/taim/session` | | The picked person: `{ staff, rights, screens }` (401 if nobody) |
+| DELETE | `/api/taim/session` | | 204, cookie cleared (switch person) |
+
+`rights` and `screens` are the role's entries from `roles.js`, so the
+client can show only the screens that person may use.
+
+```bash
+curl localhost:4000/api/taim/staff
+curl -c /tmp/taim.cookies -H 'Content-Type: application/json' \
+  -d '{"staffId":3}' localhost:4000/api/taim/session
+curl -b /tmp/taim.cookies localhost:4000/api/taim/session
 ```
