@@ -1,7 +1,13 @@
 // Menu editor – visuals only (layout is utility classes in the markup)
 .menu-editor {
+    // A readable column: about a tablet's width, so prices and toggles stay
+    // close to the dish names on wide screens
+    width: 100%;
+    max-width: 760px;
     &__category {
         box-sizing: border-box;
+        // Rows below react to the card's own width (see &__price)
+        container-type: inline-size;
     }
 
     &__category-name {
@@ -47,8 +53,9 @@
         color: var(--text-h);
         font-variant-numeric: tabular-nums;
 
-        // Phones: the row wraps under the dish name, so line up on the left
-        @media (max-width: 600px) {
+        // A narrow card (tablet, phone) wraps price + toggle under the dish
+        // name, so line up on the left instead of in a right-hand column
+        @container (max-width: 560px) {
             min-width: 0;
             text-align: left;
         }

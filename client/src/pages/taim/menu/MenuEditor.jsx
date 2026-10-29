@@ -103,16 +103,19 @@ const MenuEditor = () => {
                                         </span>
                                         {dish.description && <span className="form__hint">{dish.description}</span>}
                                     </div>
-                                    <span className="menu-editor__price">{formatMoney(dish.price)}</span>
-                                    <Checkbox
-                                        label="On menu"
-                                        checked={!dish.hidden}
-                                        onChange={() => toggleOnMenu(dish)}
-                                        disabled={toggling === dish.id}
-                                    />
-                                    <Button size="sm" variant="ghost" onClick={() => setEditing({ kind: 'dish', item: dish })}>
-                                        Edit
-                                    </Button>
+                                    {/* Price, toggle and Edit wrap together under the name on narrow screens */}
+                                    <div className="d-flex align-items-center gap-1">
+                                        <span className="menu-editor__price">{formatMoney(dish.price)}</span>
+                                        <Checkbox
+                                            label="On menu"
+                                            checked={!dish.hidden}
+                                            onChange={() => toggleOnMenu(dish)}
+                                            disabled={toggling === dish.id}
+                                        />
+                                        <Button size="sm" variant="ghost" onClick={() => setEditing({ kind: 'dish', item: dish })}>
+                                            Edit
+                                        </Button>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
