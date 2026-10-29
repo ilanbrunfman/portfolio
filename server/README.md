@@ -76,7 +76,8 @@ daily spending, and transfers (monthly savings, ATM withdrawals, credit card
 payments). It uses a fixed random seed, so every run gives the same data.
 
 **Ta'im** (`seeds/taim.js`): one staff member per role: Noa (Manager),
-Avi (Chef), Yossi (Cook), Dana (Host), Lior (Waiter).
+Avi (Chef), Yossi (Cook), Dana (Host), Lior (Waiter); and a menu of 4
+categories and 13 dishes (Schnitzel starts sold out).
 
 ## Tests
 
@@ -145,7 +146,7 @@ src/
     taim/         Ta'im, the restaurant app
       index.js    all Ta'im routes as one router
       roles.js    who may do what: rights and screens per role
-      routes/     staff, session
+      routes/     staff, session, menu
       schemas/    Zod schemas
       middleware/ requireStaff + allow(right)
 test/
@@ -156,7 +157,7 @@ test/
     *.test.js     one file per area (accounts, transactions, …)
   taim/
     helpers.js    resetTaim, as(role)
-    *.test.js     session, roles
+    *.test.js     session, roles, menu
 ```
 
 Each project lives in its own folder under `src/projects/` and only imports
@@ -285,9 +286,21 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | POST | `/api/taim/session` | `{ staffId }` | `{ staff, rights, screens }` + cookie (404 if no such person) |
 | GET | `/api/taim/session` | | The picked person: `{ staff, rights, screens }` (401 if nobody) |
 | DELETE | `/api/taim/session` | | 204, cookie cleared (switch person) |
+| GET | `/api/taim/menu` | | Categories in menu order, each with its `items` (hidden ones marked `hidden: true`) |
+| POST | `/api/taim/categories` | `{ name }` | 201, added at the end of the menu (409 if the name exists) |
+| PATCH | `/api/taim/categories/:id` | `{ name }` | The renamed category |
+| DELETE | `/api/taim/categories/:id` | | 204, only when it has no dishes (409 otherwise) |
+| POST | `/api/taim/menu-items` | `{ categoryId, name, price, description?, hidden? }` | 201 + the dish (409 if the name exists) |
+| PATCH | `/api/taim/menu-items/:id` | any of those fields | The updated dish; `{ hidden: true }` = sold out |
 
 `rights` and `screens` are the role's entries from `roles.js`, so the
 client can show only the screens that person may use.
+
+Everything except `/staff` and `/session` needs a picked person (401).
+Changing the menu needs `editMenu` (403 for Cook, Host, Waiter). Dishes are
+never deleted, only hidden, because orders will point to them; a price
+must be above 0, which the database itself also enforces (a `CHECK` rule
+added by hand to the migration).
 
 ```bash
 curl localhost:4000/api/taim/staff
