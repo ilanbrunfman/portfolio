@@ -25,7 +25,8 @@ const statusText = (item, now) =>
  * where it is: not sent, in the kitchen (and for how long), served, came
  * back. Then the total.
  * When allowed: "Send to kitchen (n)" for the dishes not sent yet, and
- * "Close bill" (refused while dishes haven't been sent). Used on the Order
+ * "Close bill" → "Paid · $40.00" to confirm the guests paid (refused while
+ * dishes haven't been sent). Used on the Order
  * screen and in the Floor's bill dialog.
  *
  * @param {object} props
@@ -130,7 +131,7 @@ const Ticket = ({ order, onEditItem, onSend, onClose, className = '' }) => {
                 ) : confirming ? (
                     <div className="d-flex flex-wrap gap-0-5">
                         <Button onClick={() => run('close', onClose)} disabled={busy !== null}>
-                            {busy === 'close' ? 'Closing…' : `Close bill · ${formatMoney(order.total)}`}
+                            {busy === 'close' ? 'Saving…' : `Paid · ${formatMoney(order.total)}`}
                         </Button>
                         <Button variant="ghost" onClick={() => setConfirming(false)} disabled={busy !== null}>Not yet</Button>
                     </div>
