@@ -1,6 +1,5 @@
 // Menu – visuals only (layout is utility classes in the markup).
-// Two levels of the shared Accordion: categories, and dishes inside each.
-// Child selectors (>) keep each level's style from leaking into the other.
+// Categories are the shared Accordion; each one opens to a list of dish rows.
 .menu-editor {
     // A readable column: about a tablet's width, so prices stay close to
     // the dish names on wide screens
@@ -22,8 +21,16 @@
         }
 
         > .accordion__item > .accordion__panel .accordion__panel-content {
-            padding: 0 0.25rem 0.75rem;
+            padding: 0 0.75rem 0.75rem;
+            // Dish rows react to the section's own width (see &__price)
+            container-type: inline-size;
         }
+    }
+
+    // The header's text area fills the row
+    .accordion__title {
+        flex: 1 1 auto;
+        min-width: 0;
     }
 
     &__category-name {
@@ -42,47 +49,50 @@
         padding: 0.25rem 0.75rem;
     }
 
-    // ---------- level 2: dishes ----------
+    // ---------- dish rows ----------
     &__dishes {
-        border: 1px solid var(--border);
-        border-radius: 10px;
-
-        > .accordion__item > .accordion__header {
-            padding: 0.75rem;
-            font-size: 0.95rem;
-            line-height: 1.3;
-        }
-
-        > .accordion__item > .accordion__panel .accordion__panel-content {
-            padding: 0 0.75rem 0.85rem;
-        }
+        list-style: none;
+        margin: 0;
+        padding: 0;
     }
 
-    // The header's text area fills the row, so the price can sit on the right
-    .accordion__title {
-        flex: 1 1 auto;
-        min-width: 0;
-    }
-
+    // One row per dish: text takes the free space, then price, toggle, Edit
     &__dish {
-        width: 100%;
+        padding: 0.6rem 0;
+        border-top: 1px solid var(--border);
 
-        &.is-sold-out .menu-editor__dish-name,
+        &:first-child {
+            border-top: 0;
+        }
+
+        &.is-sold-out .menu-editor__dish-text,
         &.is-sold-out .menu-editor__price {
             opacity: 0.55;
         }
     }
 
+    &__dish-text {
+        flex: 1 1 14rem;
+        min-width: 0;
+    }
+
     &__dish-name {
-        font-weight: 600;
         color: var(--text-h);
+        font-weight: 600;
     }
 
     &__price {
-        flex: 0 0 auto;
+        min-width: 4.5rem;
+        text-align: right;
         color: var(--text-h);
-        font-weight: 500;
         font-variant-numeric: tabular-nums;
+
+        // A narrow section (phone) wraps price + toggle under the dish name,
+        // so line up on the left instead of in a right-hand column
+        @container (max-width: 560px) {
+            min-width: 0;
+            text-align: left;
+        }
     }
 
     &__tag {
@@ -96,9 +106,5 @@
         letter-spacing: 0.04em;
         text-transform: uppercase;
         vertical-align: 0.1em;
-    }
-
-    &__details {
-        font-size: 0.95rem;
     }
 }

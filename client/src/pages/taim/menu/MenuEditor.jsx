@@ -10,10 +10,10 @@ import { formatMoney } from '@/pages/taim/utils/money'
 import './MenuEditor.scss'
 
 /**
- * /taim/menu – the Manager's and Chef's menu, as nested accordions:
- * each category opens to its dishes, each dish opens to its details
- * (description, "On menu", Edit). Accordion headers are buttons, so the
- * controls live inside the panels, never in a header.
+ * /taim/menu – the Manager's and Chef's menu: each category is an
+ * accordion section that opens to its dishes, one row each (name,
+ * description, price, "On menu" to mark it sold out, Edit). Accordion
+ * headers are buttons, so the controls live inside the panels.
  * (The route only renders this for roles with the editMenu right; the
  * server refuses changes from anyone else.)
  */
@@ -113,28 +113,32 @@ const MenuEditor = () => {
                                 {category.items.length === 0 ? (
                                     <p className="form__hint menu-editor__empty">No dishes yet.</p>
                                 ) : (
-                                    <Accordion className="menu-editor__dishes">
+                                    <ul className="menu-editor__dishes">
                                         {category.items.map((dish) => (
-                                            <Accordion.Item key={dish.id} title={<DishTitle dish={dish} />}>
-                                                <div className="menu-editor__details d-flex flex-column gap-1">
-                                                    <p className={dish.description ? '' : 'form__hint'}>
-                                                        {dish.description ?? 'No description yet.'}
-                                                    </p>
-                                                    <div className="d-flex flex-wrap align-items-center justify-between gap-1">
-                                                        <Checkbox
-                                                            label={dish.hidden ? 'Sold out: tick to put it back on the menu' : 'On the menu'}
-                                                            checked={!dish.hidden}
-                                                            onChange={() => toggleOnMenu(dish)}
-                                                            disabled={toggling === dish.id}
-                                                        />
-                                                        <Button size="sm" variant="secondary" onClick={() => setEditing({ kind: 'dish', item: dish })}>
-                                                            Edit dish
-                                                        </Button>
-                                                    </div>
+                                            <li key={dish.id} className={`menu-editor__dish d-flex flex-wrap align-items-center gap-1 ${dish.hidden ? 'is-sold-out' : ''}`}>
+                                                <div className="menu-editor__dish-text d-flex flex-column">
+                                                    <span className="menu-editor__dish-name">
+                                                        {dish.name}
+                                                        {dish.hidden && <span className="menu-editor__tag">Sold out</span>}
+                                                    </span>
+                                                    {dish.description && <span className="form__hint">{dish.description}</span>}
                                                 </div>
-                                            </Accordion.Item>
+                                                {/* Price, toggle and Edit wrap together under the name on narrow screens */}
+                                                <div className="d-flex align-items-center gap-1">
+                                                    <span className="menu-editor__price">{formatMoney(dish.price)}</span>
+                                                    <Checkbox
+                                                        label="On menu"
+                                                        checked={!dish.hidden}
+                                                        onChange={() => toggleOnMenu(dish)}
+                                                        disabled={toggling === dish.id}
+                                                    />
+                                                    <Button size="sm" variant="ghost" onClick={() => setEditing({ kind: 'dish', item: dish })}>
+                                                        Edit
+                                                    </Button>
+                                                </div>
+                                            </li>
                                         ))}
-                                    </Accordion>
+                                    </ul>
                                 )}
                             </div>
                         </Accordion.Item>
@@ -190,16 +194,5 @@ const CategoryTitle = ({ category }) => {
         </span>
     )
 }
-
-/** Dish header: name (+ Sold out tag) on the left, price on the right */
-const DishTitle = ({ dish }) => (
-    <span className={`menu-editor__dish d-flex align-items-center justify-between gap-1 ${dish.hidden ? 'is-sold-out' : ''}`}>
-        <span className="menu-editor__dish-name">
-            {dish.name}
-            {dish.hidden && <span className="menu-editor__tag">Sold out</span>}
-        </span>
-        <span className="menu-editor__price">{formatMoney(dish.price)}</span>
-    </span>
-)
 
 export default MenuEditor
