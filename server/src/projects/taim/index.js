@@ -3,6 +3,7 @@ import { requireStaff } from './middleware/staff.js'
 import staffRouter from './routes/staff.js'
 import sessionRouter from './routes/session.js'
 import menuRouter from './routes/menu.js'
+import floorRouter from './routes/floor.js'
 
 // Every Ta'im route, as one router. app.js mounts it at /api/taim.
 //
@@ -20,5 +21,7 @@ taim.use(requireStaff)
 
 // /menu, /categories, /menu-items
 taim.use(menuRouter)
+// /tables, /orders
+taim.use(floorRouter)
 
 export default taim

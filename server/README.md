@@ -77,7 +77,8 @@ payments). It uses a fixed random seed, so every run gives the same data.
 
 **Ta'im** (`seeds/taim.js`): one staff member per role: Noa (Manager),
 Avi (Chef), Yossi (Cook), Dana (Host), Lior (Waiter); and a menu of 4
-categories and 13 dishes (Schnitzel starts sold out).
+categories and 13 dishes (Schnitzel starts sold out); 8 tables (T1–T8) and 3 open orders (T2, T5
+and a take-out for Maya) so the floor isn't empty.
 
 ## Tests
 
@@ -146,7 +147,8 @@ src/
     taim/         Ta'im, the restaurant app
       index.js    all Ta'im routes as one router
       roles.js    who may do what: rights and screens per role
-      routes/     staff, session, menu
+      routes/     staff, session, menu, floor (tables and orders)
+      services/   order JSON and the bill total
       schemas/    Zod schemas
       middleware/ requireStaff + allow(right)
 test/
@@ -157,7 +159,7 @@ test/
     *.test.js     one file per area (accounts, transactions, …)
   taim/
     helpers.js    resetTaim, as(role)
-    *.test.js     session, roles, menu
+    *.test.js     session, roles, menu, floor
 ```
 
 Each project lives in its own folder under `src/projects/` and only imports
@@ -293,6 +295,15 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | POST | `/api/taim/menu-items` | `{ categoryId, name, price, description?, hidden? }` | 201 + the dish, at the top of its category (409 if the name exists) |
 | PATCH | `/api/taim/menu-items/:id` | any of those fields | The updated dish; `{ hidden: true }` = sold out; a new `categoryId` puts it at the top there |
 | PUT | `/api/taim/categories/:id/dish-order` | `{ dishIds }`, top first | The category's dishes in their new order (400 unless the list is exactly that category's dishes) |
+| GET | `/api/taim/tables` | | Tables in floor order; `order` = the open order's summary (`guests`, `openedAt`, `dishCount`, `cameBack`, `total`) or `null` when free |
+| POST | `/api/taim/tables` | `{ label, seats }` | 201, added at the end of the floor (Manager; 409 if the label exists) |
+| PATCH | `/api/taim/tables/:id` | `{ label?, seats? }` | The updated table (Manager) |
+| GET | `/api/taim/orders` | `?status=OPEN` (default) or `CLOSED` | Orders with their dishes and `total`; open ones oldest first |
+| GET | `/api/taim/orders/:id` | | One order: `table` or `customerName`, `guests`, `openedBy`, `items` (name, price, status), `total` |
+| POST | `/api/taim/orders` | `{ type: 'TABLE', tableId, guests }` or `{ type: 'TAKEOUT', customerName }` | 201 + the order (409 if the table is already seated) |
+| POST | `/api/taim/orders/:id/items` | `{ items: [{ menuItemId, quantity? }] }` | 201 + the order; one row per dish, price copied from the menu (409 if a dish is sold out or the bill is closed) |
+| DELETE | `/api/taim/orders/:id/items/:itemId` | | The order without that dish; only while it's still `PREPARING` (409 otherwise) |
+| POST | `/api/taim/orders/:id/close` | | The closed order; the table is free again (409 if already closed) |
 
 `rights` and `screens` are the role's entries from `roles.js`, so the
 client can show only the screens that person may use.
@@ -307,6 +318,16 @@ Each dish has a `position` in its category (1 = top). Adding a dish shifts
 the others down one and takes position 1, in one transaction; saving a new
 order after a drag rewrites every position of that category in one
 transaction, so a half-saved order can't happen.
+
+**Floor and orders.** A table is "taken" while it has an `OPEN` order; it
+isn't stored anywhere else. The database allows at most one open order per
+table (a partial unique index, `WHERE status = 'OPEN'`), so seating a taken
+table answers 409 even when two hosts tap at the same moment: there is no
+"is it free?" check in code that two requests could both pass. A `CHECK`
+rule makes table orders have a table and guests, and take-outs a name and no
+table. Each dish on an order is its own row with the price copied in when it
+was added, so changing a menu price never rewrites an old bill. The bill
+total is calculated from the rows, leaving out dishes that came back.
 
 ```bash
 curl localhost:4000/api/taim/staff
