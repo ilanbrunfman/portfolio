@@ -109,21 +109,22 @@ enum DishStatus {
 }
 
 // One visit to a table, or one take-out. TABLE orders have a table and a
-// guest count; TAKEOUT orders have a customer name and no table (a CHECK
-// rule in the migration enforces this).
+// guest count; TAKEOUT orders have a customer name and phone (to call when
+// it's ready) and no table (CHECK rules in the migrations enforce this).
 model Order {
-  id           Int          @id @default(autoincrement())
-  type         OrderType
-  tableId      Int?
-  table        DiningTable? @relation(fields: [tableId], references: [id], onDelete: Restrict)
-  guests       Int?
-  customerName String?
-  status       OrderStatus  @default(OPEN)
-  openedById   Int
-  openedBy     Staff        @relation(fields: [openedById], references: [id], onDelete: Restrict)
-  openedAt     DateTime     @default(now())
-  closedAt     DateTime?
-  items        OrderItem[]
+  id            Int          @id @default(autoincrement())
+  type          OrderType
+  tableId       Int?
+  table         DiningTable? @relation(fields: [tableId], references: [id], onDelete: Restrict)
+  guests        Int?
+  customerName  String?
+  customerPhone String? // take-out only; required by the API for new take-outs
+  status        OrderStatus  @default(OPEN)
+  openedById    Int
+  openedBy      Staff        @relation(fields: [openedById], references: [id], onDelete: Restrict)
+  openedAt      DateTime     @default(now())
+  closedAt      DateTime?
+  items         OrderItem[]
 
   @@index([status])
   @@map("orders")

@@ -26,6 +26,7 @@ export function toOrderJson(order) {
         table: order.table,
         guests: order.guests,
         customerName: order.customerName,
+        customerPhone: order.customerPhone,
         openedBy: order.openedBy,
         openedAt: order.openedAt,
         closedAt: order.closedAt,

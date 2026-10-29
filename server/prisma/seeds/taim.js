@@ -88,6 +88,7 @@ export async function seedTaim(prisma) {
                 tableId: isTable ? tableId[where] : null,
                 guests: isTable ? guests : null,
                 customerName: isTable ? null : where,
+                customerPhone: isTable ? null : '050-123-4567',
                 openedById: staffId[by],
                 openedAt,
                 items: {

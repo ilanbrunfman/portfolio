@@ -66,9 +66,24 @@ describe('seating and take-out (seatTable: Manager, Host, Waiter)', () => {
         expect(await prisma.order.count({ where: { tableId: t1.id, status: 'OPEN' } })).toBe(1)
     })
 
-    it('starts a take-out with a name and no table', async () => {
-        const res = await waiter.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: '  Maya ' }).expect(201)
-        expect(res.body).toMatchObject({ type: 'TAKEOUT', table: null, guests: null, customerName: 'Maya' })
+    it('starts a take-out with a name and phone, and no table', async () => {
+        const res = await waiter.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: '  Maya ', customerPhone: ' +972 50-123-4567 ' }).expect(201)
+        expect(res.body).toMatchObject({ type: 'TAKEOUT', table: null, guests: null, customerName: 'Maya', customerPhone: '+972 50-123-4567' })
+    })
+
+    it('a take-out needs a phone number that looks like one', async () => {
+        const missing = await waiter.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya' }).expect(400)
+        expect(missing.body.fields).toEqual({ customerPhone: 'Phone is required' })
+        for (const phone of ['abc', '12', '050-12x-4567']) {
+            const res = await waiter.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya', customerPhone: phone }).expect(400)
+            expect(res.body.fields).toEqual({ customerPhone: 'Enter a phone number, e.g. 050-123-4567' })
+        }
+    })
+
+    it('the database refuses a phone on a table order', async () => {
+        const order = (await seat(host).expect(201)).body
+        expect(order.customerPhone).toBeNull()
+        await expect(prisma.order.update({ where: { id: order.id }, data: { customerPhone: '050-123-4567' } })).rejects.toThrow(/orders_phone_takeout_only/)
     })
 
     it('validates the request', async () => {
@@ -77,13 +92,13 @@ describe('seating and take-out (seatTable: Manager, Host, Waiter)', () => {
         const noTable = await host.post('/api/taim/orders').send({ type: 'TABLE', tableId: 999, guests: 2 }).expect(400)
         expect(noTable.body.fields).toEqual({ tableId: 'Table not found' })
         const noName = await host.post('/api/taim/orders').send({ type: 'TAKEOUT' }).expect(400)
-        expect(noName.body.fields).toEqual({ customerName: 'Name is required' })
+        expect(noName.body.fields).toEqual({ customerName: 'Name is required', customerPhone: 'Phone is required' })
         await host.post('/api/taim/orders').send({ type: 'DELIVERY' }).expect(400)
     })
 
     it('Cook and Chef cannot seat anyone', async () => {
         for (const role of ['COOK', 'CHEF']) await seat(await as(role)).expect(403)
-        await anonymous.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Bob' }).expect(401)
+        await anonymous.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Bob', customerPhone: '050-123-4567' }).expect(401)
     })
 })
 
@@ -157,7 +172,7 @@ describe('closing the bill (closeBill: Manager, Host, Waiter)', () => {
 
     it('a closed bill cannot be closed again; open and closed lists', async () => {
         const order = (await seat(host).expect(201)).body
-        await waiter.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya' }).expect(201)
+        await waiter.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya', customerPhone: '050-123-4567' }).expect(201)
         await host.post(`/api/taim/orders/${order.id}/close`).expect(200)
         await host.post(`/api/taim/orders/${order.id}/close`).expect(409)
         await host.post('/api/taim/orders/999/close').expect(404)
@@ -253,7 +268,7 @@ describe('fixing a seating mistake (seatTable)', () => {
     })
 
     it('a take-out cannot be moved to a table', async () => {
-        const takeout = (await waiter.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya' }).expect(201)).body
+        const takeout = (await waiter.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya', customerPhone: '050-123-4567' }).expect(201)).body
         await host.patch(`/api/taim/orders/${takeout.id}`).send({ tableId: t1.id }).expect(409)
     })
 })
@@ -293,7 +308,7 @@ describe('seat numbers on dishes', () => {
         const res = await addDishes(waiter, order.id, [{ menuItemId: hummus.id, seat: 4 }]).expect(400)
         expect(res.body.fields).toEqual({ items: "Seat 4 doesn't exist: the table has 3 guests" })
 
-        const takeout = (await waiter.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya' }).expect(201)).body
+        const takeout = (await waiter.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya', customerPhone: '050-123-4567' }).expect(201)).body
         const out = await addDishes(waiter, takeout.id, [{ menuItemId: hummus.id, seat: 1 }]).expect(400)
         expect(out.body.fields).toEqual({ items: 'Take-out dishes have no seat' })
         expect(await prisma.orderItem.count()).toBe(0)
@@ -361,7 +376,7 @@ describe('the database ties rounds to sending', () => {
 
 describe('take-out orders (takeoutOrders: Manager, Host, Waiter)', () => {
     it('the Host takes a take-out from start to paid', async () => {
-        const takeout = (await host.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya' }).expect(201)).body
+        const takeout = (await host.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya', customerPhone: '050-123-4567' }).expect(201)).body
         const { items } = (await addDishes(host, takeout.id, [{ menuItemId: hummus.id, quantity: 2 }]).expect(201)).body
         await host.delete(`/api/taim/orders/${takeout.id}/items/${items[1].id}`).expect(200)
         const sent = await host.post(`/api/taim/orders/${takeout.id}/send`).expect(200)
@@ -379,7 +394,7 @@ describe('take-out orders (takeoutOrders: Manager, Host, Waiter)', () => {
     })
 
     it('Cook and Chef cannot take take-out orders; an unknown order is 404', async () => {
-        const takeout = (await host.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya' }).expect(201)).body
+        const takeout = (await host.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya', customerPhone: '050-123-4567' }).expect(201)).body
         for (const role of ['COOK', 'CHEF']) await addDishes(await as(role), takeout.id, [{ menuItemId: hummus.id }]).expect(403)
         await addDishes(host, 999, [{ menuItemId: hummus.id }]).expect(404)
     })
