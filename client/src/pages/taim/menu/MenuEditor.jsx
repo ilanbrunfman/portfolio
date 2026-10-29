@@ -22,13 +22,13 @@ const MenuEditor = () => {
     const { categories } = menu
     // What the modal shows: { kind: 'dish' | 'category', item?, categoryId? } or null
     const [editing, setEditing] = useState(null)
-    // Open categories; null = not set yet (the first one starts open)
+    // Open categories; null = untouched, so every category starts open
     const [openIds, setOpenIds] = useState(null)
     const [toggling, setToggling] = useState(null) // id of the dish being switched on/off
     const [error, setError] = useState('')
     const close = () => setEditing(null)
 
-    const openCategories = openIds ?? new Set(categories?.length ? [categories[0].id] : [])
+    const openCategories = openIds ?? new Set(categories?.map((c) => c.id))
     const setCategoryOpen = (id, next) => {
         const ids = new Set(openCategories)
         if (next) ids.add(id)
@@ -99,23 +99,24 @@ const MenuEditor = () => {
                             open={openCategories.has(category.id)}
                             onToggle={(next) => setCategoryOpen(category.id, next)}
                             title={<CategoryTitle category={category} />}
-                        >
-                            <div className="d-flex flex-column gap-0-5">
-                                <div className="d-flex flex-wrap justify-end gap-0-5">
+                            actions={
+                                <>
                                     <Button size="sm" variant="ghost" onClick={() => setEditing({ kind: 'category', item: category })}>
                                         Rename
                                     </Button>
                                     <Button size="sm" variant="ghost" icon="IconPlus" onClick={() => setEditing({ kind: 'dish', categoryId: category.id })}>
                                         Dish
                                     </Button>
-                                </div>
-
+                                </>
+                            }
+                        >
+                            <div className="d-flex flex-column gap-0-5">
                                 {category.items.length === 0 ? (
                                     <p className="form__hint menu-editor__empty">No dishes yet.</p>
                                 ) : (
                                     <ul className="menu-editor__dishes">
                                         {category.items.map((dish) => (
-                                            <li key={dish.id} className={`menu-editor__dish d-flex flex-wrap align-items-center gap-1 ${dish.hidden ? 'is-sold-out' : ''}`}>
+                                            <li key={dish.id} className={`menu-editor__dish d-flex flex-wrap align-items-start gap-1 ${dish.hidden ? 'is-sold-out' : ''}`}>
                                                 <div className="menu-editor__dish-text d-flex flex-column">
                                                     <span className="menu-editor__dish-name">
                                                         {dish.name}
@@ -186,7 +187,7 @@ const CategoryTitle = ({ category }) => {
     const soldOut = category.items.filter((d) => d.hidden).length
     const count = category.items.length
     return (
-        <span className="d-flex flex-wrap align-items-baseline gap-0-5">
+        <span className="menu-editor__category-title d-flex align-items-center gap-0-5">
             <span className="menu-editor__category-name">{category.name}</span>
             <span className="menu-editor__count">
                 {count} {count === 1 ? 'dish' : 'dishes'}{soldOut > 0 && ` · ${soldOut} sold out`}

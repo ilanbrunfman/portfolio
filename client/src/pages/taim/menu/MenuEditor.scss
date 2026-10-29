@@ -15,9 +15,15 @@
         box-sizing: border-box;
         padding-block: 0.5rem;
 
-        > .accordion__item > .accordion__header {
+        > .accordion__item > .accordion__head > .accordion__header {
             padding: 0.9rem 0.75rem;
             line-height: 1.3;
+        }
+
+        // No hover background on the section rows (the shared Accordion has
+        // one); the rows are already separated by borders
+        > .accordion__item > .accordion__head:hover {
+            background: transparent;
         }
 
         > .accordion__item > .accordion__panel .accordion__panel-content {
@@ -33,13 +39,23 @@
         min-width: 0;
     }
 
+    // Name and count on one line; the count gives way ("…") on narrow screens
+    &__category-title {
+        min-width: 0;
+        white-space: nowrap;
+    }
+
     &__category-name {
+        flex-shrink: 0;
         font-size: 1.1rem;
         font-weight: 600;
         color: var(--text-h);
     }
 
     &__count {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
         font-size: 0.85rem;
         font-weight: 400;
         color: var(--text);
