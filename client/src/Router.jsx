@@ -15,6 +15,9 @@ import IsaApp from './pages/isa/IsaApp'
 import BankApp from './pages/bank/BankApp'
 import BankOverview from './pages/bank/overview/Overview'
 import BankAccountPage from './pages/bank/account/AccountPage'
+import TaimApp from './pages/taim/TaimApp'
+import TaimHome from './pages/taim/screen/TaimHome'
+import TaimScreenPage from './pages/taim/screen/ScreenPage'
 
 import PageNotFoundPage from './pages/page-not-found/PageNotFoundPage'
 
@@ -64,6 +67,14 @@ const router = createBrowserRouter([
         children: [
             { index: true, element: <BankOverview /> },
             { path: 'accounts/:id', element: <BankAccountPage /> },
+        ]
+    },
+    {
+        path: '/taim',
+        element: <TaimApp />,
+        children: [
+            { index: true, element: <TaimHome /> },
+            { path: ':screen', element: <TaimScreenPage /> },
         ]
     },
     {
