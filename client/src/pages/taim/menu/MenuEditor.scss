@@ -20,8 +20,12 @@
             line-height: 1.3;
         }
 
-        // No hover background on the section rows (the shared Accordion has
-        // one); the rows are already separated by borders
+        // No border between sections and no hover background (the shared
+        // Accordion has both); Ta'im's own divider is still to be designed
+        > .accordion__item {
+            border-top: 0;
+        }
+
         > .accordion__item > .accordion__head:hover {
             background: transparent;
         }
