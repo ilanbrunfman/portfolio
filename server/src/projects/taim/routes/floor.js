@@ -52,20 +52,24 @@ function checkSeat(order, seat, field) {
 }
 
 // GET /api/taim/tables – every table in floor order; `order` is its open
-// order (a short summary) or null; `needsCleaning` = guests left, not cleaned yet
+// order (a short summary) or null; `needsCleaning` = guests left, not cleaned yet.
+// The summary says how the food is coming along: dishes not sent yet,
+// dishes in the kitchen, since when the oldest is waiting, and for which
+// seats (null = shared) – so a waiter can ask the kitchen about them.
 router.get('/tables', async (req, res) => {
     const tables = await prisma.diningTable.findMany({
         orderBy: { position: 'asc' },
         include: {
             orders: {
                 where: { status: 'OPEN' },
-                select: { id: true, guests: true, openedAt: true, items: { select: { price: true, status: true } } },
+                select: { id: true, guests: true, openedAt: true, items: { select: { price: true, status: true, seat: true, firedAt: true } } },
             },
         },
     })
     res.json(
         tables.map(({ orders, ...table }) => {
             const open = orders[0] // the database allows at most one
+            const cooking = open ? open.items.filter((item) => item.status === 'PREPARING') : []
             return {
                 ...table,
                 order: open
@@ -75,6 +79,11 @@ router.get('/tables', async (req, res) => {
                           openedAt: open.openedAt,
                           dishCount: open.items.length,
                           notSent: open.items.filter((item) => item.status === 'NEW').length,
+                          inKitchen: cooking.length,
+                          // the oldest dish still in the kitchen: since when it waits
+                          waitingSince: cooking.reduce((oldest, item) => (!oldest || item.firedAt < oldest ? item.firedAt : oldest), null),
+                          // seats still waiting for food, in order; null = shared, last
+                          waitingSeats: [...new Set(cooking.map((item) => item.seat))].sort((a, b) => (a ?? Infinity) - (b ?? Infinity)),
                           cameBack: open.items.filter((item) => item.status === 'CAME_BACK').length,
                           total: billTotal(open.items),
                       }

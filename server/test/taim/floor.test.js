@@ -299,10 +299,21 @@ describe('sending to the kitchen (addDishes: Manager, Waiter)', () => {
         expect(res.body.items.map((i) => i.status)).toEqual(['PREPARING', 'PREPARING'])
         expect(res.body.items.every((i) => i.firedAt)).toBe(true)
 
+        // the floor shows the food is coming: 2 in the kitchen, for seats 1 and 2
+        const cooking = (await host.get('/api/taim/tables').expect(200)).body[1].order
+        expect(cooking).toMatchObject({ notSent: 0, inKitchen: 2, waitingSeats: [1, 2], waitingSince: expect.any(String) })
+
         // a second round: only the new dish is sent
         await addDishes(waiter, order.id, [{ menuItemId: hummus.id, seat: 3 }]).expect(201)
         const again = await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200)
         expect(again.body.items.map((i) => i.status)).toEqual(['PREPARING', 'PREPARING', 'PREPARING'])
+
+        // seat 1's dish is served; shared dishes come last in the waiting list
+        await prisma.orderItem.update({ where: { id: again.body.items[0].id }, data: { status: 'SENT_OUT', sentOutAt: new Date() } })
+        await addDishes(waiter, order.id, [{ menuItemId: shakshuka.id }]).expect(201)
+        await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200)
+        const later = (await host.get('/api/taim/tables').expect(200)).body[1].order
+        expect(later).toMatchObject({ inKitchen: 3, waitingSeats: [2, 3, null] })
     })
 
     it('nothing new → 409; a Host cannot send', async () => {
