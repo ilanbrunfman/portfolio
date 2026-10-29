@@ -44,11 +44,22 @@ export const orderItemsAdd = z.object({
             z.object({
                 menuItemId: positiveInt('Invalid dish'),
                 quantity: positiveInt('Quantity must be a whole number above 0').max(20, 'Max 20 at a time').default(1),
+                // Which guest gets it (1…guests); null or missing = shared / take-out
+                seat: positiveInt('Seat must be a whole number above 0').nullable().default(null),
             }),
             { error: 'Pick at least one dish' }
         )
         .min(1, 'Pick at least one dish'),
 })
+
+// PATCH /api/taim/orders/:id – fix a seating: another table and/or guest count
+export const orderUpdate = z
+    .object({
+        tableId: positiveInt('Pick a table'),
+        guests: positiveInt('Guests must be a whole number above 0').max(50, 'Max 50 guests'),
+    })
+    .partial()
+    .refine((data) => Object.keys(data).length > 0, 'Nothing to update')
 
 // GET /api/taim/orders?status=OPEN|CLOSED
 export const orderListQuery = z.object({

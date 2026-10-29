@@ -8,7 +8,8 @@ export const ROLES = ['MANAGER', 'CHEF', 'COOK', 'HOST', 'WAITER']
 export const RIGHTS = {
     editMenu: ['MANAGER', 'CHEF'], // add, edit, hide dishes and prices
     setUpTables: ['MANAGER'], // add, rename tables, set seats
-    seatTable: ['MANAGER', 'HOST', 'WAITER'], // seat a table or start take-out
+    seatTable: ['MANAGER', 'HOST', 'WAITER'], // seat a table or start take-out; move or undo a seating
+    cleanTable: ['MANAGER', 'HOST', 'WAITER'], // mark a table clean after guests leave
     addDishes: ['MANAGER', 'WAITER'], // add dishes to an order
     advanceDish: ['MANAGER', 'CHEF', 'COOK'], // preparing → sent out
     markCameBack: ['MANAGER', 'CHEF', 'WAITER'], // a dish came back, with a reason

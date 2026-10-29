@@ -44,12 +44,15 @@ export const TABLES = [
 ]
 
 // Orders open right now: [table or take-out name, guests, opened by, minutes ago, dishes]
-// A dish name with " ✓" has already been sent out by the kitchen.
+// In a dish: " #2" = for seat 2 (none = shared), " ✓" = already sent out.
 const OPEN_ORDERS = [
-    ['T2', 3, 'Lior', 34, ['Hummus with pita ✓', 'Shakshuka', 'Sabich ✓', 'Lemonana ✓']],
-    ['T5', 6, 'Lior', 12, ['Kebab', 'Sabich', 'Falafel plate', 'Mint tea', 'Mint tea']],
+    ['T2', 3, 'Lior', 34, ['Hummus with pita ✓', 'Shakshuka #1', 'Sabich #2 ✓', 'Lemonana #3 ✓']],
+    ['T5', 6, 'Lior', 12, ['Kebab #1', 'Sabich #2', 'Falafel plate #3', 'Mint tea #4', 'Mint tea #5']],
     ['Maya', null, 'Dana', 9, ['Falafel plate', 'Hummus with pita']],
 ]
+
+// Guests just left these tables; they need cleaning before the next guests
+const NEEDS_CLEANING = ['T3']
 
 /** @param {import('../../src/generated/prisma/client.ts').PrismaClient} prisma */
 export async function seedTaim(prisma) {
@@ -66,7 +69,9 @@ export async function seedTaim(prisma) {
         dishCount += items.length
     }
 
-    await prisma.diningTable.createMany({ data: TABLES.map(([label, seats], i) => ({ label, seats, position: i + 1 })) })
+    await prisma.diningTable.createMany({
+        data: TABLES.map(([label, seats], i) => ({ label, seats, position: i + 1, needsCleaning: NEEDS_CLEANING.includes(label) })),
+    })
 
     // A few open orders, with prices copied from the menu like the API does
     const staffId = Object.fromEntries((await prisma.staff.findMany()).map((p) => [p.name, p.id]))
@@ -86,8 +91,12 @@ export async function seedTaim(prisma) {
                 items: {
                     create: dishes.map((entry) => {
                         const sent = entry.endsWith(' ✓')
-                        const { id, price } = dish[entry.replace(' ✓', '')]
-                        return { menuItemId: id, price, status: sent ? 'SENT_OUT' : 'PREPARING', createdAt: openedAt, sentOutAt: sent ? new Date() : null }
+                        const [, name, seat] = entry.replace(' ✓', '').match(/^(.+?)(?: #(\d+))?$/)
+                        const { id, price } = dish[name]
+                        return {
+                            menuItemId: id, price, seat: seat ? Number(seat) : null,
+                            status: sent ? 'SENT_OUT' : 'PREPARING', createdAt: openedAt, sentOutAt: sent ? new Date() : null,
+                        }
                     }),
                 },
             },

@@ -6,7 +6,7 @@ export const ORDER_INCLUDE = {
     table: { select: { id: true, label: true } },
     openedBy: { select: { id: true, name: true } },
     items: {
-        select: { id: true, menuItemId: true, price: true, status: true, createdAt: true, sentOutAt: true, menuItem: { select: { name: true } } },
+        select: { id: true, menuItemId: true, price: true, seat: true, status: true, createdAt: true, sentOutAt: true, menuItem: { select: { name: true } } },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     },
 }
@@ -43,7 +43,10 @@ export async function getOrder(id, db = prisma) {
 
 /** The order if it's still open; 404 if missing, 409 if the bill is closed */
 export async function requireOpenOrder(id, db = prisma) {
-    const order = await db.order.findUnique({ where: { id }, select: { id: true, status: true } })
+    const order = await db.order.findUnique({
+        where: { id },
+        select: { id: true, status: true, type: true, tableId: true, guests: true, _count: { select: { items: true } } },
+    })
     if (!order) throw new HttpError(404, 'Order not found')
     if (order.status !== 'OPEN') throw new HttpError(409, 'This bill is already closed')
     return order

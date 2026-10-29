@@ -4,7 +4,7 @@ import { validate } from '../../../shared/middleware/validate.js'
 import { HttpError } from '../../../shared/lib/httpError.js'
 import { idParams } from '../../../shared/schemas/common.js'
 import { allow } from '../middleware/staff.js'
-import { tableCreate, tableUpdate, orderCreate, orderItemsAdd, orderListQuery, orderItemParams } from '../schemas/floor.js'
+import { tableCreate, tableUpdate, orderCreate, orderUpdate, orderItemsAdd, orderListQuery, orderItemParams } from '../schemas/floor.js'
 import { ORDER_INCLUDE, billTotal, getOrder, requireOpenOrder, toOrderJson } from '../services/orders.js'
 
 // The floor (tables) and orders. Everyone picked can read them; changing
@@ -21,8 +21,26 @@ function labelTaken(err) {
 
 // ---------- tables ----------
 
+/**
+ * A table that can take new guests: it exists (400 otherwise) and has been
+ * cleaned since the last guests left (409 otherwise). Whether it's free is
+ * left to the database's one-open-order-per-table index.
+ */
+async function requireReadyTable(tableId, db = prisma) {
+    const table = await db.diningTable.findUnique({ where: { id: tableId } })
+    if (!table) throw new HttpError(400, 'Validation failed', { fields: { tableId: 'Table not found' } })
+    if (table.needsCleaning) throw new HttpError(409, `${table.label} needs cleaning first`)
+    return table
+}
+
+/** The database's one-open-order-per-table index said no → 409 */
+const tableTaken = (err) => {
+    if (err.code === 'P2002') throw new HttpError(409, 'This table is already seated')
+    throw err
+}
+
 // GET /api/taim/tables – every table in floor order; `order` is its open
-// order (a short summary) or null when the table is free
+// order (a short summary) or null; `needsCleaning` = guests left, not cleaned yet
 router.get('/tables', async (req, res) => {
     const tables = await prisma.diningTable.findMany({
         orderBy: { position: 'asc' },
@@ -68,6 +86,16 @@ router.patch('/tables/:id', allow('setUpTables'), validate({ params: idParams, b
     res.json(table)
 })
 
+// POST /api/taim/tables/:id/clean – guests have left and the table is clean
+router.post('/tables/:id/clean', allow('cleanTable'), validate({ params: idParams }), async (req, res) => {
+    const { id } = req.valid.params
+    const table = await prisma.diningTable.findUnique({ where: { id }, include: { orders: { where: { status: 'OPEN' }, select: { id: true } } } })
+    if (!table) throw new HttpError(404, 'Table not found')
+    if (table.orders.length > 0) throw new HttpError(409, `${table.label} still has guests`)
+    const updated = await prisma.diningTable.update({ where: { id }, data: { needsCleaning: false } })
+    res.json({ ...updated, order: null })
+})
+
 // ---------- orders ----------
 
 // GET /api/taim/orders?status=OPEN – open orders (tables and take-outs), oldest first
@@ -90,20 +118,45 @@ router.get('/orders/:id', validate({ params: idParams }), async (req, res) => {
 // or start a take-out { type: 'TAKEOUT', customerName }
 router.post('/orders', allow('seatTable'), validate({ body: orderCreate }), async (req, res) => {
     const data = req.valid.body
-    if (data.type === 'TABLE') {
-        const table = await prisma.diningTable.findUnique({ where: { id: data.tableId } })
-        if (!table) throw new HttpError(400, 'Validation failed', { fields: { tableId: 'Table not found' } })
-    }
+    if (data.type === 'TABLE') await requireReadyTable(data.tableId)
 
     // No "is it free?" check first: two hosts could both pass it at the same
     // moment. The database's one-open-order-per-table index decides instead.
     const order = await prisma.order
         .create({ data: { ...data, openedById: req.staff.id }, include: ORDER_INCLUDE })
-        .catch((err) => {
-            if (err.code === 'P2002') throw new HttpError(409, 'This table is already seated')
-            throw err
-        })
+        .catch(tableTaken)
     res.status(201).json(toOrderJson(order))
+})
+
+// PATCH /api/taim/orders/:id { tableId?, guests? } – fix a seating mistake:
+// move the guests to another (ready, free) table and/or change how many there are
+router.patch('/orders/:id', allow('seatTable'), validate({ params: idParams, body: orderUpdate }), async (req, res) => {
+    const { id } = req.valid.params
+    const data = req.valid.body
+    const order = await requireOpenOrder(id)
+    if (order.type !== 'TABLE') throw new HttpError(409, 'Only a table order can be moved')
+
+    if (data.guests !== undefined) {
+        // Fewer guests than seats with dishes would leave dishes for nobody
+        const { _max } = await prisma.orderItem.aggregate({ where: { orderId: id }, _max: { seat: true } })
+        if (_max.seat && _max.seat > data.guests) {
+            throw new HttpError(409, `Seat ${_max.seat} has dishes: remove them or keep ${_max.seat} guests`)
+        }
+    }
+    if (data.tableId !== undefined && data.tableId !== order.tableId) await requireReadyTable(data.tableId)
+
+    await prisma.order.update({ where: { id }, data }).catch(tableTaken)
+    res.json(await getOrder(id))
+})
+
+// DELETE /api/taim/orders/:id – undo a seating (or a take-out) made by
+// mistake. Only while nothing has been ordered: after that it's a real bill.
+router.delete('/orders/:id', allow('seatTable'), validate({ params: idParams }), async (req, res) => {
+    const { id } = req.valid.params
+    const order = await requireOpenOrder(id)
+    if (order._count.items > 0) throw new HttpError(409, 'This order already has dishes: remove them first, or close the bill')
+    await prisma.order.delete({ where: { id } })
+    res.status(204).end()
 })
 
 // POST /api/taim/orders/:id/items { items: [{ menuItemId, quantity }] } – add dishes
@@ -112,7 +165,17 @@ router.post('/orders/:id/items', allow('addDishes'), validate({ params: idParams
     const { items } = req.valid.body
 
     const order = await prisma.$transaction(async (tx) => {
-        await requireOpenOrder(id, tx)
+        const current = await requireOpenOrder(id, tx)
+
+        // Seats: a take-out has none; at a table, seat 1…guests (or null = shared)
+        for (const { seat } of items) {
+            if (seat === null) continue
+            if (current.type === 'TAKEOUT') throw new HttpError(400, 'Validation failed', { fields: { items: 'Take-out dishes have no seat' } })
+            if (seat > current.guests) {
+                throw new HttpError(400, 'Validation failed', { fields: { items: `Seat ${seat} doesn't exist: the table has ${current.guests} guests` } })
+            }
+        }
+
         const ids = [...new Set(items.map((item) => item.menuItemId))]
         const dishes = await tx.menuItem.findMany({ where: { id: { in: ids } } })
         const byId = new Map(dishes.map((dish) => [dish.id, dish]))
@@ -125,8 +188,8 @@ router.post('/orders/:id/items', allow('addDishes'), validate({ params: idParams
         // One row per dish; the price is copied now, so a later price change
         // never rewrites this bill
         await tx.orderItem.createMany({
-            data: items.flatMap(({ menuItemId, quantity }) =>
-                Array.from({ length: quantity }, () => ({ orderId: id, menuItemId, price: byId.get(menuItemId).price }))
+            data: items.flatMap(({ menuItemId, quantity, seat }) =>
+                Array.from({ length: quantity }, () => ({ orderId: id, menuItemId, seat, price: byId.get(menuItemId).price }))
             ),
         })
         return getOrder(id, tx)
@@ -146,12 +209,17 @@ router.delete('/orders/:id/items/:itemId', allow('addDishes'), validate({ params
     res.json(await getOrder(id))
 })
 
-// POST /api/taim/orders/:id/close – close the bill; a table becomes free
+// POST /api/taim/orders/:id/close – close the bill. The guests leave, so the
+// table is free but needs cleaning (yellow on the floor) before new guests.
 router.post('/orders/:id/close', allow('closeBill'), validate({ params: idParams }), async (req, res) => {
     const { id } = req.valid.params
-    // Only an OPEN order changes; if it was already closed nothing is updated
-    const { count } = await prisma.order.updateMany({ where: { id, status: 'OPEN' }, data: { status: 'CLOSED', closedAt: new Date() } })
-    if (count === 0) await requireOpenOrder(id) // throws the right error: 404 or 409
+    await prisma.$transaction(async (tx) => {
+        // Only an OPEN order changes; if it was already closed nothing is updated
+        const { count } = await tx.order.updateMany({ where: { id, status: 'OPEN' }, data: { status: 'CLOSED', closedAt: new Date() } })
+        if (count === 0) await requireOpenOrder(id, tx) // throws the right error: 404 or 409
+        const { tableId } = await tx.order.findUniqueOrThrow({ where: { id }, select: { tableId: true } })
+        if (tableId) await tx.diningTable.update({ where: { id: tableId }, data: { needsCleaning: true } })
+    })
     res.json(await getOrder(id))
 })
 

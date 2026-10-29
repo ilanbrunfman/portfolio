@@ -149,8 +149,7 @@ describe('closing the bill (closeBill: Manager, Host, Waiter)', () => {
         expect(res.body).toMatchObject({ status: 'CLOSED', total: 900, closedAt: expect.any(String) })
 
         const tables = await host.get('/api/taim/tables').expect(200)
-        expect(tables.body[0].order).toBeNull()
-        await seat(waiter).expect(201) // the table can be seated again
+        expect(tables.body[0]).toMatchObject({ order: null, needsCleaning: true })
     })
 
     it('a closed bill cannot be closed again; open and closed lists', async () => {
@@ -165,5 +164,104 @@ describe('closing the bill (closeBill: Manager, Host, Waiter)', () => {
         expect(open.body.map((o) => o.customerName)).toEqual(['Maya'])
         const closed = await host.get('/api/taim/orders?status=CLOSED').expect(200)
         expect(closed.body.map((o) => o.id)).toEqual([order.id])
+    })
+})
+
+describe('cleaning (cleanTable: Manager, Host, Waiter)', () => {
+    const closeT1 = async () => {
+        const order = (await seat(host).expect(201)).body
+        await host.post(`/api/taim/orders/${order.id}/close`).expect(200)
+    }
+
+    it('a table that needs cleaning cannot be seated until it is marked clean', async () => {
+        await closeT1()
+        const res = await seat(waiter).expect(409)
+        expect(res.body.error).toBe('T1 needs cleaning first')
+
+        const cleaned = await waiter.post(`/api/taim/tables/${t1.id}/clean`).expect(200)
+        expect(cleaned.body).toMatchObject({ label: 'T1', needsCleaning: false, order: null })
+        await seat(host).expect(201)
+    })
+
+    it('Cook and Chef cannot mark a table clean; a table with guests is not "clean"', async () => {
+        await closeT1()
+        await (await as('COOK')).post(`/api/taim/tables/${t1.id}/clean`).expect(403)
+        await (await as('CHEF')).post(`/api/taim/tables/${t1.id}/clean`).expect(403)
+
+        await seat(host, t2).expect(201)
+        const res = await host.post(`/api/taim/tables/${t2.id}/clean`).expect(409)
+        expect(res.body.error).toBe('T2 still has guests')
+        await host.post('/api/taim/tables/999/clean').expect(404)
+    })
+})
+
+describe('fixing a seating mistake (seatTable)', () => {
+    it('moves the guests to another table; the first one is free again', async () => {
+        const order = (await seat(host, t1, 2).expect(201)).body
+        const res = await host.patch(`/api/taim/orders/${order.id}`).send({ tableId: t2.id, guests: 3 }).expect(200)
+        expect(res.body).toMatchObject({ table: { label: 'T2' }, guests: 3 })
+
+        const tables = (await host.get('/api/taim/tables').expect(200)).body
+        expect(tables.map((t) => [t.label, t.order?.id ?? null, t.needsCleaning])).toEqual([['T1', null, false], ['T2', order.id, false]])
+    })
+
+    it('cannot move onto a taken table or one that needs cleaning', async () => {
+        const first = (await seat(host, t1).expect(201)).body
+        const second = (await seat(host, t2).expect(201)).body
+        const taken = await host.patch(`/api/taim/orders/${first.id}`).send({ tableId: t2.id }).expect(409)
+        expect(taken.body.error).toBe('This table is already seated')
+
+        await host.post(`/api/taim/orders/${second.id}/close`).expect(200)
+        const dirty = await host.patch(`/api/taim/orders/${first.id}`).send({ tableId: t2.id }).expect(409)
+        expect(dirty.body.error).toBe('T2 needs cleaning first')
+    })
+
+    it('cannot lower the guest count below a seat that has dishes', async () => {
+        const order = (await seat(host, t2, 4).expect(201)).body
+        await addDishes(waiter, order.id, [{ menuItemId: hummus.id, seat: 3 }]).expect(201)
+        const res = await host.patch(`/api/taim/orders/${order.id}`).send({ guests: 2 }).expect(409)
+        expect(res.body.error).toBe('Seat 3 has dishes: remove them or keep 3 guests')
+        await host.patch(`/api/taim/orders/${order.id}`).send({ guests: 3 }).expect(200)
+    })
+
+    it('undoes a seating while nothing is ordered; after that it is a real bill', async () => {
+        const order = (await seat(host).expect(201)).body
+        await host.delete(`/api/taim/orders/${order.id}`).expect(204)
+        const tables = (await host.get('/api/taim/tables').expect(200)).body
+        expect(tables[0]).toMatchObject({ order: null, needsCleaning: false })
+
+        const again = (await seat(host).expect(201)).body
+        await addDishes(waiter, again.id, [{ menuItemId: hummus.id }]).expect(201)
+        const res = await host.delete(`/api/taim/orders/${again.id}`).expect(409)
+        expect(res.body.error).toMatch(/already has dishes/)
+        await (await as('COOK')).delete(`/api/taim/orders/${again.id}`).expect(403)
+    })
+
+    it('a take-out cannot be moved to a table', async () => {
+        const takeout = (await waiter.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya' }).expect(201)).body
+        await host.patch(`/api/taim/orders/${takeout.id}`).send({ tableId: t1.id }).expect(409)
+    })
+})
+
+describe('seat numbers on dishes', () => {
+    it('saves which guest each dish is for; no seat = shared', async () => {
+        const order = (await seat(host, t2, 3).expect(201)).body
+        const res = await addDishes(waiter, order.id, [
+            { menuItemId: hummus.id },
+            { menuItemId: shakshuka.id, seat: 1 },
+            { menuItemId: hummus.id, seat: 3, quantity: 2 },
+        ]).expect(201)
+        expect(res.body.items.map((i) => [i.name, i.seat])).toEqual([['Hummus', null], ['Shakshuka', 1], ['Hummus', 3], ['Hummus', 3]])
+    })
+
+    it('refuses a seat the table does not have, and seats on a take-out', async () => {
+        const order = (await seat(host, t2, 3).expect(201)).body
+        const res = await addDishes(waiter, order.id, [{ menuItemId: hummus.id, seat: 4 }]).expect(400)
+        expect(res.body.fields).toEqual({ items: "Seat 4 doesn't exist: the table has 3 guests" })
+
+        const takeout = (await waiter.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya' }).expect(201)).body
+        const out = await addDishes(waiter, takeout.id, [{ menuItemId: hummus.id, seat: 1 }]).expect(400)
+        expect(out.body.fields).toEqual({ items: 'Take-out dishes have no seat' })
+        expect(await prisma.orderItem.count()).toBe(0)
     })
 })
