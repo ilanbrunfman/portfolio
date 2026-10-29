@@ -276,7 +276,8 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | `editMenu`: dishes and prices | ✓ | ✓ | | | |
 | `setUpTables`: add, rename, seats | ✓ | | | | |
 | `seatTable`: seat, start take-out, move or undo a seating | ✓ | | | ✓ | ✓ |
-| `addDishes`: add dishes to an order | ✓ | | | | ✓ |
+| `addDishes`: a table's dishes (add, send, move, remove) | ✓ | | | | ✓ |
+| `takeoutOrders`: the same on a take-out | ✓ | | | ✓ | ✓ |
 | `advanceDish`: preparing → sent out | ✓ | ✓ | ✓ | | |
 | `markCameBack`: a dish came back | ✓ | ✓ | | | ✓ |
 | `closeBill`: close the bill | ✓ | | | ✓ | ✓ |

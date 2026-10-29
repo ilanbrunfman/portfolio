@@ -358,3 +358,30 @@ describe('the database ties rounds to sending', () => {
         await expect(prisma.orderItem.update({ where: { id: items[0].id }, data: { status: 'PREPARING' } })).rejects.toThrow(/order_items_round_when_sent/)
     })
 })
+
+describe('take-out orders (takeoutOrders: Manager, Host, Waiter)', () => {
+    it('the Host takes a take-out from start to paid', async () => {
+        const takeout = (await host.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya' }).expect(201)).body
+        const { items } = (await addDishes(host, takeout.id, [{ menuItemId: hummus.id, quantity: 2 }]).expect(201)).body
+        await host.delete(`/api/taim/orders/${takeout.id}/items/${items[1].id}`).expect(200)
+        const sent = await host.post(`/api/taim/orders/${takeout.id}/send`).expect(200)
+        expect(sent.body.items.map((i) => [i.status, i.round])).toEqual([['PREPARING', 1]])
+        await host.post(`/api/taim/orders/${takeout.id}/close`).expect(200)
+    })
+
+    it('the Host still cannot change the dishes of a table', async () => {
+        const order = (await seat(host).expect(201)).body
+        await addDishes(host, order.id, [{ menuItemId: hummus.id }]).expect(403)
+        const { items } = (await addDishes(waiter, order.id, [{ menuItemId: hummus.id }]).expect(201)).body
+        await host.post(`/api/taim/orders/${order.id}/send`).expect(403)
+        await host.patch(`/api/taim/orders/${order.id}/items/${items[0].id}`).send({ seat: 2 }).expect(403)
+        await host.delete(`/api/taim/orders/${order.id}/items/${items[0].id}`).expect(403)
+    })
+
+    it('Cook and Chef cannot take take-out orders; an unknown order is 404', async () => {
+        const takeout = (await host.post('/api/taim/orders').send({ type: 'TAKEOUT', customerName: 'Maya' }).expect(201)).body
+        for (const role of ['COOK', 'CHEF']) await addDishes(await as(role), takeout.id, [{ menuItemId: hummus.id }]).expect(403)
+        await addDishes(host, 999, [{ menuItemId: hummus.id }]).expect(404)
+    })
+})
+

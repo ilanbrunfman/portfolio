@@ -3,12 +3,13 @@ import { prisma } from '../../../shared/db.js'
 import { validate } from '../../../shared/middleware/validate.js'
 import { HttpError } from '../../../shared/lib/httpError.js'
 import { idParams } from '../../../shared/schemas/common.js'
-import { allow } from '../middleware/staff.js'
+import { allow, allowDishChanges } from '../middleware/staff.js'
 import { tableCreate, tableUpdate, orderCreate, orderUpdate, orderItemsAdd, orderItemUpdate, orderListQuery, orderItemParams } from '../schemas/floor.js'
 import { ORDER_INCLUDE, billTotal, getOrder, requireOpenOrder, toOrderJson } from '../services/orders.js'
 
 // The floor (tables) and orders. Everyone picked can read them; changing
-// them needs a right: setUpTables, seatTable, addDishes, closeBill.
+// them needs a right: setUpTables, seatTable, cleanTable, closeBill, and for
+// an order's dishes addDishes (tables) or takeoutOrders (take-outs).
 const router = Router()
 
 /** Prisma's "unique value already used" error → 409 with a message under the Label input */
@@ -192,7 +193,7 @@ router.delete('/orders/:id', allow('seatTable'), validate({ params: idParams }),
 })
 
 // POST /api/taim/orders/:id/items { items: [{ menuItemId, quantity }] } – add dishes
-router.post('/orders/:id/items', allow('addDishes'), validate({ params: idParams, body: orderItemsAdd }), async (req, res) => {
+router.post('/orders/:id/items', validate({ params: idParams, body: orderItemsAdd }), allowDishChanges, async (req, res) => {
     const { id } = req.valid.params
     const { items } = req.valid.body
 
@@ -225,7 +226,7 @@ router.post('/orders/:id/items', allow('addDishes'), validate({ params: idParams
 // PATCH /api/taim/orders/:id/items/:itemId { seat } – the dish is for
 // another guest (or shared). Any time while the bill is open, whatever the
 // kitchen status: it only changes who gets it.
-router.patch('/orders/:id/items/:itemId', allow('addDishes'), validate({ params: orderItemParams, body: orderItemUpdate }), async (req, res) => {
+router.patch('/orders/:id/items/:itemId', validate({ params: orderItemParams, body: orderItemUpdate }), allowDishChanges, async (req, res) => {
     const { id, itemId } = req.valid.params
     const order = await requireOpenOrder(id)
     checkSeat(order, req.valid.body.seat, 'seat')
@@ -237,7 +238,7 @@ router.patch('/orders/:id/items/:itemId', allow('addDishes'), validate({ params:
 // POST /api/taim/orders/:id/send – send every dish not sent yet to the
 // kitchen (NEW → PREPARING), all at once, as the order's next round
 // (1 = first send, e.g. starters; 2 = the mains 20 minutes later…)
-router.post('/orders/:id/send', allow('addDishes'), validate({ params: idParams }), async (req, res) => {
+router.post('/orders/:id/send', validate({ params: idParams }), allowDishChanges, async (req, res) => {
     const { id } = req.valid.params
     await prisma.$transaction(async (tx) => {
         await requireOpenOrder(id, tx)
@@ -253,7 +254,7 @@ router.post('/orders/:id/send', allow('addDishes'), validate({ params: idParams 
 
 // DELETE /api/taim/orders/:id/items/:itemId – take back a dish: any time
 // before it's sent to the kitchen, or while the kitchen is preparing it
-router.delete('/orders/:id/items/:itemId', allow('addDishes'), validate({ params: orderItemParams }), async (req, res) => {
+router.delete('/orders/:id/items/:itemId', validate({ params: orderItemParams }), allowDishChanges, async (req, res) => {
     const { id, itemId } = req.valid.params
     await requireOpenOrder(id)
     const item = await prisma.orderItem.findFirst({ where: { id: itemId, orderId: id } })

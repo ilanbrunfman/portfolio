@@ -31,6 +31,20 @@ export async function requireStaff(req, res, next) {
 }
 
 /**
+ * Authorization for changing an order's dishes: the right depends on the
+ * kind of order – addDishes for a table (Manager, Waiter), takeoutOrders
+ * for a take-out (Manager, Host, Waiter). Use after validate(), so
+ * req.valid.params.id is a real id. Unknown order → 404, role → 403.
+ */
+export async function allowDishChanges(req, res, next) {
+    const order = await prisma.order.findUnique({ where: { id: req.valid.params.id }, select: { type: true } })
+    if (!order) throw new HttpError(404, 'Order not found')
+    const roles = RIGHTS[order.type === 'TAKEOUT' ? 'takeoutOrders' : 'addDishes']
+    if (!roles.includes(req.staff.role)) throw new HttpError(403, "Your role can't do this")
+    next()
+}
+
+/**
  * Authorization: may you do this? Use after requireStaff:
  *   router.post('/menu-items', allow('editMenu'), …)
  * The role doesn't have the right → 403.
