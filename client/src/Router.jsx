@@ -75,6 +75,7 @@ const router = createBrowserRouter([
         children: [
             { index: true, element: <TaimHome /> },
             { path: ':screen', element: <TaimScreenPage /> },
+            { path: 'order/:orderId', element: <TaimScreenPage /> },
         ]
     },
     {

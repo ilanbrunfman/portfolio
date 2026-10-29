@@ -1,0 +1,70 @@
+// Dish details popup – visuals only (layout is utility classes in the markup)
+.dish-details {
+    p {
+        margin: 0;
+    }
+
+    &__price {
+        color: var(--text-h);
+        font-size: 1.3rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__sold-out {
+        padding: 0.1rem 0.6rem;
+        border-radius: 999px;
+        background: var(--accent-bg);
+        color: var(--accent);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    &__description {
+        color: var(--text-h);
+        font-size: 1.05rem;
+        line-height: 1.5;
+    }
+
+    // − 2 +
+    &__stepper {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+
+        button {
+            width: 40px;
+            height: 38px;
+            border: 0;
+            background: none;
+            color: var(--text-h);
+            font: inherit;
+            font-size: 1.2rem;
+            cursor: pointer;
+
+            &:hover:not(:disabled) {
+                background: var(--accent-bg);
+            }
+
+            &:focus-visible {
+                outline: 2px solid var(--accent);
+                outline-offset: -2px;
+            }
+
+            &:disabled {
+                cursor: default;
+                opacity: 0.35;
+            }
+        }
+
+        output {
+            min-width: 2.5rem;
+            text-align: center;
+            color: var(--text-h);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+}

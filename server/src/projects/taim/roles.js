@@ -8,8 +8,11 @@ export const ROLES = ['MANAGER', 'CHEF', 'COOK', 'HOST', 'WAITER']
 export const RIGHTS = {
     editMenu: ['MANAGER', 'CHEF'], // add, edit, hide dishes and prices
     setUpTables: ['MANAGER'], // add, rename tables, set seats
-    seatTable: ['MANAGER', 'HOST', 'WAITER'], // seat a table or start take-out
-    addDishes: ['MANAGER', 'WAITER'], // add dishes to an order
+    seatTable: ['MANAGER', 'HOST', 'WAITER'], // seat a table or start take-out; move or undo a seating
+    cleanTable: ['MANAGER', 'HOST', 'WAITER'], // mark a table clean after guests leave
+    combineTables: ['MANAGER', 'HOST'], // join free tables for a big party, split them again
+    addDishes: ['MANAGER', 'WAITER'], // a table's order: add, send, move, remove dishes
+    takeoutOrders: ['MANAGER', 'HOST', 'WAITER'], // the same on a take-out (the host takes phone orders)
     advanceDish: ['MANAGER', 'CHEF', 'COOK'], // preparing → sent out
     markCameBack: ['MANAGER', 'CHEF', 'WAITER'], // a dish came back, with a reason
     closeBill: ['MANAGER', 'HOST', 'WAITER'], // close the bill, free the table
@@ -19,7 +22,7 @@ export const RIGHTS = {
 /** Screen → the roles that see it in the side nav */
 export const SCREENS = {
     floor: ['MANAGER', 'HOST', 'WAITER'],
-    order: ['MANAGER', 'WAITER'],
+    order: ['MANAGER', 'HOST', 'WAITER'], // the Host uses it for take-outs (tables' bills read-only)
     kitchen: ['MANAGER', 'CHEF', 'COOK'],
     menu: ['MANAGER', 'CHEF'],
     losses: ['MANAGER', 'CHEF'],

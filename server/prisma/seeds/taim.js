@@ -1,5 +1,6 @@
 // Ta'im demo data: one staff member per role (the people on the
-// "Who are you?" screen) and a small menu. Prices are cents.
+// "Who are you?" screen), a small menu, 8 tables and a few open orders so
+// the floor isn't empty. Prices are cents.
 //
 // ⚠ Wipes all Ta'im rows first.
 
@@ -36,10 +37,29 @@ export const MENU = [
     ]],
 ]
 
+// label, seats – in floor order
+export const TABLES = [
+    ['T1', 2], ['T2', 4], ['T3', 2], ['T4', 4],
+    ['T5', 6], ['T6', 6], ['T7', 4], ['T8', 8],
+]
+
+// Orders open right now: [table or take-out name, guests, opened by, minutes ago, dishes]
+// In a dish: " #2" = for seat 2 (none = shared), " ✓" = already sent out,
+// " ○" = on the bill but not sent to the kitchen yet, " r2" = sent in the
+// order's 2nd round (15 minutes after the 1st; no "r" = round 1).
+const OPEN_ORDERS = [
+    ['T2', 3, 'Lior', 34, ['Hummus with pita ✓', 'Lemonana #3 ✓', 'Shakshuka #1 r2', 'Sabich #2 r2 ✓']],
+    ['T5', 6, 'Lior', 12, ['Kebab #1', 'Sabich #2', 'Falafel plate #3', 'Mint tea #4', 'Mint tea #5', 'Malabi #6 ○']],
+    ['Maya', null, 'Dana', 9, ['Falafel plate', 'Hummus with pita']],
+]
+
+// Guests just left these tables; they need cleaning before the next guests
+const NEEDS_CLEANING = ['T3']
+
 /** @param {import('../../src/generated/prisma/client.ts').PrismaClient} prisma */
 export async function seedTaim(prisma) {
     // Start clean: empty the tables and restart ids at 1
-    await prisma.$executeRaw`TRUNCATE TABLE taim.menu_items, taim.categories, taim.staff RESTART IDENTITY CASCADE`
+    await prisma.$executeRaw`TRUNCATE TABLE taim.order_items, taim.orders, taim.dining_tables, taim.menu_items, taim.categories, taim.staff RESTART IDENTITY CASCADE`
 
     await prisma.staff.createMany({ data: STAFF })
 
@@ -51,5 +71,45 @@ export async function seedTaim(prisma) {
         dishCount += items.length
     }
 
-    console.log(`Ta'im: ${STAFF.length} staff (${STAFF.map((s) => s.name).join(', ')}), ${MENU.length} categories, ${dishCount} dishes`)
+    await prisma.diningTable.createMany({
+        data: TABLES.map(([label, seats], i) => ({ label, seats, position: i + 1, needsCleaning: NEEDS_CLEANING.includes(label) })),
+    })
+
+    // A few open orders, with prices copied from the menu like the API does
+    const staffId = Object.fromEntries((await prisma.staff.findMany()).map((p) => [p.name, p.id]))
+    const tableId = Object.fromEntries((await prisma.diningTable.findMany()).map((t) => [t.label, t.id]))
+    const dish = Object.fromEntries((await prisma.menuItem.findMany()).map((d) => [d.name, d]))
+    for (const [where, guests, by, minutesAgo, dishes] of OPEN_ORDERS) {
+        const openedAt = new Date(Date.now() - minutesAgo * 60_000)
+        const isTable = where in tableId
+        await prisma.order.create({
+            data: {
+                type: isTable ? 'TABLE' : 'TAKEOUT',
+                tableId: isTable ? tableId[where] : null,
+                guests: isTable ? guests : null,
+                customerName: isTable ? null : where,
+                customerPhone: isTable ? null : '050-123-4567',
+                openedById: staffId[by],
+                openedAt,
+                items: {
+                    create: dishes.map((entry) => {
+                        const sent = entry.endsWith(' ✓')
+                        const notSent = entry.endsWith(' ○')
+                        const [, name, seat, round] = entry.replace(/ [✓○]$/, '').match(/^(.+?)(?: #(\d+))?(?: r(\d+))?$/)
+                        const { id, price } = dish[name]
+                        const r = notSent ? null : Number(round ?? 1)
+                        const firedAt = r ? new Date(openedAt.getTime() + (r - 1) * 15 * 60_000) : null
+                        return {
+                            menuItemId: id, price, seat: seat ? Number(seat) : null, createdAt: firedAt ?? openedAt,
+                            status: notSent ? 'NEW' : sent ? 'SENT_OUT' : 'PREPARING',
+                            firedAt, round: r,
+                            sentOutAt: sent ? new Date() : null,
+                        }
+                    }),
+                },
+            },
+        })
+    }
+
+    console.log(`Ta'im: ${STAFF.length} staff (${STAFF.map((s) => s.name).join(', ')}), ${MENU.length} categories, ${dishCount} dishes, ${TABLES.length} tables, ${OPEN_ORDERS.length} open orders`)
 }

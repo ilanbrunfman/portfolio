@@ -77,7 +77,8 @@ payments). It uses a fixed random seed, so every run gives the same data.
 
 **Ta'im** (`seeds/taim.js`): one staff member per role: Noa (Manager),
 Avi (Chef), Yossi (Cook), Dana (Host), Lior (Waiter); and a menu of 4
-categories and 13 dishes (Schnitzel starts sold out).
+categories and 13 dishes (Schnitzel starts sold out); 8 tables (T1–T8) and 3 open orders (T2, T5
+and a take-out for Maya) so the floor isn't empty.
 
 ## Tests
 
@@ -146,7 +147,8 @@ src/
     taim/         Ta'im, the restaurant app
       index.js    all Ta'im routes as one router
       roles.js    who may do what: rights and screens per role
-      routes/     staff, session, menu
+      routes/     staff, session, menu, floor (tables and orders)
+      services/   order JSON and the bill total
       schemas/    Zod schemas
       middleware/ requireStaff + allow(right)
 test/
@@ -157,7 +159,7 @@ test/
     *.test.js     one file per area (accounts, transactions, …)
   taim/
     helpers.js    resetTaim, as(role)
-    *.test.js     session, roles, menu
+    *.test.js     session, roles, menu, floor
 ```
 
 Each project lives in its own folder under `src/projects/` and only imports
@@ -273,12 +275,15 @@ The rights live in one place, `src/projects/taim/roles.js`:
 |---|:-:|:-:|:-:|:-:|:-:|
 | `editMenu`: dishes and prices | ✓ | ✓ | | | |
 | `setUpTables`: add, rename, seats | ✓ | | | | |
-| `seatTable`: seat or start take-out | ✓ | | | ✓ | ✓ |
-| `addDishes`: add dishes to an order | ✓ | | | | ✓ |
+| `seatTable`: seat, start take-out, move or undo a seating | ✓ | | | ✓ | ✓ |
+| `addDishes`: a table's dishes (add, send, move, remove) | ✓ | | | | ✓ |
+| `takeoutOrders`: the same on a take-out | ✓ | | | ✓ | ✓ |
 | `advanceDish`: preparing → sent out | ✓ | ✓ | ✓ | | |
 | `markCameBack`: a dish came back | ✓ | ✓ | | | ✓ |
 | `closeBill`: close the bill | ✓ | | | ✓ | ✓ |
 | `seeLosses`: the losses summary | ✓ | ✓ | | | |
+| `cleanTable`: mark a table clean | ✓ | | | ✓ | ✓ |
+| `combineTables`: combine or split tables | ✓ | | | ✓ | |
 
 | Method | Path | Body | Returns |
 |--------|------|------|---------|
@@ -293,6 +298,23 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | POST | `/api/taim/menu-items` | `{ categoryId, name, price, description?, hidden? }` | 201 + the dish, at the top of its category (409 if the name exists) |
 | PATCH | `/api/taim/menu-items/:id` | any of those fields | The updated dish; `{ hidden: true }` = sold out; a new `categoryId` puts it at the top there |
 | PUT | `/api/taim/categories/:id/dish-order` | `{ dishIds }`, top first | The category's dishes in their new order (400 unless the list is exactly that category's dishes) |
+| GET | `/api/taim/tables` | | Tables in floor order; `order` = the open order's summary (`guests`, `openedAt`, `dishCount`, `notSent`, `cameBack`, `total`) or `null` when free; `needsCleaning` after guests leave |
+| POST | `/api/taim/tables` | `{ label, seats }` | 201, added at the end of the floor (Manager; 409 if the label exists) |
+| PATCH | `/api/taim/tables/:id` | `{ label?, seats? }` | The updated table (Manager) |
+| POST | `/api/taim/tables/:id/clean` | | The table (or its whole group), ready again; a combined group splits up (409 while it still has guests) |
+| POST | `/api/taim/tables/combine` | `{ tableIds }` (2 or more) | 201 + the main table with `groupLabel` ("T1 + T4 + T7") and `groupSeats`; only free, clean, single tables (409 otherwise) |
+| POST | `/api/taim/tables/:id/split` | | The main table back on its own; only while nobody is seated (409) |
+| POST | `/api/taim/tables/:id/needs-cleaning` | | The table, back to needing cleaning ("not clean enough"; 409 while it has guests) |
+| GET | `/api/taim/orders` | `?status=OPEN` (default) or `CLOSED` | Orders with their dishes and `total`; open ones oldest first |
+| GET | `/api/taim/orders/:id` | | One order: `table` or `customerName` + `customerPhone`, `guests`, `openedBy`, `items` (name, price, status), `total` |
+| POST | `/api/taim/orders` | `{ type: 'TABLE', tableId, guests }` or `{ type: 'TAKEOUT', customerName, customerPhone? }` | 201 + the order (409 if the table is already seated or needs cleaning) |
+| PATCH | `/api/taim/orders/:id` | `{ tableId?, guests? }` | Fix a seating: move to another ready table and/or change guests (409 if fewer guests than a seat with dishes) |
+| DELETE | `/api/taim/orders/:id` | | 204, undo a seating or take-out; only while it has no dishes (409 otherwise) |
+| POST | `/api/taim/orders/:id/items` | `{ items: [{ menuItemId, quantity?, seat? }] }` | 201 + the order; one row per dish (`NEW`, not sent yet), price copied from the menu (409 if a dish is sold out or the bill is closed) |
+| POST | `/api/taim/orders/:id/send` | | Send every dish not sent yet to the kitchen as the order's next `round` (`NEW` → `PREPARING`, `firedAt` set); 409 if there's nothing new |
+| PATCH | `/api/taim/orders/:id/items/:itemId` | `{ seat }` (a number, or `null` = shared) | The order with the dish moved to that seat; any time while the bill is open |
+| DELETE | `/api/taim/orders/:id/items/:itemId` | | The order without that dish; while it's `NEW` or `PREPARING` (409 once sent out) |
+| POST | `/api/taim/orders/:id/close` | | The closed order; the table now needs cleaning (409 if already closed, or while dishes haven't been sent) |
 
 `rights` and `screens` are the role's entries from `roles.js`, so the
 client can show only the screens that person may use.
@@ -307,6 +329,41 @@ Each dish has a `position` in its category (1 = top). Adding a dish shifts
 the others down one and takes position 1, in one transaction; saving a new
 order after a drag rewrites every position of that category in one
 transaction, so a half-saved order can't happen.
+
+**Floor and orders.** A table is "taken" while it has an `OPEN` order; it
+isn't stored anywhere else. The database allows at most one open order per
+table (a partial unique index, `WHERE status = 'OPEN'`), so seating a taken
+table answers 409 even when two hosts tap at the same moment: there is no
+"is it free?" check in code that two requests could both pass. A `CHECK`
+rule makes table orders have a table and guests, and take-outs a name and no
+table. Each dish on an order is its own row with the price copied in when it
+was added, so changing a menu price never rewrites an old bill. The bill
+total is calculated from the rows, leaving out dishes that came back.
+
+A table's colour on the floor: **green** ready, **grey** dining (an open
+order), **yellow** needs cleaning (`needsCleaning`, set in the same
+transaction that closes the bill, cleared by `POST /tables/:id/clean`). A
+table that needs cleaning can't be seated. Each dish can carry a `seat`
+(1…guests, or `null` = shared) so the runner knows who gets what;
+take-outs have no seats.
+
+A dish's life: `NEW` (on the bill; the waiter can still change or remove
+it) → **Send to kitchen** → `PREPARING` → the kitchen sends it out →
+`SENT_OUT` → maybe `CAME_BACK` (step 6). A bill can't be closed while any
+dish is still `NEW`.
+
+**Combined tables:** `POST /tables/combine` points the other tables of a
+group at its main table (the first on the floor, `joinedToId`). The main
+table takes the group's order, so the one-open-order rule still holds; a
+joined table can't be seated on its own. Guests can't outnumber the seats:
+a single table's own, or a group's total (T1 + T4 + T7 = 10), when seating,
+changing the guest count or moving. Closing the bill makes the whole
+group need cleaning, and cleaning it splits it back into single tables.
+
+Each send is a numbered **round** (1 = e.g. starters,
+2 = the mains added later…), stored on the dish, so the bill and the kitchen
+see what was ordered when; the database requires a round exactly on sent
+dishes.
 
 ```bash
 curl localhost:4000/api/taim/staff

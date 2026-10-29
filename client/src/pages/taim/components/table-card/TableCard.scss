@@ -1,0 +1,148 @@
+// One table on the Floor – visuals only (layout is utility classes in the markup)
+.table-card {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 7rem;
+    padding: 0.85rem 1rem;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+
+    &:hover:not(:disabled) {
+        transform: translateY(-2px);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+
+    &:disabled {
+        cursor: default;
+    }
+
+    // Ready: green
+    &.is-free {
+        border-color: rgba(34, 160, 107, 0.6);
+
+        &:hover:not(:disabled) {
+            border-color: #22a06b;
+        }
+    }
+
+    // Needs cleaning: yellow
+    &.is-cleaning {
+        border-color: rgba(214, 158, 46, 0.75);
+        background: rgba(214, 158, 46, 0.08);
+
+        &:hover:not(:disabled) {
+            border-color: #d69e2e;
+        }
+    }
+
+    // Dining: grey (the neutral border), the accent on hover
+    &.is-dining {
+        background: var(--social-bg);
+
+        &:hover:not(:disabled) {
+            border-color: var(--accent);
+        }
+    }
+
+    // Picked while combining tables
+    &.is-selected {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px var(--accent-bg);
+    }
+
+    &__label {
+        font-size: 1.4rem;
+        font-weight: 700;
+        line-height: 1;
+        color: var(--text-h);
+
+        // "T1 + T4 + T7": a bit smaller; the seats wrap under it if needed
+        &--group {
+            font-size: 1.15rem;
+            line-height: 1.2;
+        }
+    }
+
+    &__seats {
+        font-size: 0.8rem;
+    }
+
+    &__meta {
+        font-size: 0.9rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__combined {
+        align-self: flex-start;
+        padding: 0.05rem 0.5rem;
+        border-radius: 999px;
+        background: var(--accent-bg);
+        color: var(--accent);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    &__free {
+        color: #22a06b;
+        font-weight: 700;
+    }
+
+    // How the food is coming along
+    &__progress {
+        font-size: 0.85rem;
+    }
+
+    &__not-sent {
+        color: var(--accent);
+        font-weight: 700;
+    }
+
+    &__kitchen {
+        color: #b7791f;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__served {
+        color: #22a06b;
+        font-weight: 700;
+    }
+
+    &__cleaning {
+        color: #d69e2e;
+        font-weight: 700;
+    }
+
+    // "1 came back": a small red tag
+    &__alert {
+        align-self: flex-start;
+        padding: 0.05rem 0.5rem;
+        border-radius: 999px;
+        background: rgba(229, 72, 77, 0.15);
+        color: #e5484d;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        transition: none;
+
+        &:hover:not(:disabled) {
+            transform: none;
+        }
+    }
+}

@@ -66,9 +66,16 @@ export const StaffProvider = ({ children }) => {
     /** May the picked person do this? e.g. can('editMenu') – the server checks too */
     const can = useCallback((right) => Boolean(session?.rights.includes(right)), [session])
 
+    /**
+     * May they change this order's dishes (add, send, move, remove)? A table
+     * needs addDishes, a take-out takeoutOrders – like the server.
+     * @param {'TABLE'|'TAKEOUT'} orderType
+     */
+    const canEditDishes = useCallback((orderType) => can(orderType === 'TAKEOUT' ? 'takeoutOrders' : 'addDishes'), [can])
+
     const value = useMemo(
-        () => ({ session, status, retry, pick, switchPerson, can }),
-        [session, status, retry, pick, switchPerson, can]
+        () => ({ session, status, retry, pick, switchPerson, can, canEditDishes }),
+        [session, status, retry, pick, switchPerson, can, canEditDishes]
     )
     return <StaffContext.Provider value={value}>{children}</StaffContext.Provider>
 }
