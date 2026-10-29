@@ -63,6 +63,20 @@ async function groupOf(tableId, db = prisma) {
 /** "T1 + T4 + T7" */
 const groupLabel = (members) => members.map((t) => t.label).join(' + ')
 
+/**
+ * No more guests than seats: a single table's own seats, or the total of
+ * combined tables (T1 + T4 + T7 = 10). Too many → 400 under "guests".
+ */
+async function checkGuestsFit(tableId, guests, db = prisma) {
+    const { members } = await groupOf(tableId, db)
+    const seats = members.reduce((sum, t) => sum + t.seats, 0)
+    if (guests > seats) {
+        throw new HttpError(400, 'Validation failed', {
+            fields: { guests: `${groupLabel(members)} has ${seats} seats: seat up to ${seats} guests` },
+        })
+    }
+}
+
 /** The database's one-open-order-per-table index said no → 409 */
 const tableTaken = (err) => {
     if (err.code === 'P2002') throw new HttpError(409, 'This table is already seated')
@@ -245,7 +259,10 @@ router.get('/orders/:id', validate({ params: idParams }), async (req, res) => {
 // or start a take-out { type: 'TAKEOUT', customerName }
 router.post('/orders', allow('seatTable'), validate({ body: orderCreate }), async (req, res) => {
     const data = req.valid.body
-    if (data.type === 'TABLE') await requireReadyTable(data.tableId)
+    if (data.type === 'TABLE') {
+        await requireReadyTable(data.tableId)
+        await checkGuestsFit(data.tableId, data.guests)
+    }
 
     // No "is it free?" check first: two hosts could both pass it at the same
     // moment. The database's one-open-order-per-table index decides instead.
@@ -271,6 +288,8 @@ router.patch('/orders/:id', allow('seatTable'), validate({ params: idParams, bod
         }
     }
     if (data.tableId !== undefined && data.tableId !== order.tableId) await requireReadyTable(data.tableId)
+    // The guests (new or current count) must fit the table (new or current)
+    await checkGuestsFit(data.tableId ?? order.tableId, data.guests ?? order.guests)
 
     await prisma.order.update({ where: { id }, data }).catch(tableTaken)
     res.json(await getOrder(id))

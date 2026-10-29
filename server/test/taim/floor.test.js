@@ -417,6 +417,14 @@ describe('combining tables (combineTables: Manager, Host)', () => {
         expect(floor.find((t) => t.label === 'T3').joinedToId).toBe(t1.id)
     })
 
+    it('no more guests than the combined seats', async () => {
+        await combine(host, t1, t3).expect(201) // 2 + 6 = 8 seats
+        const res = await seat(host, t1, 9).expect(400)
+        expect(res.body.fields).toEqual({ guests: 'T1 + T3 has 8 seats: seat up to 8 guests' })
+        const order = (await seat(host, t1, 8).expect(201)).body
+        await host.patch(`/api/taim/orders/${order.id}`).send({ guests: 9 }).expect(400)
+    })
+
     it('the group is seated through its main table, with seats for everyone', async () => {
         await combine(host, t1, t3).expect(201)
         const joinedSeat = await seat(host, t3, 6).expect(409)
@@ -477,6 +485,19 @@ describe('combining tables (combineTables: Manager, Host)', () => {
 
     it('the database refuses a table joined to itself', async () => {
         await expect(prisma.diningTable.update({ where: { id: t1.id }, data: { joinedToId: t1.id } })).rejects.toThrow(/dining_tables_not_joined_to_itself/)
+    })
+})
+
+describe('no more guests than seats', () => {
+    it('a single table: up to its own seats, when seating, changing guests or moving', async () => {
+        const res = await seat(host, t1, 3).expect(400) // T1 has 2 seats
+        expect(res.body.fields).toEqual({ guests: 'T1 has 2 seats: seat up to 2 guests' })
+
+        const order = (await seat(host, t2, 4).expect(201)).body // T2 has 4
+        await host.patch(`/api/taim/orders/${order.id}`).send({ guests: 5 }).expect(400)
+        const move = await host.patch(`/api/taim/orders/${order.id}`).send({ tableId: t1.id }).expect(400)
+        expect(move.body.fields).toEqual({ guests: 'T1 has 2 seats: seat up to 2 guests' })
+        await host.patch(`/api/taim/orders/${order.id}`).send({ tableId: t1.id, guests: 2 }).expect(200)
     })
 })
 

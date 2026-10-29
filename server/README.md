@@ -355,7 +355,9 @@ dish is still `NEW`.
 **Combined tables:** `POST /tables/combine` points the other tables of a
 group at its main table (the first on the floor, `joinedToId`). The main
 table takes the group's order, so the one-open-order rule still holds; a
-joined table can't be seated on its own. Closing the bill makes the whole
+joined table can't be seated on its own. Guests can't outnumber the seats:
+a single table's own, or a group's total (T1 + T4 + T7 = 10), when seating,
+changing the guest count or moving. Closing the bill makes the whole
 group need cleaning, and cleaning it splits it back into single tables.
 
 Each send is a numbered **round** (1 = e.g. starters,
