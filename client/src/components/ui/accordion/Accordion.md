@@ -107,6 +107,26 @@ const [openId, setOpenId] = useState('faq-1')
 
 ---
 
+## Nested accordions
+
+An `Accordion` can sit inside another item's panel (e.g. menu categories,
+each opening to its dishes). Each item opens only its own panel, so
+opening a parent doesn't open its children. Keep interactive controls
+(buttons, checkboxes) inside the panel, not in `title`: the header is
+itself a `<button>`.
+
+```jsx
+<Accordion>
+    <Accordion.Item title="Starters" defaultOpen>
+        <Accordion>
+            <Accordion.Item title="Hummus with pita">Tahini, olive oil, warm pita</Accordion.Item>
+        </Accordion>
+    </Accordion.Item>
+</Accordion>
+```
+
+---
+
 ## How It Works
 
 - The header is a real `<button>` with `aria-expanded` / `aria-controls`;

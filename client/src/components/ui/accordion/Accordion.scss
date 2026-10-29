@@ -45,7 +45,9 @@
         transition: transform 0.2s ease;
     }
 
-    &__item.is-open &__chevron {
+    // Child selectors (>): an open item turns only its own chevron and opens
+    // only its own panel, so accordions can be nested inside a panel
+    &__item.is-open > &__header > &__chevron {
         transform: rotate(90deg);
     }
 
@@ -65,7 +67,7 @@
         }
     }
 
-    &__item.is-open &__panel {
+    &__item.is-open > &__panel {
         grid-template-rows: 1fr;
     }
 
