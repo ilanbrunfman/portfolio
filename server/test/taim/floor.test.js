@@ -93,7 +93,7 @@ describe('adding dishes (addDishes: Manager, Waiter)', () => {
         const res = await addDishes(waiter, order.id, [{ menuItemId: hummus.id, quantity: 2 }, { menuItemId: shakshuka.id }]).expect(201)
 
         expect(res.body.items.map((i) => [i.name, i.price, i.status])).toEqual([
-            ['Hummus', 900, 'PREPARING'], ['Hummus', 900, 'PREPARING'], ['Shakshuka', 1400, 'PREPARING'],
+            ['Hummus', 900, 'NEW'], ['Hummus', 900, 'NEW'], ['Shakshuka', 1400, 'NEW'],
         ])
         expect(res.body.total).toBe(3200)
     })
@@ -126,15 +126,17 @@ describe('adding dishes (addDishes: Manager, Waiter)', () => {
         expect(res.body.error).toBe('This bill is already closed')
     })
 
-    it('removes a dish still being prepared, but not one already sent out', async () => {
+    it('removes a dish not sent yet or still being prepared, but not one already sent out', async () => {
         const order = (await seat(host).expect(201)).body
-        const { items } = (await addDishes(waiter, order.id, [{ menuItemId: hummus.id, quantity: 2 }]).expect(201)).body
-        await prisma.orderItem.update({ where: { id: items[1].id }, data: { status: 'SENT_OUT', sentOutAt: new Date() } })
+        const { items } = (await addDishes(waiter, order.id, [{ menuItemId: hummus.id, quantity: 3 }]).expect(201)).body
+        await prisma.orderItem.update({ where: { id: items[1].id }, data: { status: 'PREPARING' } })
+        await prisma.orderItem.update({ where: { id: items[2].id }, data: { status: 'SENT_OUT', sentOutAt: new Date() } })
 
-        const res = await waiter.delete(`/api/taim/orders/${order.id}/items/${items[0].id}`).expect(200)
+        await waiter.delete(`/api/taim/orders/${order.id}/items/${items[0].id}`).expect(200)
+        const res = await waiter.delete(`/api/taim/orders/${order.id}/items/${items[1].id}`).expect(200)
         expect(res.body.items).toHaveLength(1)
-        const sent = await waiter.delete(`/api/taim/orders/${order.id}/items/${items[1].id}`).expect(409)
-        expect(sent.body.error).toMatch(/still being prepared/)
+        const sent = await waiter.delete(`/api/taim/orders/${order.id}/items/${items[2].id}`).expect(409)
+        expect(sent.body.error).toBe('The kitchen already sent this dish out, so it stays on the bill')
         await waiter.delete(`/api/taim/orders/${order.id}/items/999`).expect(404)
     })
 })
@@ -143,6 +145,7 @@ describe('closing the bill (closeBill: Manager, Host, Waiter)', () => {
     it('closes the order and frees the table; the total leaves out dishes that came back', async () => {
         const order = (await seat(host).expect(201)).body
         const { items } = (await addDishes(waiter, order.id, [{ menuItemId: hummus.id }, { menuItemId: shakshuka.id }]).expect(201)).body
+        await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200)
         await prisma.orderItem.update({ where: { id: items[1].id }, data: { status: 'CAME_BACK' } })
 
         const res = await host.post(`/api/taim/orders/${order.id}/close`).expect(200)
@@ -282,5 +285,42 @@ describe('seat numbers on dishes', () => {
         const out = await addDishes(waiter, takeout.id, [{ menuItemId: hummus.id, seat: 1 }]).expect(400)
         expect(out.body.fields).toEqual({ items: 'Take-out dishes have no seat' })
         expect(await prisma.orderItem.count()).toBe(0)
+    })
+})
+
+describe('sending to the kitchen (addDishes: Manager, Waiter)', () => {
+    it('new dishes wait on the bill until the waiter sends them, all at once', async () => {
+        const order = (await seat(host, t2, 3).expect(201)).body
+        await addDishes(waiter, order.id, [{ menuItemId: hummus.id, seat: 1 }, { menuItemId: shakshuka.id, seat: 2 }]).expect(201)
+        const tables = (await host.get('/api/taim/tables').expect(200)).body
+        expect(tables[1].order).toMatchObject({ dishCount: 2, notSent: 2 })
+
+        const res = await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200)
+        expect(res.body.items.map((i) => i.status)).toEqual(['PREPARING', 'PREPARING'])
+        expect(res.body.items.every((i) => i.firedAt)).toBe(true)
+
+        // a second round: only the new dish is sent
+        await addDishes(waiter, order.id, [{ menuItemId: hummus.id, seat: 3 }]).expect(201)
+        const again = await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200)
+        expect(again.body.items.map((i) => i.status)).toEqual(['PREPARING', 'PREPARING', 'PREPARING'])
+    })
+
+    it('nothing new → 409; a Host cannot send', async () => {
+        const order = (await seat(host).expect(201)).body
+        const nothing = await waiter.post(`/api/taim/orders/${order.id}/send`).expect(409)
+        expect(nothing.body.error).toBe('Nothing new to send: add dishes first')
+        await addDishes(waiter, order.id, [{ menuItemId: hummus.id }]).expect(201)
+        await host.post(`/api/taim/orders/${order.id}/send`).expect(403)
+    })
+
+    it('the bill cannot be closed while dishes have not been sent', async () => {
+        const order = (await seat(host).expect(201)).body
+        await addDishes(waiter, order.id, [{ menuItemId: hummus.id, quantity: 2 }]).expect(201)
+        const res = await host.post(`/api/taim/orders/${order.id}/close`).expect(409)
+        expect(res.body.error).toBe("2 dishes haven't been sent to the kitchen: send or remove them first")
+        expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe('OPEN')
+
+        await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200)
+        await host.post(`/api/taim/orders/${order.id}/close`).expect(200)
     })
 })

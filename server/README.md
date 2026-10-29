@@ -296,7 +296,7 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | POST | `/api/taim/menu-items` | `{ categoryId, name, price, description?, hidden? }` | 201 + the dish, at the top of its category (409 if the name exists) |
 | PATCH | `/api/taim/menu-items/:id` | any of those fields | The updated dish; `{ hidden: true }` = sold out; a new `categoryId` puts it at the top there |
 | PUT | `/api/taim/categories/:id/dish-order` | `{ dishIds }`, top first | The category's dishes in their new order (400 unless the list is exactly that category's dishes) |
-| GET | `/api/taim/tables` | | Tables in floor order; `order` = the open order's summary (`guests`, `openedAt`, `dishCount`, `cameBack`, `total`) or `null` when free; `needsCleaning` after guests leave |
+| GET | `/api/taim/tables` | | Tables in floor order; `order` = the open order's summary (`guests`, `openedAt`, `dishCount`, `notSent`, `cameBack`, `total`) or `null` when free; `needsCleaning` after guests leave |
 | POST | `/api/taim/tables` | `{ label, seats }` | 201, added at the end of the floor (Manager; 409 if the label exists) |
 | PATCH | `/api/taim/tables/:id` | `{ label?, seats? }` | The updated table (Manager) |
 | POST | `/api/taim/tables/:id/clean` | | The table, ready again (409 while it still has guests) |
@@ -305,10 +305,11 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | POST | `/api/taim/orders` | `{ type: 'TABLE', tableId, guests }` or `{ type: 'TAKEOUT', customerName }` | 201 + the order (409 if the table is already seated or needs cleaning) |
 | PATCH | `/api/taim/orders/:id` | `{ tableId?, guests? }` | Fix a seating: move to another ready table and/or change guests (409 if fewer guests than a seat with dishes) |
 | DELETE | `/api/taim/orders/:id` | | 204, undo a seating or take-out; only while it has no dishes (409 otherwise) |
-| POST | `/api/taim/orders/:id/items` | `{ items: [{ menuItemId, quantity?, seat? }] }` | 201 + the order; one row per dish, price copied from the menu (409 if a dish is sold out or the bill is closed) |
+| POST | `/api/taim/orders/:id/items` | `{ items: [{ menuItemId, quantity?, seat? }] }` | 201 + the order; one row per dish (`NEW`, not sent yet), price copied from the menu (409 if a dish is sold out or the bill is closed) |
+| POST | `/api/taim/orders/:id/send` | | Send every dish not sent yet to the kitchen (`NEW` → `PREPARING`, `firedAt` set); 409 if there's nothing new |
 | PATCH | `/api/taim/orders/:id/items/:itemId` | `{ seat }` (a number, or `null` = shared) | The order with the dish moved to that seat; any time while the bill is open |
-| DELETE | `/api/taim/orders/:id/items/:itemId` | | The order without that dish; only while it's still `PREPARING` (409 otherwise) |
-| POST | `/api/taim/orders/:id/close` | | The closed order; the table now needs cleaning (409 if already closed) |
+| DELETE | `/api/taim/orders/:id/items/:itemId` | | The order without that dish; while it's `NEW` or `PREPARING` (409 once sent out) |
+| POST | `/api/taim/orders/:id/close` | | The closed order; the table now needs cleaning (409 if already closed, or while dishes haven't been sent) |
 
 `rights` and `screens` are the role's entries from `roles.js`, so the
 client can show only the screens that person may use.
@@ -340,6 +341,11 @@ transaction that closes the bill, cleared by `POST /tables/:id/clean`). A
 table that needs cleaning can't be seated. Each dish can carry a `seat`
 (1…guests, or `null` = shared) so the runner knows who gets what;
 take-outs have no seats.
+
+A dish's life: `NEW` (on the bill; the waiter can still change or remove
+it) → **Send to kitchen** → `PREPARING` → the kitchen sends it out →
+`SENT_OUT` → maybe `CAME_BACK` (step 6). A bill can't be closed while any
+dish is still `NEW`.
 
 ```bash
 curl localhost:4000/api/taim/staff

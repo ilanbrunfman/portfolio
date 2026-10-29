@@ -74,6 +74,7 @@ router.get('/tables', async (req, res) => {
                           guests: open.guests,
                           openedAt: open.openedAt,
                           dishCount: open.items.length,
+                          notSent: open.items.filter((item) => item.status === 'NEW').length,
                           cameBack: open.items.filter((item) => item.status === 'CAME_BACK').length,
                           total: billTotal(open.items),
                       }
@@ -191,10 +192,10 @@ router.post('/orders/:id/items', allow('addDishes'), validate({ params: idParams
         if (soldOut) throw new HttpError(409, `${soldOut.name} is sold out`)
 
         // One row per dish; the price is copied now, so a later price change
-        // never rewrites this bill
+        // never rewrites this bill. NEW = on the bill, not sent to the kitchen yet.
         await tx.orderItem.createMany({
             data: items.flatMap(({ menuItemId, quantity, seat }) =>
-                Array.from({ length: quantity }, () => ({ orderId: id, menuItemId, seat, price: byId.get(menuItemId).price }))
+                Array.from({ length: quantity }, () => ({ orderId: id, menuItemId, seat, price: byId.get(menuItemId).price, status: 'NEW' }))
             ),
         })
         return getOrder(id, tx)
@@ -214,14 +215,29 @@ router.patch('/orders/:id/items/:itemId', allow('addDishes'), validate({ params:
     res.json(await getOrder(id))
 })
 
-// DELETE /api/taim/orders/:id/items/:itemId – take back a dish added by
-// mistake, only while the kitchen is still preparing it
+// POST /api/taim/orders/:id/send – send every dish not sent yet to the
+// kitchen (NEW → PREPARING), all at once; more rounds can follow
+router.post('/orders/:id/send', allow('addDishes'), validate({ params: idParams }), async (req, res) => {
+    const { id } = req.valid.params
+    await requireOpenOrder(id)
+    const { count } = await prisma.orderItem.updateMany({
+        where: { orderId: id, status: 'NEW' },
+        data: { status: 'PREPARING', firedAt: new Date() },
+    })
+    if (count === 0) throw new HttpError(409, 'Nothing new to send: add dishes first')
+    res.json(await getOrder(id))
+})
+
+// DELETE /api/taim/orders/:id/items/:itemId – take back a dish: any time
+// before it's sent to the kitchen, or while the kitchen is preparing it
 router.delete('/orders/:id/items/:itemId', allow('addDishes'), validate({ params: orderItemParams }), async (req, res) => {
     const { id, itemId } = req.valid.params
     await requireOpenOrder(id)
     const item = await prisma.orderItem.findFirst({ where: { id: itemId, orderId: id } })
     if (!item) throw new HttpError(404, 'Dish not found on this order')
-    if (item.status !== 'PREPARING') throw new HttpError(409, 'Only a dish that is still being prepared can be removed')
+    if (item.status !== 'NEW' && item.status !== 'PREPARING') {
+        throw new HttpError(409, 'The kitchen already sent this dish out, so it stays on the bill')
+    }
     await prisma.orderItem.delete({ where: { id: itemId } })
     res.json(await getOrder(id))
 })
@@ -231,6 +247,11 @@ router.delete('/orders/:id/items/:itemId', allow('addDishes'), validate({ params
 router.post('/orders/:id/close', allow('closeBill'), validate({ params: idParams }), async (req, res) => {
     const { id } = req.valid.params
     await prisma.$transaction(async (tx) => {
+        // Guests don't pay for dishes the kitchen never got
+        const notSent = await tx.orderItem.count({ where: { orderId: id, status: 'NEW' } })
+        if (notSent > 0) {
+            throw new HttpError(409, `${notSent} ${notSent === 1 ? "dish hasn't" : "dishes haven't"} been sent to the kitchen: send or remove ${notSent === 1 ? 'it' : 'them'} first`)
+        }
         // Only an OPEN order changes; if it was already closed nothing is updated
         const { count } = await tx.order.updateMany({ where: { id, status: 'OPEN' }, data: { status: 'CLOSED', closedAt: new Date() } })
         if (count === 0) await requireOpenOrder(id, tx) // throws the right error: 404 or 409

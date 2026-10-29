@@ -96,9 +96,11 @@ enum OrderStatus {
   @@schema("taim")
 }
 
-// What happens to each dish: the kitchen moves it PREPARING → SENT_OUT
-// (step 5); SENT_OUT → CAME_BACK records a loss (step 6).
+// What happens to each dish: NEW (on the bill, not sent to the kitchen
+// yet) → the waiter sends it → PREPARING → the kitchen sends it out →
+// SENT_OUT (step 5); SENT_OUT → CAME_BACK records a loss (step 6).
 enum DishStatus {
+  NEW
   PREPARING
   SENT_OUT
   CAME_BACK
@@ -140,8 +142,9 @@ model OrderItem {
   menuItem   MenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
   price      Int // cents, copied when ordered
   seat       Int? // guest's seat number at the table; null = shared or take-out
-  status     DishStatus @default(PREPARING)
+  status     DishStatus // no default: every insert says NEW (or, in the seed, later)
   createdAt  DateTime   @default(now())
+  firedAt    DateTime? // when the waiter sent it to the kitchen
   sentOutAt  DateTime?
 
   @@index([orderId])

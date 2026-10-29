@@ -44,10 +44,11 @@ export const TABLES = [
 ]
 
 // Orders open right now: [table or take-out name, guests, opened by, minutes ago, dishes]
-// In a dish: " #2" = for seat 2 (none = shared), " ✓" = already sent out.
+// In a dish: " #2" = for seat 2 (none = shared), " ✓" = already sent out,
+// " ○" = on the bill but not sent to the kitchen yet.
 const OPEN_ORDERS = [
     ['T2', 3, 'Lior', 34, ['Hummus with pita ✓', 'Shakshuka #1', 'Sabich #2 ✓', 'Lemonana #3 ✓']],
-    ['T5', 6, 'Lior', 12, ['Kebab #1', 'Sabich #2', 'Falafel plate #3', 'Mint tea #4', 'Mint tea #5']],
+    ['T5', 6, 'Lior', 12, ['Kebab #1', 'Sabich #2', 'Falafel plate #3', 'Mint tea #4', 'Mint tea #5', 'Malabi #6 ○']],
     ['Maya', null, 'Dana', 9, ['Falafel plate', 'Hummus with pita']],
 ]
 
@@ -91,11 +92,14 @@ export async function seedTaim(prisma) {
                 items: {
                     create: dishes.map((entry) => {
                         const sent = entry.endsWith(' ✓')
-                        const [, name, seat] = entry.replace(' ✓', '').match(/^(.+?)(?: #(\d+))?$/)
+                        const notSent = entry.endsWith(' ○')
+                        const [, name, seat] = entry.replace(/ [✓○]$/, '').match(/^(.+?)(?: #(\d+))?$/)
                         const { id, price } = dish[name]
                         return {
-                            menuItemId: id, price, seat: seat ? Number(seat) : null,
-                            status: sent ? 'SENT_OUT' : 'PREPARING', createdAt: openedAt, sentOutAt: sent ? new Date() : null,
+                            menuItemId: id, price, seat: seat ? Number(seat) : null, createdAt: openedAt,
+                            status: notSent ? 'NEW' : sent ? 'SENT_OUT' : 'PREPARING',
+                            firedAt: notSent ? null : openedAt,
+                            sentOutAt: sent ? new Date() : null,
                         }
                     }),
                 },
