@@ -24,10 +24,11 @@ import './Floor.scss'
  *   needs cleaning → "Mark as clean" (cleanTable)
  *   dining table   → its order (addDishes: Waiter, Manager) or its bill (Host),
  *                    where a seating mistake can be fixed (move, undo)
+ *   take-out       → its order (takeoutOrders: Host too, who takes phone orders)
  */
 const Floor = () => {
     const floor = useFloor()
-    const { can } = useStaff()
+    const { can, canEditDishes } = useStaff()
     const navigate = useNavigate()
     const now = useNow()
     // What the modal shows: { kind: 'seat' | 'clean', table } | { kind: 'takeout' } | { kind: 'table' } | { kind: 'bill', orderId }
@@ -35,17 +36,19 @@ const Floor = () => {
     const close = () => setDialog(null)
 
     // After seating: a Waiter or Manager takes the order straight away
+    // After seating or starting a take-out: whoever can take that order goes
+    // straight to it (a Host seating a table stays on the floor)
     const afterSeat = (order) => {
-        if (can('addDishes')) navigate(`/taim/order/${order.id}`)
+        if (canEditDishes(order.type)) navigate(`/taim/order/${order.id}`)
     }
 
-    const openOrder = (orderId) => {
-        if (can('addDishes')) navigate(`/taim/order/${orderId}`)
+    const openOrder = (orderId, type) => {
+        if (canEditDishes(type)) navigate(`/taim/order/${orderId}`)
         else setDialog({ kind: 'bill', orderId })
     }
 
     const handleTable = (table) => {
-        if (table.order) openOrder(table.order.id)
+        if (table.order) openOrder(table.order.id, 'TABLE')
         else if (table.needsCleaning) setDialog({ kind: 'clean', table })
         else if (can('seatTable')) setDialog({ kind: 'seat', table })
     }
@@ -109,7 +112,7 @@ const Floor = () => {
                         <ul className="floor__takeout-list">
                             {floor.takeouts.map((order) => (
                                 <li key={order.id}>
-                                    <button type="button" className="floor__takeout d-flex justify-between gap-0-5" onClick={() => openOrder(order.id)}>
+                                    <button type="button" className="floor__takeout d-flex justify-between gap-0-5" onClick={() => openOrder(order.id, 'TAKEOUT')}>
                                         <span className="d-flex flex-column">
                                             <strong>{order.customerName}</strong>
                                             <span className="form__hint">

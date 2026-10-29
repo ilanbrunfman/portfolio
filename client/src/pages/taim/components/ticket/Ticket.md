@@ -37,8 +37,8 @@ from `orderTitle(order)` in `utils/orders.js`.
 ```jsx
 <Ticket
     order={order}
-    onEditItem={can('addDishes') ? openEditor : undefined}
-    onSend={can('addDishes') ? send : undefined}
+    onEditItem={canEditDishes(order.type) ? openEditor : undefined}
+    onSend={canEditDishes(order.type) ? send : undefined}
     onClose={can('closeBill') ? close : undefined}
 />
 ```

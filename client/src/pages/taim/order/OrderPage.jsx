@@ -29,7 +29,7 @@ import './Order.scss'
 const OrderPage = () => {
     const orderId = Number(useParams().orderId)
     const navigate = useNavigate()
-    const { can } = useStaff()
+    const { can, canEditDishes } = useStaff()
     const { order, error, addDish, moveDish, removeDish, send, close, update, undo } = useOrder(orderId)
     const menu = useMenu()
     const [category, setCategory] = useState(null) // null = the first one
@@ -51,6 +51,8 @@ const OrderPage = () => {
     const categories = menu.categories.filter((c) => c.items.length > 0)
     const activeId = category ?? String(categories[0]?.id ?? '')
     const isOpen = order.status === 'OPEN'
+    // Waiter/Manager on any order; the Host on take-outs only (read-only bill on a table)
+    const canEdit = canEditDishes(order.type)
     const atTable = order.type === 'TABLE'
     // The picked seat, unless guests were reduced below it
     const seatValue = atTable && seat !== 'shared' && Number(seat) > order.guests ? '1' : seat
@@ -89,7 +91,7 @@ const OrderPage = () => {
             </div>
 
             <div className="order-page__layout d-flex flex-wrap align-items-start gap-2">
-                {isOpen && can('addDishes') && (
+                {isOpen && canEdit && (
                     <section className="order-page__menu d-flex flex-column gap-1" aria-label="Menu">
                         {atTable && (
                             <RadioGroup
@@ -136,8 +138,8 @@ const OrderPage = () => {
                 <Ticket
                     order={order}
                     className="order-page__ticket"
-                    onEditItem={can('addDishes') ? setEditing : undefined}
-                    onSend={can('addDishes') ? handleSend : undefined}
+                    onEditItem={canEdit ? setEditing : undefined}
+                    onSend={canEdit ? handleSend : undefined}
                     onClose={can('closeBill') ? async () => { await close(); navigate('/taim/floor') } : undefined}
                 />
             </div>
