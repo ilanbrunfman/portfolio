@@ -4,8 +4,8 @@ import { request, resetDb, createAccount, prisma } from './helpers.js'
 
 beforeEach(resetDb)
 
-const balance = async (id) => (await request.get(`/api/accounts/${id}`).expect(200)).body.balance
-const transfer = (body) => request.post('/api/transfers').send({ date: '2026-10-01', ...body })
+const balance = async (id) => (await request.get(`/api/bank/accounts/${id}`).expect(200)).body.balance
+const transfer = (body) => request.post('/api/bank/transfers').send({ date: '2026-10-01', ...body })
 
 describe('transfers', () => {
     it('moves money: out of one account, into the other', async () => {
@@ -18,7 +18,7 @@ describe('transfers', () => {
         expect(await balance(b.id)).toBe(25000)
 
         // Both rows share the transferId and point at each other in the ledger
-        const ledger = (await request.get(`/api/accounts/${a.id}/transactions`).expect(200)).body.items
+        const ledger = (await request.get(`/api/bank/accounts/${a.id}/transactions`).expect(200)).body.items
         expect(ledger[0]).toMatchObject({ amount: -25000, transferId: res.body.transferId, counterpartAccountId: b.id })
     })
 
@@ -28,10 +28,10 @@ describe('transfers', () => {
         const c = await createAccount({ name: 'C' })
         const { body } = await transfer({ fromAccountId: a.id, toAccountId: b.id, amount: 25000 }).expect(201)
 
-        await request.patch(`/api/transfers/${body.transferId}`).send({ amount: 30000, toAccountId: c.id }).expect(200)
+        await request.patch(`/api/bank/transfers/${body.transferId}`).send({ amount: 30000, toAccountId: c.id }).expect(200)
         expect([await balance(a.id), await balance(b.id), await balance(c.id)]).toEqual([70000, 0, 30000])
 
-        const fetched = await request.get(`/api/transfers/${body.transferId}`).expect(200)
+        const fetched = await request.get(`/api/bank/transfers/${body.transferId}`).expect(200)
         expect(fetched.body).toMatchObject({ fromAccountId: a.id, toAccountId: c.id, amount: 30000 })
     })
 
@@ -41,14 +41,14 @@ describe('transfers', () => {
         const first = (await transfer({ fromAccountId: a.id, toAccountId: b.id, amount: 100 }).expect(201)).body
         const second = (await transfer({ fromAccountId: a.id, toAccountId: b.id, amount: 200 }).expect(201)).body
 
-        await request.delete(`/api/transfers/${first.transferId}`).expect(204)
-        // deleting one side through /api/transactions removes the other side too
+        await request.delete(`/api/bank/transfers/${first.transferId}`).expect(204)
+        // deleting one side through /api/bank/transactions removes the other side too
         const side = await prisma.transaction.findFirst({ where: { transferId: second.transferId } })
-        await request.delete(`/api/transactions/${side.id}`).expect(204)
+        await request.delete(`/api/bank/transactions/${side.id}`).expect(204)
 
         expect(await prisma.transaction.count()).toBe(0)
         expect(await balance(a.id)).toBe(100000)
-        await request.get(`/api/transfers/${first.transferId}`).expect(404)
+        await request.get(`/api/bank/transfers/${first.transferId}`).expect(404)
     })
 
     it('rejects same account, unknown account (400) and archived account (409)', async () => {
@@ -58,7 +58,7 @@ describe('transfers', () => {
         await transfer({ fromAccountId: a.id, toAccountId: 999, amount: 1 })
             .expect(400).expect((res) => expect(res.body.fields).toEqual({ toAccountId: 'Unknown account' }))
 
-        await request.patch(`/api/accounts/${b.id}`).send({ archived: true }).expect(200)
+        await request.patch(`/api/bank/accounts/${b.id}`).send({ archived: true }).expect(200)
         await transfer({ fromAccountId: a.id, toAccountId: b.id, amount: 1 }).expect(409)
         expect(await prisma.transaction.count()).toBe(0) // nothing half-written
     })
@@ -80,7 +80,7 @@ describe('transfers', () => {
     })
 
     it('validates the transfer id', async () => {
-        await request.get('/api/transfers/not-a-uuid').expect(400)
-        await request.get(`/api/transfers/${randomUUID()}`).expect(404)
+        await request.get('/api/bank/transfers/not-a-uuid').expect(400)
+        await request.get(`/api/bank/transfers/${randomUUID()}`).expect(404)
     })
 })

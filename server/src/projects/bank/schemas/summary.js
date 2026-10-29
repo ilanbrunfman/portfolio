@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-// GET /api/summary?month=2026-10 (defaults to the current month, UTC)
+// GET /api/bank/summary?month=2026-10 (defaults to the current month, UTC)
 export const summaryQuery = z.object({
     month: z
         .string()

@@ -19,9 +19,9 @@ if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1)
 app.use(express.json())
 app.use(cookieParser())
 
-// All routes live under /api
+// All routes live under /api; each project gets its own prefix
 app.use('/api/health', healthRouter)
-app.use('/api', bank)
+app.use('/api/bank', bank)
 
 app.use(notFound)
 app.use(errorHandler)

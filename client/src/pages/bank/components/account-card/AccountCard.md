@@ -15,7 +15,7 @@ archived accounts are faded.
 
 | Prop      | Type                  | Description |
 |-----------|-----------------------|-------------|
-| `account` | `object`              | An account from `GET /api/accounts` (`name`, `type`, `color`, `balance`, `transactionCount`, `archived`). |
+| `account` | `object`              | An account from `GET /api/bank/accounts` (`name`, `type`, `color`, `balance`, `transactionCount`, `archived`). |
 | `onEdit`  | `(account) => void`   | Optional. Shows an **Edit** button that calls it. |
 
 The color strip uses the CSS variable `--account-color`, set inline from

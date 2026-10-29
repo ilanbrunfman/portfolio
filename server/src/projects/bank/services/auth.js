@@ -8,12 +8,12 @@ const SESSION_DAYS = 30
 // SHA-256 hash. Looking a session up = hash the cookie, find that row.
 const hashToken = (token) => createHash('sha256').update(token).digest('hex')
 
-/** Cookie settings: not readable by page scripts, sent only to /api, HTTPS-only in production */
+/** Cookie settings: not readable by page scripts, sent only to the bank API, HTTPS-only in production */
 export const cookieOptions = (expires) => ({
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
-    path: '/api',
+    path: '/api/bank',
     ...(expires && { expires }),
 })
 

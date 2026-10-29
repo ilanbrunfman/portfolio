@@ -37,7 +37,7 @@ async function withBalances(accounts) {
 // and changes their own accounts. Someone else's account → 404, as if it
 // didn't exist.
 
-// GET /api/accounts – active accounts (add ?includeArchived=true for all)
+// GET /api/bank/accounts – active accounts (add ?includeArchived=true for all)
 router.get('/', validate({ query: accountListQuery }), async (req, res) => {
     const { includeArchived } = req.valid.query
     const accounts = await prisma.account.findMany({
@@ -47,7 +47,7 @@ router.get('/', validate({ query: accountListQuery }), async (req, res) => {
     res.json(await withBalances(accounts))
 })
 
-// GET /api/accounts/:id
+// GET /api/bank/accounts/:id
 router.get('/:id', validate({ params: idParams }), async (req, res) => {
     const account = await prisma.account.findFirst({ where: { id: req.valid.params.id, userId: req.user.id } })
     if (!account) throw new HttpError(404, 'Account not found')
@@ -55,14 +55,14 @@ router.get('/:id', validate({ params: idParams }), async (req, res) => {
     res.json(result)
 })
 
-// POST /api/accounts → 201 Created
+// POST /api/bank/accounts → 201 Created
 router.post('/', validate({ body: accountCreate }), async (req, res) => {
     const account = await prisma.account.create({ data: { ...req.valid.body, userId: req.user.id } })
     const [result] = await withBalances([account])
     res.status(201).json(result)
 })
 
-// PATCH /api/accounts/:id – change some fields; { archived: true } hides it
+// PATCH /api/bank/accounts/:id – change some fields; { archived: true } hides it
 router.patch('/:id', validate({ params: idParams, body: accountUpdate }), async (req, res) => {
     const account = await prisma.account.update({
         where: { id: req.valid.params.id, userId: req.user.id },
@@ -72,7 +72,7 @@ router.patch('/:id', validate({ params: idParams, body: accountUpdate }), async 
     res.json(result)
 })
 
-// GET /api/accounts/:id/transactions – newest first, with runningBalance,
+// GET /api/bank/accounts/:id/transactions – newest first, with runningBalance,
 // one page at a time (?limit=50&cursor=<nextCursor from the previous page>)
 router.get('/:id/transactions', validate({ params: idParams, query: ledgerQuery }), async (req, res) => {
     const { id } = req.valid.params

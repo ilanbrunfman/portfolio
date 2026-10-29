@@ -11,7 +11,7 @@ const fields = {
     color: z.string().regex(/^#[0-9a-f]{6}$/i, 'Use a hex color like #aa3bff').nullable(),
 }
 
-// POST /api/accounts – name required, the rest has defaults
+// POST /api/bank/accounts – name required, the rest has defaults
 export const accountCreate = z.object({
     name: fields.name,
     type: fields.type.default('CHECKING'),
@@ -19,14 +19,14 @@ export const accountCreate = z.object({
     color: fields.color.optional(),
 })
 
-// PATCH /api/accounts/:id – any subset of fields (no defaults, so missing
+// PATCH /api/bank/accounts/:id – any subset of fields (no defaults, so missing
 // fields are left unchanged), plus archived
 export const accountUpdate = z
     .object({ ...fields, archived: z.boolean({ error: 'Must be true or false' }) })
     .partial()
     .refine((data) => Object.keys(data).length > 0, 'Nothing to update')
 
-// GET /api/accounts?includeArchived=true
+// GET /api/bank/accounts?includeArchived=true
 export const accountListQuery = z.object({
     includeArchived: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
 })

@@ -19,7 +19,7 @@ async function logIn(res, user) {
 // wrong password (the timing doesn't reveal which emails are registered)
 const DUMMY_HASH = await hashPassword('not-a-real-password')
 
-// POST /api/auth/signup → 201, logged in
+// POST /api/bank/auth/signup → 201, logged in
 router.post('/signup', validate({ body: credentials }), async (req, res) => {
     const { email, password } = req.valid.body
     const existing = await prisma.user.findUnique({ where: { email } })
@@ -30,7 +30,7 @@ router.post('/signup', validate({ body: credentials }), async (req, res) => {
     res.status(201).json({ user: toUserJson(user) })
 })
 
-// POST /api/auth/login
+// POST /api/bank/auth/login
 router.post('/login', validate({ body: credentials }), async (req, res) => {
     const { email, password } = req.valid.body
     const user = await prisma.user.findUnique({ where: { email } })
@@ -42,14 +42,14 @@ router.post('/login', validate({ body: credentials }), async (req, res) => {
     res.json({ user: toUserJson(user) })
 })
 
-// POST /api/auth/logout → 204
+// POST /api/bank/auth/logout → 204
 router.post('/logout', async (req, res) => {
     await deleteSession(req.cookies?.[SESSION_COOKIE])
     res.clearCookie(SESSION_COOKIE, cookieOptions())
     res.status(204).end()
 })
 
-// GET /api/auth/me – who's logged in (401 if nobody)
+// GET /api/bank/auth/me – who's logged in (401 if nobody)
 router.get('/me', requireAuth, (req, res) => {
     res.json({ user: toUserJson(req.user) })
 })

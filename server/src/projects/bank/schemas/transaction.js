@@ -3,7 +3,7 @@ import { z } from 'zod'
 const isDay = (value) => z.iso.date().safeParse(value).success
 const isId = (value) => Number.isInteger(value) && value > 0
 
-// GET /api/accounts/:id/transactions
+// GET /api/bank/accounts/:id/transactions
 //   ?limit=50&cursor=2026-10-01_123            paging
 //   &q=coffee&type=expense&categoryId=6        filters (all optional)
 //   &from=2026-10-01&to=2026-10-31
@@ -56,7 +56,7 @@ const fields = {
         .nullable(),
 }
 
-// POST /api/transactions
+// POST /api/bank/transactions
 export const transactionCreate = z.object({
     accountId: fields.accountId,
     date: fields.date,
@@ -66,7 +66,7 @@ export const transactionCreate = z.object({
     note: fields.note.optional(),
 })
 
-// PATCH /api/transactions/:id – any subset (moving to another account isn't supported)
+// PATCH /api/bank/transactions/:id – any subset (moving to another account isn't supported)
 export const transactionUpdate = z
     .object({
         date: fields.date,
@@ -100,7 +100,7 @@ const differentAccountsCheck = {
     when: ({ value }) => isId(value?.fromAccountId) && isId(value?.toAccountId),
 }
 
-// POST /api/transfers
+// POST /api/bank/transfers
 export const transferCreate = z
     .object({
         ...transferFields,
@@ -109,7 +109,7 @@ export const transferCreate = z
     })
     .refine(differentAccounts, differentAccountsCheck)
 
-// PATCH /api/transfers/:transferId – any subset
+// PATCH /api/bank/transfers/:transferId – any subset
 export const transferUpdate = z
     .object(transferFields)
     .partial()

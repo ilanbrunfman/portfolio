@@ -1,6 +1,6 @@
 # MonthSummary
 
-One month at a glance, from `GET /api/summary?month=YYYY-MM`:
+One month at a glance, from `GET /api/bank/summary?month=YYYY-MM`:
 
 - **Income**, **Spent** and **Net** for the month.
 - **Last 6 months**: income (green) vs spending (red) bars. Click a month to

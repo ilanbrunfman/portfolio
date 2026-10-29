@@ -7,22 +7,22 @@ import { createTransfer, getTransfer, updateTransfer, deleteTransfer } from '../
 // The logic lives in services/transfers.js; these routes only validate and respond.
 const router = Router()
 
-// POST /api/transfers → 201
+// POST /api/bank/transfers → 201
 router.post('/', validate({ body: transferCreate }), async (req, res) => {
     res.status(201).json(await createTransfer(req.user.id, req.valid.body))
 })
 
-// GET /api/transfers/:transferId
+// GET /api/bank/transfers/:transferId
 router.get('/:transferId', validate({ params: transferParams }), async (req, res) => {
     res.json(await getTransfer(req.user.id, req.valid.params.transferId))
 })
 
-// PATCH /api/transfers/:transferId
+// PATCH /api/bank/transfers/:transferId
 router.patch('/:transferId', validate({ params: transferParams, body: transferUpdate }), async (req, res) => {
     res.json(await updateTransfer(req.user.id, req.valid.params.transferId, req.valid.body))
 })
 
-// DELETE /api/transfers/:transferId → 204
+// DELETE /api/bank/transfers/:transferId → 204
 router.delete('/:transferId', validate({ params: transferParams }), async (req, res) => {
     await deleteTransfer(req.user.id, req.valid.params.transferId)
     res.status(204).end()

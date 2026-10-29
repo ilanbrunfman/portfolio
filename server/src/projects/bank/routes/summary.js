@@ -3,7 +3,7 @@ import { validate } from '../../../shared/middleware/validate.js'
 import { summaryQuery } from '../schemas/summary.js'
 import { getSummary } from '../services/summary.js'
 
-// GET /api/summary?month=YYYY-MM – income, spending, by category, 6-month trend
+// GET /api/bank/summary?month=YYYY-MM – income, spending, by category, 6-month trend
 const router = Router()
 
 router.get('/', validate({ query: summaryQuery }), async (req, res) => {

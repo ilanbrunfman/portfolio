@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-// POST /api/auth/signup and /api/auth/login
+// POST /api/bank/auth/signup and /api/bank/auth/login
 export const credentials = z.object({
     email: z
         .string({ error: 'Email is required' })

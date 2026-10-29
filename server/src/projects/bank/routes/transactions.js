@@ -30,7 +30,7 @@ async function findTransaction(id, userId) {
     return transaction
 }
 
-// POST /api/transactions → 201 Created
+// POST /api/bank/transactions → 201 Created
 router.post('/', validate({ body: transactionCreate }), async (req, res) => {
     const body = req.valid.body
 
@@ -44,12 +44,12 @@ router.post('/', validate({ body: transactionCreate }), async (req, res) => {
     res.status(201).json(toTransactionJson(created))
 })
 
-// PATCH /api/transactions/:id
+// PATCH /api/bank/transactions/:id
 router.patch('/:id', validate({ params: idParams, body: transactionUpdate }), async (req, res) => {
     const { id } = req.valid.params
     const existing = await findTransaction(id, req.user.id)
     if (existing.transferId) {
-        throw new HttpError(409, 'This is one side of a transfer. Edit it with PATCH /api/transfers/:transferId.')
+        throw new HttpError(409, 'This is one side of a transfer. Edit it with PATCH /api/bank/transfers/:transferId.')
     }
     await assertCategory(req.valid.body.categoryId)
 
@@ -61,7 +61,7 @@ router.patch('/:id', validate({ params: idParams, body: transactionUpdate }), as
     res.json(toTransactionJson(updated))
 })
 
-// DELETE /api/transactions/:id → 204 No Content
+// DELETE /api/bank/transactions/:id → 204 No Content
 // A transfer is two rows; deleting either side deletes both in one statement,
 // so the database never holds half a transfer.
 router.delete('/:id', validate({ params: idParams }), async (req, res) => {

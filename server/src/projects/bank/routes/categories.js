@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { prisma } from '../../../shared/db.js'
 
-// GET /api/categories – all categories, income first, then by name
+// GET /api/bank/categories – all categories, income first, then by name
 const router = Router()
 
 router.get('/', async (req, res) => {
