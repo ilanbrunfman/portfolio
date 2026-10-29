@@ -12,14 +12,34 @@
         color: var(--text-h);
     }
 
-    // "Seat 1", "Shared": a small heading over that guest's dishes
-    &__seat {
+    // "Round 1 · sent 20:05", "Not sent yet": a small heading over each send
+    &__round {
         margin: 0.25rem 0 0;
         font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 0.06em;
         text-transform: uppercase;
         color: var(--accent);
+    }
+
+    &__round-time {
+        color: var(--text);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: none;
+        font-variant-numeric: tabular-nums;
+    }
+
+    // "Seat 2" / "Shared" after the dish name
+    &__seat-tag {
+        margin-left: 0.5rem;
+        padding: 0.05rem 0.45rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--text);
+        font-size: 0.72rem;
+        font-weight: 600;
+        vertical-align: 0.1em;
     }
 
     &__lines {

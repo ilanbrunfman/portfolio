@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Button from '@/components/ui/button/Button'
 import { formatMoney } from '@/pages/taim/utils/money'
 import { useNow, minutesSince } from '@/pages/taim/hooks/useNow'
-import { orderTitle, groupBySeat } from '@/pages/taim/utils/orders'
+import { orderTitle, groupByRound, seatLabel, clockTime } from '@/pages/taim/utils/orders'
 import './Ticket.scss'
 
 const STATUS = {
@@ -19,9 +19,11 @@ const statusText = (item, now) =>
         : STATUS[item.status].label
 
 /**
- * The bill of one order: its dishes (grouped by seat at a table, so the
- * runner knows who gets what) with where each one is – not sent yet, in
- * the kitchen (and for how long), served, came back – and the total.
+ * The bill of one order: its dishes in the order they were sent to the
+ * kitchen – Round 1 (e.g. starters, sent 20:05), Round 2 (the mains added
+ * later)…, then the ones not sent yet – each with its seat (at a table) and
+ * where it is: not sent, in the kitchen (and for how long), served, came
+ * back. Then the total.
  * When allowed: "Send to kitchen (n)" for the dishes not sent yet, and
  * "Close bill" (refused while dishes haven't been sent). Used on the Order
  * screen and in the Floor's bill dialog.
@@ -68,15 +70,21 @@ const Ticket = ({ order, onEditItem, onSend, onClose, className = '' }) => {
             {order.items.length === 0 ? (
                 <p className="form__hint">No dishes yet.</p>
             ) : (
-                groupBySeat(order).map((group) => (
+                groupByRound(order).map((group) => (
                     <div key={group.key} className="ticket__group">
-                        {group.title && <h4 className="ticket__seat">{group.title}</h4>}
+                        <h4 className="ticket__round d-flex justify-between gap-0-5">
+                            <span>{group.title}</span>
+                            {group.sentAt && <span className="ticket__round-time">sent {clockTime(group.sentAt)}</span>}
+                        </h4>
                         <ul className="ticket__lines">
                             {group.items.map((item) => {
                                 const content = (
                                     <>
                                         <span className="ticket__dish d-flex flex-column">
-                                            <span className="ticket__name">{item.name}</span>
+                                            <span className="ticket__name">
+                                                {item.name}
+                                                {order.type === 'TABLE' && <span className="ticket__seat-tag">{seatLabel(item.seat)}</span>}
+                                            </span>
                                             <span className={`ticket__status ${STATUS[item.status].className}`}>{statusText(item, now)}</span>
                                         </span>
                                         <span className="ticket__price">{formatMoney(item.price)}</span>
@@ -90,7 +98,7 @@ const Ticket = ({ order, onEditItem, onSend, onClose, className = '' }) => {
                                                 type="button"
                                                 className="ticket__line-button d-flex align-items-start gap-0-5"
                                                 onClick={() => onEditItem(item)}
-                                                aria-label={`${item.name}, ${statusText(item, now)}, ${formatMoney(item.price)}. Edit`}
+                                                aria-label={`${item.name}${order.type === 'TABLE' ? `, ${seatLabel(item.seat)}` : ''}, ${statusText(item, now)}, ${formatMoney(item.price)}. Edit`}
                                             >
                                                 {content}
                                             </button>

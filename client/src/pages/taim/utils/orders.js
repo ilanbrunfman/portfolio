@@ -50,16 +50,27 @@ export const seatOptions = (order) =>
 export const seatFromValue = (value) => (value === 'shared' || value === null ? null : Number(value))
 export const valueFromSeat = (seat) => (seat === null ? 'shared' : String(seat))
 
+/** "20:05" – the clock time of a date, in the viewer's time zone */
+export const clockTime = (date) => new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
+/** "Seat 2" or "Shared" */
+export const seatLabel = (seat) => (seat === null ? 'Shared' : `Seat ${seat}`)
+
 /**
- * A table order's dishes grouped by seat, for the runner: Seat 1, Seat 2…
- * then Shared (dishes with no seat). A take-out is one group with no title.
- * @returns {{ key: string, title: string|null, items: object[] }[]}
+ * An order's dishes grouped the way they were ordered: Round 1, Round 2…
+ * (each "Send to kitchen", oldest first, with the time it was sent), then
+ * the dishes not sent yet. Inside a round, dishes are ordered by seat
+ * (shared last), so the runner can still serve seat by seat.
+ * @returns {{ key: string, title: string, sentAt: string|null, items: object[] }[]}
  */
-export function groupBySeat(order) {
-    if (order.type !== 'TABLE') return [{ key: 'all', title: null, items: order.items }]
-    const seats = [...new Set(order.items.map((item) => item.seat).filter((seat) => seat !== null))].sort((a, b) => a - b)
-    const groups = seats.map((seat) => ({ key: `seat-${seat}`, title: `Seat ${seat}`, items: order.items.filter((item) => item.seat === seat) }))
-    const shared = order.items.filter((item) => item.seat === null)
-    if (shared.length > 0) groups.push({ key: 'shared', title: 'Shared', items: shared })
+export function groupByRound(order) {
+    const bySeat = (a, b) => (a.seat ?? Infinity) - (b.seat ?? Infinity) || a.id - b.id
+    const rounds = [...new Set(order.items.map((item) => item.round).filter((round) => round !== null))].sort((a, b) => a - b)
+    const groups = rounds.map((round) => {
+        const items = order.items.filter((item) => item.round === round).sort(bySeat)
+        return { key: `round-${round}`, title: `Round ${round}`, sentAt: items[0].firedAt, items }
+    })
+    const notSent = order.items.filter((item) => item.round === null).sort(bySeat)
+    if (notSent.length > 0) groups.push({ key: 'not-sent', title: 'Not sent yet', sentAt: null, items: notSent })
     return groups
 }

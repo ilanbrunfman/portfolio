@@ -12,9 +12,12 @@ Where a dish is:
 - **Served**: the kitchen sent it out.
 - **Came back**: crossed out, not on the bill (it counts as money lost).
 
-At a table the dishes are grouped by seat (**Seat 1**, **Seat 2**, …, then
-**Shared**), so whoever brings the food knows who gets what. A take-out is
-one list.
+The dishes are grouped the way they were ordered: **Round 1 · sent 20:05**
+(e.g. the starters), **Round 2 · sent 20:25** (the mains added later), …
+and **Not sent yet** last. At a table every dish carries a seat tag
+(**Seat 2**, **Shared**), and inside a round dishes go seat by seat, so
+whoever brings the food knows who gets what. Rounds come from
+`groupByRound(order)` in `utils/orders.js`.
 
 Buttons, when the matching prop is given:
 
