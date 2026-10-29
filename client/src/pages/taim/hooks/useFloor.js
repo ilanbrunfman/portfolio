@@ -66,5 +66,17 @@ export function useFloor() {
         reload()
     }, [reload])
 
-    return { tables, takeouts, error, reload, seatTable, startTakeout, createTable, closeOrder, cleanTable, markNeedsCleaning }
+    /** Combine free tables (ids) into one group for a big party */
+    const combineTables = useCallback(async (tableIds) => {
+        await api('/tables/combine', { method: 'POST', body: { tableIds } })
+        reload()
+    }, [reload])
+
+    /** Split a group of combined tables back into single tables */
+    const splitTables = useCallback(async (tableId) => {
+        await api(`/tables/${tableId}/split`, { method: 'POST' })
+        reload()
+    }, [reload])
+
+    return { tables, takeouts, error, reload, seatTable, startTakeout, createTable, closeOrder, cleanTable, markNeedsCleaning, combineTables, splitTables }
 }

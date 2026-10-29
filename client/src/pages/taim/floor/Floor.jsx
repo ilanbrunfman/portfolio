@@ -25,6 +25,9 @@ import './Floor.scss'
  *   dining table   → its order (addDishes: Waiter, Manager) or its bill (Host),
  *                    where a seating mistake can be fixed (move, undo)
  *   take-out       → its order (takeoutOrders: Host too, who takes phone orders)
+ * "Combine tables" (Host, Manager): pick free, clean tables, then "Set
+ * tables" – they show as one card ("T1 + T4 + T7 · 10 seats") and are
+ * seated and ordered for as one.
  */
 const Floor = () => {
     const floor = useFloor()
@@ -34,8 +37,11 @@ const Floor = () => {
     // What the modal shows: { kind: 'seat' | 'clean', table } | { kind: 'takeout' } | { kind: 'table' } | { kind: 'bill', orderId }
     const [dialog, setDialog] = useState(null)
     const close = () => setDialog(null)
+    // Combining tables: null = not choosing; otherwise the ids picked so far
+    const [picked, setPicked] = useState(null)
+    const [combineError, setCombineError] = useState('')
+    const [combining, setCombining] = useState(false)
 
-    // After seating: a Waiter or Manager takes the order straight away
     // After seating or starting a take-out: whoever can take that order goes
     // straight to it (a Host seating a table stays on the floor)
     const afterSeat = (order) => {
@@ -47,7 +53,27 @@ const Floor = () => {
         else setDialog({ kind: 'bill', orderId })
     }
 
+    // Only free, clean, single tables can be combined
+    const canPick = (table) => !table.order && !table.needsCleaning && table.joined.length === 0
+    const togglePick = (table) =>
+        setPicked((ids) => (ids.includes(table.id) ? ids.filter((id) => id !== table.id) : [...ids, table.id]))
+    const stopCombining = () => { setPicked(null); setCombineError('') }
+
+    const setTables = async () => {
+        setCombining(true)
+        setCombineError('')
+        try {
+            await floor.combineTables(picked)
+            stopCombining()
+        } catch (err) {
+            setCombineError(err.message)
+        } finally {
+            setCombining(false)
+        }
+    }
+
     const handleTable = (table) => {
+        if (picked) return canPick(table) && togglePick(table)
         if (table.order) openOrder(table.order.id, 'TABLE')
         else if (table.needsCleaning) setDialog({ kind: 'clean', table })
         else if (can('seatTable')) setDialog({ kind: 'seat', table })
@@ -63,8 +89,11 @@ const Floor = () => {
     }
     if (!floor.tables) return <p role="status">Loading the floor…</p>
 
-    const taken = floor.tables.filter((table) => table.order).length
-    const toClean = floor.tables.filter((table) => !table.order && table.needsCleaning).length
+    // Tables joined to another show inside their group's card
+    const shown = floor.tables.filter((table) => !table.joinedToId)
+    const taken = shown.filter((table) => table.order).length
+    const toClean = shown.filter((table) => !table.order && table.needsCleaning).length
+    const pickedTables = picked ? floor.tables.filter((table) => picked.includes(table.id)) : []
     const nextLabel = `T${floor.tables.length + 1}`
 
     return (
@@ -73,12 +102,15 @@ const Floor = () => {
                 <div className="d-flex flex-column">
                     <h2 className="taim__heading">Floor</h2>
                     <span className="form__hint">
-                        {taken} of {floor.tables.length} tables dining
+                        {taken} of {shown.length} tables dining
                         {toClean > 0 && ` · ${toClean} to clean`} · {floor.takeouts.length} take-out
                         {floor.takeouts.length === 1 ? '' : 's'}
                     </span>
                 </div>
                 <div className="d-flex flex-wrap gap-0-5">
+                    {can('combineTables') && !picked && (
+                        <Button variant="ghost" onClick={() => setPicked([])}>Combine tables</Button>
+                    )}
                     {can('setUpTables') && (
                         <Button variant="ghost" icon="IconPlus" onClick={() => setDialog({ kind: 'table' })}>Table</Button>
                     )}
@@ -90,15 +122,33 @@ const Floor = () => {
 
             {floor.error && <p className="form__error" role="alert">Couldn't refresh: {floor.error}</p>}
 
+            {picked && (
+                <div className="floor__combine surface d-flex flex-wrap align-items-center gap-1" role="region" aria-label="Combine tables">
+                    <span className="floor__combine-text">
+                        {pickedTables.length === 0
+                            ? 'Tap the free tables to combine.'
+                            : `${pickedTables.map((t) => t.label).join(' + ')} · ${pickedTables.reduce((sum, t) => sum + t.seats, 0)} seats`}
+                    </span>
+                    {combineError && <span className="form__error" role="alert">{combineError}</span>}
+                    <span className="d-flex gap-0-5 ml-auto">
+                        <Button variant="ghost" onClick={stopCombining} disabled={combining}>Cancel</Button>
+                        <Button onClick={setTables} disabled={combining || pickedTables.length < 2}>
+                            {combining ? 'Setting…' : 'Set tables'}
+                        </Button>
+                    </span>
+                </div>
+            )}
+
             <div className="d-flex flex-wrap align-items-start gap-2">
                 <ul className="floor__tables" aria-label="Tables">
-                    {floor.tables.map((table) => (
+                    {shown.map((table) => (
                         <li key={table.id}>
                             <TableCard
                                 table={table}
                                 now={now}
                                 onClick={() => handleTable(table)}
-                                disabled={!table.order && !can(table.needsCleaning ? 'cleanTable' : 'seatTable')}
+                                disabled={picked ? !canPick(table) : !table.order && !can(table.needsCleaning ? 'cleanTable' : 'seatTable')}
+                                selected={picked ? picked.includes(table.id) : undefined}
                             />
                         </li>
                     ))}
@@ -133,14 +183,16 @@ const Floor = () => {
             <Modal
                 isOpen={dialog?.kind === 'seat' || dialog?.kind === 'takeout'}
                 onClose={close}
-                title={dialog?.kind === 'seat' ? `Seat ${dialog.table.label}` : 'New take-out'}
+                title={dialog?.kind === 'seat' ? `Seat ${dialog.table.groupLabel}` : 'New take-out'}
                 size="sm"
             >
                 {dialog?.kind === 'seat' && (
                     <SeatForm
-                        table={dialog.table}
+                        // a combined group shows as one table: its label and seats
+                        table={{ ...dialog.table, label: dialog.table.groupLabel, seats: dialog.table.groupSeats }}
                         onSave={async (guests) => afterSeat(await floor.seatTable(dialog.table.id, guests))}
                         onNeedsCleaning={can('cleanTable') ? () => floor.markNeedsCleaning(dialog.table.id) : undefined}
+                        onSplit={can('combineTables') && dialog.table.joined.length > 0 ? () => floor.splitTables(dialog.table.id) : undefined}
                         onDone={close}
                     />
                 )}
@@ -149,7 +201,7 @@ const Floor = () => {
                 )}
             </Modal>
 
-            <Modal isOpen={dialog?.kind === 'clean'} onClose={close} title={`${dialog?.table?.label ?? ''} needs cleaning`} size="sm">
+            <Modal isOpen={dialog?.kind === 'clean'} onClose={close} title={`${dialog?.table?.groupLabel ?? ''} needs cleaning`} size="sm">
                 {dialog?.kind === 'clean' && (
                     <CleanDialog table={dialog.table} onClean={() => floor.cleanTable(dialog.table.id)} onDone={close} />
                 )}
@@ -216,7 +268,11 @@ const CleanDialog = ({ table, onClean, onDone }) => {
 
     return (
         <div className="d-flex flex-column gap-1">
-            <p>The guests at {table.label} have left. Once it's cleaned and set, mark it ready for the next guests.</p>
+            <p>
+                The guests at {table.groupLabel} have left. Once {table.joined.length > 0 ? 'they are' : "it's"} cleaned
+                and set, mark {table.joined.length > 0 ? 'them' : 'it'} ready for the next guests
+                {table.joined.length > 0 && ' (the tables are split back up)'}.
+            </p>
             {error && <p className="form__error" role="alert">{error}</p>}
             <div className="d-flex flex-wrap justify-end gap-0-5">
                 <Button variant="ghost" onClick={onDone} disabled={busy}>Later</Button>

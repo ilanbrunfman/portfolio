@@ -14,6 +14,9 @@ the left: if the table isn't clean enough after all, it goes back to yellow
 on the Floor (`POST /api/taim/tables/:id/needs-cleaning`), so someone comes
 back to it.
 
+With `onSplit` (combined tables, Host and Manager), **Split tables** turns
+the group back into single tables.
+
 If someone else seated the table a moment earlier, the server answers
 "This table is already seated" and the form shows it on top.
 
@@ -31,4 +34,5 @@ If someone else seated the table a moment earlier, the server answers
 | `table`  | `object \| null`              | The free table to seat, or `null` for a take-out. |
 | `onSave` | `(value) => Promise`          | Gets the guest count (number) or `{ customerName, customerPhone }`; throws on failure. |
 | `onNeedsCleaning` | `() => Promise`      | Optional, table only: send it back to needing cleaning. |
+| `onSplit` | `() => Promise`              | Optional, combined tables only: split them back. |
 | `onDone` | `() => void`                  | Called after saving, and on Cancel. |

@@ -11,9 +11,10 @@ import Button from '@/components/ui/button/Button'
  * @param {object|null} props.table          The free table to seat, or null for a take-out.
  * @param {(value: number|{ customerName, customerPhone }) => Promise} props.onSave  Guests (table) or name + phone (take-out); throws on failure.
  * @param {() => Promise} [props.onNeedsCleaning]  Table only: "Not clean? Needs cleaning" sends it back to yellow.
+ * @param {() => Promise} [props.onSplit]          Combined tables only: "Split tables" back into single ones.
  * @param {() => void} props.onDone          Called after saving, and on Cancel.
  */
-const SeatForm = ({ table, onSave, onNeedsCleaning, onDone }) => {
+const SeatForm = ({ table, onSave, onNeedsCleaning, onSplit, onDone }) => {
     const isTable = Boolean(table)
     const [value, setValue] = useState(isTable ? String(Math.min(2, table.seats)) : '')
     const [phone, setPhone] = useState('')
@@ -45,10 +46,11 @@ const SeatForm = ({ table, onSave, onNeedsCleaning, onDone }) => {
         }
     }
 
-    const markNeedsCleaning = async () => {
+    // "Needs cleaning" / "Split tables": do it, then close
+    const runAndClose = async (action) => {
         setSaving(true)
         try {
-            await onNeedsCleaning()
+            await action()
             onDone()
         } catch (err) {
             setErrors({ form: err.message })
@@ -101,10 +103,17 @@ const SeatForm = ({ table, onSave, onNeedsCleaning, onDone }) => {
             )}
 
             <div className="d-flex flex-wrap justify-end gap-0-5">
-                {isTable && onNeedsCleaning && (
-                    <Button variant="ghost" className="mr-auto" onClick={markNeedsCleaning} disabled={saving}>
-                        Not clean? Needs cleaning
-                    </Button>
+                {isTable && (onNeedsCleaning || onSplit) && (
+                    <div className="d-flex flex-wrap gap-0-5 mr-auto">
+                        {onSplit && (
+                            <Button variant="ghost" onClick={() => runAndClose(onSplit)} disabled={saving}>Split tables</Button>
+                        )}
+                        {onNeedsCleaning && (
+                            <Button variant="ghost" onClick={() => runAndClose(onNeedsCleaning)} disabled={saving}>
+                                Not clean? Needs cleaning
+                            </Button>
+                        )}
+                    </div>
                 )}
                 <Button variant="ghost" onClick={onDone} disabled={saving}>Cancel</Button>
                 <Button type="submit" disabled={saving}>

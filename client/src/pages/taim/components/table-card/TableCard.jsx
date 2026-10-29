@@ -18,29 +18,38 @@ import './TableCard.scss'
  * @param {number} props.now         Current time (ms), so minutes keep counting.
  * @param {() => void} props.onClick
  * @param {boolean} [props.disabled] e.g. a free table for someone who can't seat guests.
+ * @param {boolean} [props.selected] While combining tables: picked (undefined = not choosing).
+ *
+ * Combined tables come as their main table with groupLabel ("T1 + T4 + T7")
+ * and groupSeats; the card shows those and a "Combined" tag.
  */
-const TableCard = ({ table, now, onClick, disabled = false }) => {
+const TableCard = ({ table, now, onClick, disabled = false, selected }) => {
     const { order } = table
     const state = order ? 'is-dining' : table.needsCleaning ? 'is-cleaning' : 'is-free'
+    const label = table.groupLabel ?? table.label
+    const seats = table.groupSeats ?? table.seats
+    const combined = table.joined?.length > 0
 
     return (
         <button
             type="button"
-            className={`table-card ${state} d-flex flex-column gap-0-5`}
+            className={`table-card ${state} ${selected ? 'is-selected' : ''} d-flex flex-column gap-0-5`}
             onClick={onClick}
             disabled={disabled}
+            aria-pressed={selected}
             aria-label={
                 order
-                    ? `${table.label}, dining: ${order.guests} guests, ${formatMoney(order.total)}`
+                    ? `${label}, dining: ${order.guests} guests, ${formatMoney(order.total)}`
                     : table.needsCleaning
-                        ? `${table.label}, needs cleaning`
-                        : `${table.label}, ready, ${table.seats} seats`
+                        ? `${label}, needs cleaning`
+                        : `${label}, ready, ${seats} seats`
             }
         >
-            <span className="d-flex justify-between align-items-baseline gap-0-5">
-                <span className="table-card__label">{table.label}</span>
-                <span className="table-card__seats">{table.seats} seats</span>
+            <span className="d-flex flex-wrap justify-between align-items-baseline gap-0-5">
+                <span className={`table-card__label ${combined ? 'table-card__label--group' : ''}`}>{label}</span>
+                <span className="table-card__seats">{seats} seats</span>
             </span>
+            {combined && <span className="table-card__combined">Combined</span>}
             {order ? (
                 <>
                     <span className="table-card__meta">

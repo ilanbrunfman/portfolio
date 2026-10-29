@@ -18,6 +18,11 @@ ask the kitchen about "table 5, seat 3":
 
 When a dish came back, a small red "1 came back" tag appears too.
 
+**Combined tables** arrive as their main table with `groupLabel`
+("T1 + T4 + T7") and `groupSeats`: the card shows those and a "Combined"
+tag. While the Floor is choosing tables to combine, `selected` marks the
+picked ones (accent border, `aria-pressed`).
+
 `KitchenProgress` (the progress lines) is also exported, for the Floor's
 take-out list.
 
@@ -39,3 +44,4 @@ $40.00", "T3, needs cleaning", "T1, ready, 2 seats".
 | `now`      | `number`     | Current time in ms. |
 | `onClick`  | `() => void` | What a tap does (seat, mark clean, open the order, show the bill). |
 | `disabled` | `boolean`    | e.g. a free table for someone who can't seat guests. |
+| `selected` | `boolean`    | While combining: picked or not (leave out otherwise). |

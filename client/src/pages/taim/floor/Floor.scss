@@ -6,6 +6,17 @@
         margin: 0;
     }
 
+    // "T1 + T4 + T7 · 10 seats  [Cancel] [Set tables]" while combining
+    &__combine {
+        box-sizing: border-box;
+        border-color: var(--accent);
+    }
+
+    &__combine-text {
+        color: var(--text-h);
+        font-weight: 600;
+    }
+
     // Table cards: as many columns as fit, at least 9rem wide each
     &__tables {
         flex: 1 1 28rem;

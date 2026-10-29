@@ -109,10 +109,11 @@ const MoveForm = ({ order, onSave, onDone }) => {
 
     if (!tables) return errors.form ? <p className="form__error" role="alert">{errors.form}</p> : <p role="status">Loading tables…</p>
 
-    // This table, plus every table that's free and clean
+    // This table, plus every table that's free and clean (combined tables as
+    // their group; the others of a group can't take guests on their own)
     const options = tables
-        .filter((t) => t.id === order.table.id || (!t.order && !t.needsCleaning))
-        .map((t) => ({ value: String(t.id), label: `${t.label} (${t.seats})` }))
+        .filter((t) => !t.joinedToId && (t.id === order.table.id || (!t.order && !t.needsCleaning)))
+        .map((t) => ({ value: String(t.id), label: `${t.groupLabel ?? t.label} (${t.groupSeats ?? t.seats})` }))
 
     return (
         <form className="d-flex flex-column gap-1" onSubmit={handleSubmit} noValidate>
