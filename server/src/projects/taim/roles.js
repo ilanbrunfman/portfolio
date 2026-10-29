@@ -10,6 +10,7 @@ export const RIGHTS = {
     setUpTables: ['MANAGER'], // add, rename tables, set seats
     seatTable: ['MANAGER', 'HOST', 'WAITER'], // seat a table or start take-out; move or undo a seating
     cleanTable: ['MANAGER', 'HOST', 'WAITER'], // mark a table clean after guests leave
+    combineTables: ['MANAGER', 'HOST'], // join free tables for a big party, split them again
     addDishes: ['MANAGER', 'WAITER'], // a table's order: add, send, move, remove dishes
     takeoutOrders: ['MANAGER', 'HOST', 'WAITER'], // the same on a take-out (the host takes phone orders)
     advanceDish: ['MANAGER', 'CHEF', 'COOK'], // preparing → sent out

@@ -283,6 +283,7 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | `closeBill`: close the bill | ✓ | | | ✓ | ✓ |
 | `seeLosses`: the losses summary | ✓ | ✓ | | | |
 | `cleanTable`: mark a table clean | ✓ | | | ✓ | ✓ |
+| `combineTables`: combine or split tables | ✓ | | | ✓ | |
 
 | Method | Path | Body | Returns |
 |--------|------|------|---------|
@@ -300,7 +301,9 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | GET | `/api/taim/tables` | | Tables in floor order; `order` = the open order's summary (`guests`, `openedAt`, `dishCount`, `notSent`, `cameBack`, `total`) or `null` when free; `needsCleaning` after guests leave |
 | POST | `/api/taim/tables` | `{ label, seats }` | 201, added at the end of the floor (Manager; 409 if the label exists) |
 | PATCH | `/api/taim/tables/:id` | `{ label?, seats? }` | The updated table (Manager) |
-| POST | `/api/taim/tables/:id/clean` | | The table, ready again (409 while it still has guests) |
+| POST | `/api/taim/tables/:id/clean` | | The table (or its whole group), ready again; a combined group splits up (409 while it still has guests) |
+| POST | `/api/taim/tables/combine` | `{ tableIds }` (2 or more) | 201 + the main table with `groupLabel` ("T1 + T4 + T7") and `groupSeats`; only free, clean, single tables (409 otherwise) |
+| POST | `/api/taim/tables/:id/split` | | The main table back on its own; only while nobody is seated (409) |
 | POST | `/api/taim/tables/:id/needs-cleaning` | | The table, back to needing cleaning ("not clean enough"; 409 while it has guests) |
 | GET | `/api/taim/orders` | `?status=OPEN` (default) or `CLOSED` | Orders with their dishes and `total`; open ones oldest first |
 | GET | `/api/taim/orders/:id` | | One order: `table` or `customerName` + `customerPhone`, `guests`, `openedBy`, `items` (name, price, status), `total` |
@@ -347,7 +350,15 @@ take-outs have no seats.
 A dish's life: `NEW` (on the bill; the waiter can still change or remove
 it) → **Send to kitchen** → `PREPARING` → the kitchen sends it out →
 `SENT_OUT` → maybe `CAME_BACK` (step 6). A bill can't be closed while any
-dish is still `NEW`. Each send is a numbered **round** (1 = e.g. starters,
+dish is still `NEW`.
+
+**Combined tables:** `POST /tables/combine` points the other tables of a
+group at its main table (the first on the floor, `joinedToId`). The main
+table takes the group's order, so the one-open-order rule still holds; a
+joined table can't be seated on its own. Closing the bill makes the whole
+group need cleaning, and cleaning it splits it back into single tables.
+
+Each send is a numbered **round** (1 = e.g. starters,
 2 = the mains added later…), stored on the dish, so the bill and the kitchen
 see what was ordered when; the database requires a round exactly on sent
 dishes.

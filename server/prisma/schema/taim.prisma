@@ -69,14 +69,21 @@ model MenuItem {
 // an OPEN order (and the database allows at most one, see the migration).
 // Closing the bill sets needsCleaning; it can't be seated again until a
 // host or waiter marks it clean. Floor colours: green = ready, yellow =
-// needs cleaning, grey = dining.
+// needs cleaning, grey = dining. Tables can be combined for a big party:
+// see joinedToId.
 model DiningTable {
-  id            Int     @id @default(autoincrement())
-  label         String  @unique // "T1"
+  id            Int           @id @default(autoincrement())
+  label         String        @unique // "T1"
   seats         Int
   position      Int // floor order: 1, 2, 3…
-  needsCleaning Boolean @default(false)
+  needsCleaning Boolean       @default(false)
   orders        Order[]
+  // Combined tables: the others in a group point to the main table (the
+  // first on the floor), which takes the group's orders. null = on its own
+  // or a main table.
+  joinedToId    Int?
+  joinedTo      DiningTable?  @relation("CombinedTables", fields: [joinedToId], references: [id], onDelete: SetNull)
+  joined        DiningTable[] @relation("CombinedTables")
 
   @@map("dining_tables")
   @@schema("taim")

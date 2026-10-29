@@ -18,6 +18,14 @@ export const tableUpdate = z
     .partial()
     .refine((data) => Object.keys(data).length > 0, 'Nothing to update')
 
+// POST /api/taim/tables/combine – two or more free, clean tables become one
+export const tablesCombine = z.object({
+    tableIds: z
+        .array(positiveInt('Invalid table'), { error: 'Pick the tables to combine' })
+        .min(2, 'Pick at least two tables')
+        .refine((ids) => new Set(ids).size === ids.length, 'Each table can be picked only once'),
+})
+
 // ---------- orders ----------
 
 // POST /api/taim/orders – seat a table, or start a take-out

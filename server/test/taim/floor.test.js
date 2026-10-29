@@ -402,3 +402,80 @@ describe('take-out orders (takeoutOrders: Manager, Host, Waiter)', () => {
     })
 })
 
+describe('combining tables (combineTables: Manager, Host)', () => {
+    let t3
+    beforeEach(async () => {
+        t3 = await prisma.diningTable.create({ data: { label: 'T3', seats: 6, position: 3 } })
+    })
+    const combine = (agent, ...tables) => agent.post('/api/taim/tables/combine').send({ tableIds: tables.map((t) => t.id) })
+    const floorOf = async () => (await host.get('/api/taim/tables').expect(200)).body
+
+    it('joins free tables into one: first on the floor is the main table, seats add up', async () => {
+        const res = await combine(host, t3, t1).expect(201)
+        expect(res.body).toMatchObject({ id: t1.id, groupLabel: 'T1 + T3', groupSeats: 8, joined: [{ label: 'T3', seats: 6 }] })
+        const floor = await floorOf()
+        expect(floor.find((t) => t.label === 'T3').joinedToId).toBe(t1.id)
+    })
+
+    it('the group is seated through its main table, with seats for everyone', async () => {
+        await combine(host, t1, t3).expect(201)
+        const joinedSeat = await seat(host, t3, 6).expect(409)
+        expect(joinedSeat.body.error).toBe('T3 is combined with T1: seat T1 instead')
+
+        const order = (await seat(host, t1, 8).expect(201)).body
+        const res = await addDishes(waiter, order.id, [{ menuItemId: hummus.id, seat: 8 }]).expect(201)
+        expect(res.body.items[0].seat).toBe(8)
+    })
+
+    it('closing the bill makes the whole group need cleaning; cleaning it splits it up', async () => {
+        await combine(host, t1, t3).expect(201)
+        const order = (await seat(host, t1, 8).expect(201)).body
+        await host.post(`/api/taim/orders/${order.id}/close`).expect(200)
+        expect((await floorOf()).filter((t) => t.needsCleaning).map((t) => t.label)).toEqual(['T1', 'T3'])
+
+        await waiter.post(`/api/taim/tables/${t3.id}/clean`).expect(200) // any table of the group
+        const floor = await floorOf()
+        expect(floor.map((t) => [t.label, t.needsCleaning, t.joinedToId, t.groupSeats])).toEqual([
+            ['T1', false, null, 2], ['T2', false, null, 4], ['T3', false, null, 6],
+        ])
+    })
+
+    it('only free, clean, single tables can be combined', async () => {
+        const one = await combine(host, t1).expect(400)
+        expect(one.body.fields).toEqual({ tableIds: 'Pick at least two tables' })
+        await host.post('/api/taim/tables/combine').send({ tableIds: [t1.id, 999] }).expect(400)
+
+        await seat(host, t2).expect(201)
+        expect((await combine(host, t1, t2).expect(409)).body.error).toBe('T2 has guests: only free tables can be combined')
+        await host.post(`/api/taim/tables/${t3.id}/needs-cleaning`).expect(200)
+        expect((await combine(host, t1, t3).expect(409)).body.error).toBe('T3 needs cleaning first')
+        await waiter.post(`/api/taim/tables/${t3.id}/clean`).expect(200)
+
+        await combine(host, t1, t3).expect(201)
+        const t4 = await prisma.diningTable.create({ data: { label: 'T4', seats: 2, position: 4 } })
+        expect((await combine(host, t3, t4).expect(409)).body.error).toBe('T3 is already combined')
+    })
+
+    it('splits back while nobody is seated; not while the party is there', async () => {
+        await combine(host, t1, t3).expect(201)
+        const order = (await seat(host, t1, 8).expect(201)).body
+        expect((await host.post(`/api/taim/tables/${t1.id}/split`).expect(409)).body.error).toBe('T1 + T3 has guests: split it after they leave')
+
+        await host.delete(`/api/taim/orders/${order.id}`).expect(204) // undo the seating
+        const res = await host.post(`/api/taim/tables/${t3.id}/split`).expect(200)
+        expect(res.body).toMatchObject({ label: 'T1', groupLabel: 'T1', groupSeats: 2, joined: [] })
+        await host.post(`/api/taim/tables/${t1.id}/split`).expect(409) // not combined any more
+    })
+
+    it('Waiter and Cook cannot combine or split', async () => {
+        await combine(waiter, t1, t3).expect(403)
+        await combine(await as('COOK'), t1, t3).expect(403)
+        await combine(await as('MANAGER'), t1, t3).expect(201)
+        await waiter.post(`/api/taim/tables/${t1.id}/split`).expect(403)
+    })
+
+    it('the database refuses a table joined to itself', async () => {
+        await expect(prisma.diningTable.update({ where: { id: t1.id }, data: { joinedToId: t1.id } })).rejects.toThrow(/dining_tables_not_joined_to_itself/)
+    })
+})
+

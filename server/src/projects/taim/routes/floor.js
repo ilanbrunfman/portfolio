@@ -4,12 +4,18 @@ import { validate } from '../../../shared/middleware/validate.js'
 import { HttpError } from '../../../shared/lib/httpError.js'
 import { idParams } from '../../../shared/schemas/common.js'
 import { allow, allowDishChanges } from '../middleware/staff.js'
-import { tableCreate, tableUpdate, orderCreate, orderUpdate, orderItemsAdd, orderItemUpdate, orderListQuery, orderItemParams } from '../schemas/floor.js'
+import { tableCreate, tableUpdate, tablesCombine, orderCreate, orderUpdate, orderItemsAdd, orderItemUpdate, orderListQuery, orderItemParams } from '../schemas/floor.js'
 import { ORDER_INCLUDE, billTotal, getOrder, requireOpenOrder, toOrderJson } from '../services/orders.js'
 
 // The floor (tables) and orders. Everyone picked can read them; changing
-// them needs a right: setUpTables, seatTable, cleanTable, closeBill, and for
-// an order's dishes addDishes (tables) or takeoutOrders (take-outs).
+// them needs a right: setUpTables, seatTable, cleanTable, combineTables,
+// closeBill, and for an order's dishes addDishes (tables) or takeoutOrders
+// (take-outs).
+//
+// Combined tables: the other tables of a group point to its main table
+// (joinedToId). The main table takes the group's orders – so the
+// one-open-order-per-table rule still holds – and the group is seated,
+// cleaned and closed as one.
 const router = Router()
 
 /** Prisma's "unique value already used" error → 409 with a message under the Label input */
@@ -28,11 +34,34 @@ function labelTaken(err) {
  * left to the database's one-open-order-per-table index.
  */
 async function requireReadyTable(tableId, db = prisma) {
-    const table = await db.diningTable.findUnique({ where: { id: tableId } })
+    const table = await db.diningTable.findUnique({ where: { id: tableId }, include: { joinedTo: { select: { label: true } } } })
     if (!table) throw new HttpError(400, 'Validation failed', { fields: { tableId: 'Table not found' } })
+    if (table.joinedTo) throw new HttpError(409, `${table.label} is combined with ${table.joinedTo.label}: seat ${table.joinedTo.label} instead`)
     if (table.needsCleaning) throw new HttpError(409, `${table.label} needs cleaning first`)
     return table
 }
+
+/**
+ * A table's group: its main table (itself, or the one it's joined to) with
+ * every table joined to it, in floor order, and the main table's open order
+ * if any. 404 if the table doesn't exist.
+ */
+async function groupOf(tableId, db = prisma) {
+    const table = await db.diningTable.findUnique({ where: { id: tableId }, select: { joinedToId: true } })
+    if (!table) throw new HttpError(404, 'Table not found')
+    const main = await db.diningTable.findUniqueOrThrow({
+        where: { id: table.joinedToId ?? tableId },
+        include: {
+            joined: { orderBy: { position: 'asc' } },
+            orders: { where: { status: 'OPEN' }, select: { id: true } },
+        },
+    })
+    const { joined, orders, ...mainTable } = main
+    return { main: mainTable, members: [mainTable, ...joined], openOrder: orders[0] ?? null }
+}
+
+/** "T1 + T4 + T7" */
+const groupLabel = (members) => members.map((t) => t.label).join(' + ')
 
 /** The database's one-open-order-per-table index said no → 409 */
 const tableTaken = (err) => {
@@ -61,6 +90,7 @@ router.get('/tables', async (req, res) => {
     const tables = await prisma.diningTable.findMany({
         orderBy: { position: 'asc' },
         include: {
+            joined: { select: { id: true, label: true, seats: true }, orderBy: { position: 'asc' } },
             orders: {
                 where: { status: 'OPEN' },
                 select: { id: true, guests: true, openedAt: true, items: { select: { price: true, status: true, seat: true, firedAt: true } } },
@@ -68,11 +98,15 @@ router.get('/tables', async (req, res) => {
         },
     })
     res.json(
-        tables.map(({ orders, ...table }) => {
+        tables.map(({ orders, joined, ...table }) => {
             const open = orders[0] // the database allows at most one
             const cooking = open ? open.items.filter((item) => item.status === 'PREPARING') : []
             return {
                 ...table,
+                // A main table of combined tables: the others, and the group's label and seats
+                joined,
+                groupLabel: groupLabel([table, ...joined]),
+                groupSeats: table.seats + joined.reduce((sum, t) => sum + t.seats, 0),
                 order: open
                     ? {
                           id: open.id,
@@ -109,19 +143,79 @@ router.patch('/tables/:id', allow('setUpTables'), validate({ params: idParams, b
     res.json(table)
 })
 
-/** Set a table's cleaning flag; 404 if it doesn't exist, 409 while it has guests */
+/**
+ * Set the cleaning flag of a table – of its whole group, if it's combined.
+ * Cleaning a group after its party also splits it back into single tables.
+ * 404 if it doesn't exist, 409 while the group has guests.
+ */
 async function setNeedsCleaning(id, needsCleaning) {
-    const table = await prisma.diningTable.findUnique({ where: { id }, include: { orders: { where: { status: 'OPEN' }, select: { id: true } } } })
-    if (!table) throw new HttpError(404, 'Table not found')
-    if (table.orders.length > 0) throw new HttpError(409, `${table.label} still has guests`)
-    const updated = await prisma.diningTable.update({ where: { id }, data: { needsCleaning } })
-    return { ...updated, order: null }
+    return prisma.$transaction(async (tx) => {
+        const { main, members, openOrder } = await groupOf(id, tx)
+        if (openOrder) throw new HttpError(409, `${groupLabel(members)} still has guests`)
+        const ids = members.map((t) => t.id)
+        await tx.diningTable.updateMany({ where: { id: { in: ids } }, data: { needsCleaning } })
+        if (!needsCleaning && members.length > 1) {
+            await tx.diningTable.updateMany({ where: { joinedToId: main.id }, data: { joinedToId: null } })
+        }
+        return { ...main, needsCleaning, order: null }
+    })
 }
 
-// POST /api/taim/tables/:id/clean – guests have left and the table is clean
+// POST /api/taim/tables/:id/clean – guests have left and the table is
+// clean (combined tables: the whole group, which then splits up)
 router.post('/tables/:id/clean', allow('cleanTable'), validate({ params: idParams }), async (req, res) => {
     res.json(await setNeedsCleaning(req.valid.params.id, false))
 })
+
+// POST /api/taim/tables/combine { tableIds } – two or more free, clean,
+// single tables become one group for a big party. The first one on the
+// floor becomes the main table; the group's seats are added up.
+router.post('/tables/combine', allow('combineTables'), validate({ body: tablesCombine }), async (req, res) => {
+    const { tableIds } = req.valid.body
+    const main = await prisma.$transaction(async (tx) => {
+        const tables = await tx.diningTable.findMany({
+            where: { id: { in: tableIds } },
+            orderBy: { position: 'asc' },
+            include: { joined: { select: { id: true } }, orders: { where: { status: 'OPEN' }, select: { id: true } } },
+        })
+        if (tables.length !== tableIds.length) throw new HttpError(400, 'Validation failed', { fields: { tableIds: 'A table was not found' } })
+        for (const table of tables) {
+            if (table.orders.length > 0) throw new HttpError(409, `${table.label} has guests: only free tables can be combined`)
+            if (table.needsCleaning) throw new HttpError(409, `${table.label} needs cleaning first`)
+            if (table.joinedToId || table.joined.length > 0) throw new HttpError(409, `${table.label} is already combined`)
+        }
+        const [first, ...others] = tables
+        await tx.diningTable.updateMany({ where: { id: { in: others.map((t) => t.id) } }, data: { joinedToId: first.id } })
+        return first
+    })
+    res.status(201).json(await groupJson(main.id))
+})
+
+// POST /api/taim/tables/:id/split – combined tables back to single tables
+// (any table of the group); only while nobody is seated there
+router.post('/tables/:id/split', allow('combineTables'), validate({ params: idParams }), async (req, res) => {
+    const main = await prisma.$transaction(async (tx) => {
+        const { main, members, openOrder } = await groupOf(req.valid.params.id, tx)
+        if (members.length === 1) throw new HttpError(409, `${main.label} isn't combined`)
+        if (openOrder) throw new HttpError(409, `${groupLabel(members)} has guests: split it after they leave`)
+        await tx.diningTable.updateMany({ where: { joinedToId: main.id }, data: { joinedToId: null } })
+        return main
+    })
+    res.json(await groupJson(main.id))
+})
+
+/** A main table with its group's label and seats (as in GET /tables, without the order) */
+async function groupJson(mainId) {
+    const { members } = await groupOf(mainId)
+    const [main, ...joined] = members
+    return {
+        ...main,
+        joined: joined.map(({ id, label, seats }) => ({ id, label, seats })),
+        groupLabel: groupLabel(members),
+        groupSeats: members.reduce((sum, t) => sum + t.seats, 0),
+        order: null,
+    }
+}
 
 // POST /api/taim/tables/:id/needs-cleaning – a "ready" table isn't clean
 // enough after all: back to yellow, so someone comes back to it
@@ -279,8 +373,9 @@ router.post('/orders/:id/close', allow('closeBill'), validate({ params: idParams
         // Only an OPEN order changes; if it was already closed nothing is updated
         const { count } = await tx.order.updateMany({ where: { id, status: 'OPEN' }, data: { status: 'CLOSED', closedAt: new Date() } })
         if (count === 0) await requireOpenOrder(id, tx) // throws the right error: 404 or 409
+        // The table – or the whole group of combined tables – needs cleaning
         const { tableId } = await tx.order.findUniqueOrThrow({ where: { id }, select: { tableId: true } })
-        if (tableId) await tx.diningTable.update({ where: { id: tableId }, data: { needsCleaning: true } })
+        if (tableId) await tx.diningTable.updateMany({ where: { OR: [{ id: tableId }, { joinedToId: tableId }] }, data: { needsCleaning: true } })
     })
     res.json(await getOrder(id))
 })
