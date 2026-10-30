@@ -12,7 +12,10 @@ Where a dish is:
   while the starters are eaten. Waits for **Fire held**.
 - **In kitchen · 14 min**: sent to the kitchen that long ago, not out yet.
 - **Served**: the kitchen sent it out.
-- **Came back**: crossed out, not on the bill (it counts as money lost).
+- **Came back · Cold**: crossed out with its reason, not on the bill (it
+  counts as money lost).
+- A **Remake** tag and "Free" instead of the price: made again on the house
+  for a dish that came back (its price counts as a loss too).
 
 A dish the guests take home has a teal **To go** tag (same bill, packed by
 the kitchen).

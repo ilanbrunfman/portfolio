@@ -38,6 +38,16 @@
         box-sizing: border-box;
     }
 
+    // Dishes that came back: a red edge
+    &__came-back {
+        border-left: 4px solid #e5484d;
+    }
+
+    &__came-back-note {
+        color: var(--text-h);
+        font-style: italic;
+    }
+
     // Held dishes: a violet edge, like "On hold" on the bill
     &__coming {
         border-left: 4px solid #8b5cf6;

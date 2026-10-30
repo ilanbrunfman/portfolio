@@ -1,0 +1,12 @@
+// Bill item editor – visuals only (layout is utility classes in the markup)
+.bill-item-editor {
+    // "Came back: Cold · "lukewarm" · Lior, 20:30. Not on the bill."
+    &__returned {
+        margin: 0;
+        padding: 0.5rem 0.75rem;
+        border-radius: 10px;
+        background: rgba(229, 72, 77, 0.1);
+        color: #e5484d;
+        font-weight: 600;
+    }
+}

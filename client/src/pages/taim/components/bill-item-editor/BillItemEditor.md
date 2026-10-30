@@ -16,6 +16,15 @@ Opens when the waiter taps a dish on the bill (Order screen). Two fixes:
 
 A take-out has no seats, so only Remove (when allowed) and Close show.
 
+## Came back (step 6)
+
+- A **served** dish shows **Came back…** (with `onCameBack`): it opens the
+  CameBackForm (why, note, make it again or not).
+- A dish that **came back** shows why in red ("Came back: Cold · "lukewarm"
+  · Lior, 20:30. Not on the bill."), no seat or to-go editing, and **Undo
+  came back** (with `onUndoCameBack`) for a mistake.
+- A **free remake** shows "Free remake (on the house)" instead of a price.
+
 ## Usage
 
 ```jsx
@@ -39,5 +48,7 @@ A take-out has no seats, so only Remove (when allowed) and Close show.
 | `item`     | `object`                 | A dish on the order: `{ name, price, seat, status }`. |
 | `seats`    | `{ value, label }[]`     | Seat choices; `[]` for a take-out. |
 | `onSave`   | `({ seat, toGo }) => Promise` | Saves the seat value and to go; throws on failure. |
+| `onCameBack` | `({ reason, note, remake }) => Promise` | Optional (markCameBack). Records the return. |
+| `onUndoCameBack` | `() => Promise` | Optional (markCameBack). Undoes it. |
 | `onRemove` | `() => Promise`          | Removes the dish; throws on failure. |
 | `onDone`   | `() => void`             | Called after saving or removing, and on Close. |

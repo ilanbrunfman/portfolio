@@ -34,7 +34,7 @@ const OrderPage = () => {
     const orderId = Number(useParams().orderId)
     const navigate = useNavigate()
     const { can, canEditDishes } = useStaff()
-    const { order, error, addDish, updateDish, removeDish, send, hold, close, update, undo } = useOrder(orderId)
+    const { order, error, addDish, updateDish, cameBack, undoCameBack, removeDish, send, hold, close, update, undo } = useOrder(orderId)
     const menu = useMenu()
     const [category, setCategory] = useState(null) // null = the first one
     const [seat, setSeat] = useState('1') // '1', '2'… or 'shared'
@@ -195,6 +195,8 @@ const OrderPage = () => {
                         seats={seats}
                         onSave={({ seat: value, toGo }) => updateDish(editing.id, { seat: seatFromValue(value), toGo })}
                         onRemove={() => removeDish(editing.id)}
+                        onCameBack={can('markCameBack') ? (data) => cameBack(editing.id, data) : undefined}
+                        onUndoCameBack={can('markCameBack') ? () => undoCameBack(editing.id) : undefined}
                         onDone={() => setEditing(null)}
                     />
                 )}

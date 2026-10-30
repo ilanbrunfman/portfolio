@@ -57,6 +57,20 @@
         vertical-align: 0.1em;
     }
 
+    // "Remake": made again on the house for a dish that came back (red, like came back)
+    &__remake {
+        margin-left: 0.4rem;
+        padding: 0.05rem 0.45rem;
+        border-radius: 999px;
+        background: rgba(229, 72, 77, 0.15);
+        color: #e5484d;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        vertical-align: 0.1em;
+    }
+
     &__seat-tag {
         margin-left: 0.5rem;
         padding: 0.05rem 0.45rem;

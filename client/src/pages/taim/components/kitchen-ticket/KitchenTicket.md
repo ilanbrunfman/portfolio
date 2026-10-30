@@ -15,6 +15,9 @@ take-out), so the cooks see it the way it was ordered.
   just shows the minutes.
 - **To go** (teal): pack the dish, the guests take it home. When every dish
   on a table's ticket is to go, the tag sits once on the title instead.
+- **Remake** (red, on the title): a dish made again for free because it
+  came back; the dish says "Remake · came back: Cold". These tickets come
+  first.
 - **The ticket's top edge** takes the colour of its worst dish, so a late
   ticket stands out in the grid.
 - **Served** on each dish, and **Serve all 3** at the bottom when there's

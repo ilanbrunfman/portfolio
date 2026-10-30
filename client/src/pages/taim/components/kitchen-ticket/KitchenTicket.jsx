@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Button from '@/components/ui/button/Button'
 import { minutesSince } from '@/pages/taim/hooks/useNow'
-import { clockTime, seatLabel, timing } from '@/pages/taim/utils/orders'
+import { clockTime, seatLabel, timing, reasonLabel } from '@/pages/taim/utils/orders'
 import './KitchenTicket.scss'
 
 // A ticket nobody started for this long turns amber
@@ -19,6 +19,9 @@ const WAIT_ALERT_MINUTES = 5
  * The minutes in the header always count from when it was sent: how long
  * the guests have waited. Served works in both states (a drink can go out
  * without a start).
+ * A remake (a dish made again, free, because it came back) has a red
+ * REMAKE tag on the ticket and "came back: Cold" on the dish; the server
+ * lists those tickets first.
  *
  * @param {object} props
  * @param {object} props.ticket          { orderId, title, type, round, firedAt, startedAt, startedBy, dishes: [{ id, name, seat, toGo, startedAt, prepMinutes }] }
@@ -62,6 +65,7 @@ const KitchenTicket = ({ ticket, now, onServe, onStart }) => {
                 <span className="d-flex flex-column">
                     <strong className="kitchen-ticket__title">
                         {ticket.title}
+                        {ticket.remake && <span className="kitchen-ticket__remake">Remake</span>}
                         {allToGo && <span className="kitchen-ticket__to-go">To go</span>}
                     </strong>
                     <span className="kitchen-ticket__round">
@@ -99,6 +103,9 @@ const KitchenTicket = ({ ticket, now, onServe, onStart }) => {
                                 {ticket.type === 'TABLE' && <span className="kitchen-ticket__seat">{seatLabel(dish.seat)}</span>}
                                 {dish.toGo && !allToGo && <span className="kitchen-ticket__to-go">To go</span>}
                             </span>
+                            {dish.remake && (
+                                <span className="kitchen-ticket__came-back">Remake · came back: {reasonLabel(dish.remake.reason)}</span>
+                            )}
                             <span className="kitchen-ticket__time">
                                 {!started
                                     ? dish.prepMinutes ? `Prep ${dish.prepMinutes} min` : 'No prep time'

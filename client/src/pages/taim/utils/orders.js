@@ -91,3 +91,17 @@ export const timing = (elapsed, prepMinutes) => {
     if (elapsed > prepMinutes) return 'late'
     return elapsed >= prepMinutes * 0.8 ? 'soon' : 'ok'
 }
+
+/** Why a guest gave a dish back: the API's values with their labels, in menu order */
+export const RETURN_REASONS = [
+    { value: 'COLD', label: 'Cold' },
+    { value: 'WRONG_DISH', label: 'Wrong dish' },
+    { value: 'TASTE', label: 'Taste' },
+    { value: 'UNDERCOOKED', label: 'Undercooked' },
+    { value: 'ALLERGY', label: 'Allergy / something in it' },
+    { value: 'TOO_SLOW', label: 'Too slow' },
+    { value: 'OTHER', label: 'Other' },
+]
+
+/** 'COLD' → 'Cold' */
+export const reasonLabel = (value) => RETURN_REASONS.find((reason) => reason.value === value)?.label ?? value

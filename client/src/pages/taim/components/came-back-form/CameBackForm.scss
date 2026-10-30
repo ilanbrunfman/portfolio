@@ -1,0 +1,11 @@
+// "Came back" form – visuals only (layout is utility classes in the markup)
+.came-back-form {
+    p {
+        margin: 0;
+    }
+
+    // Seven reasons: keep the row tight so they wrap neatly
+    &__reasons .radio {
+        min-width: 7.5rem;
+    }
+}
