@@ -53,7 +53,7 @@ describe('a dish comes back', () => {
 
         const kitchen = (await cook.get('/api/taim/kitchen').expect(200)).body
         expect(kitchen.tickets.map((t) => [t.title, t.remake])).toEqual([['T5', true], ['T6', false]])
-        expect(kitchen.tickets[0].dishes[0].remake).toEqual({ reason: 'COLD' })
+        expect(kitchen.tickets[0].dishes[0].remake).toEqual({ reason: 'COLD', replaced: null })
         expect(kitchen.cameBack).toMatchObject([{ name: 'Shakshuka', title: 'T5', seat: 2, reason: 'COLD', by: 'Lior', remade: true }])
     })
 

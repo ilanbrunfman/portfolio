@@ -5,9 +5,11 @@ import { allow } from '../middleware/staff.js'
 import { lossesQuery } from '../schemas/losses.js'
 import { TITLE_SELECT, titleOf } from '../services/orders.js'
 
-// Losses (seeLosses: Manager, Chef): what dishes that came back cost. Each
-// return's value is the dish's price plus its free remake's, if one was
-// made. Calculated from the rows, never stored.
+// Losses (seeLosses: Manager, Chef): what lost dishes cost – returns (a
+// guest gave it back) and waste (cancelled after the kitchen started it,
+// dropped, made wrong). A return's value is the dish's price plus the free
+// dish given instead, if any; waste is the dish's price. Calculated from
+// the rows, never stored.
 const router = Router()
 
 /** Group returns by a key → [{ key, count, value }], biggest loss first */
@@ -24,7 +26,8 @@ function groupBy(returns, keyOf) {
 }
 
 // GET /api/taim/losses?from=<ISO>&to=<ISO>
-//   total, count, remakes: money lost, dishes that came back, how many remade
+//   total (returnsTotal + wasteTotal), count, remakes: money lost, lost dishes,
+//            how many returns got a free dish instead
 //   byReason: [{ reason, count, value }]   byDish: [{ name, count, value }]
 //   returns: every one, newest first: dish, table, seat, reason, note, who,
 //            when, price, remakePrice (or null) and value
@@ -33,6 +36,7 @@ router.get('/losses', allow('seeLosses'), validate({ query: lossesQuery }), asyn
     const rows = await prisma.itemReturn.findMany({
         where: { createdAt: { gte: from, lt: to } },
         select: {
+            kind: true,
             reason: true,
             note: true,
             createdAt: true,
@@ -44,7 +48,7 @@ router.get('/losses', allow('seeLosses'), validate({ query: lossesQuery }), asyn
                     seat: true,
                     menuItem: { select: { name: true } },
                     order: { select: { id: true, ...TITLE_SELECT } },
-                    remake: { select: { price: true } },
+                    remake: { select: { price: true, menuItem: { select: { name: true } } } },
                 },
             },
         },
@@ -56,6 +60,7 @@ router.get('/losses', allow('seeLosses'), validate({ query: lossesQuery }), asyn
         return {
             id: dish.id,
             orderId: dish.order.id,
+            kind: row.kind,
             at: row.createdAt,
             name: dish.menuItem.name,
             title: titleOf(dish.order),
@@ -65,12 +70,16 @@ router.get('/losses', allow('seeLosses'), validate({ query: lossesQuery }), asyn
             by: row.staff.name,
             price: dish.price,
             remakePrice,
+            // what was given instead: the same dish (null = same) or another one
+            remakeName: dish.remake && dish.remake.menuItem.name !== dish.menuItem.name ? dish.remake.menuItem.name : null,
             value: dish.price + (remakePrice ?? 0),
         }
     })
 
     res.json({
         total: returns.reduce((sum, row) => sum + row.value, 0),
+        returnsTotal: returns.filter((row) => row.kind === 'RETURN').reduce((sum, row) => sum + row.value, 0),
+        wasteTotal: returns.filter((row) => row.kind === 'WASTE').reduce((sum, row) => sum + row.value, 0),
         count: returns.length,
         remakes: returns.filter((row) => row.remakePrice !== null).length,
         byReason: groupBy(returns, (row) => row.reason).map(({ key, ...group }) => ({ reason: key, ...group })),

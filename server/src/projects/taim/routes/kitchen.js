@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { idParams } from '../../../shared/schemas/common.js'
 import { allow } from '../middleware/staff.js'
 import { TITLE_SELECT, titleOf } from '../services/orders.js'
+import { redo } from '../schemas/floor.js'
 
 // The kitchen: what's waiting to be cooked, and marking dishes served.
 // Reading is open to everyone picked (the Manager looks, view only);
@@ -25,6 +26,12 @@ export const FIRE_AFTER_MINUTES = Number.parseInt(process.env.TAIM_KITCHEN_FIRE_
 
 const ORDER_SELECT = { id: true, ...TITLE_SELECT }
 
+/** A free dish for one that came back: why it came back, and what it replaces if it's another dish */
+const remakeInfo = (item) => ({
+    reason: item.remakeOf.return?.reason ?? null,
+    replaced: item.remakeOf.menuItemId === item.menuItemId ? null : item.remakeOf.menuItem.name,
+})
+
 // /orders/:id/rounds/:round/start
 const roundParams = z.object({
     id: z.coerce.number({ error: 'Invalid id' }).int('Invalid id').positive('Invalid id'),
@@ -43,13 +50,14 @@ const roundParams = z.object({
 //            a tap by mistake can be undone
 //   cameBack: dishes guests gave back in the last 30 minutes, newest first,
 //            with the reason, note, who and whether a remake was made
-// Remakes (free, for a dish that came back) carry `remake: { reason }`, and
+// Free dishes for one that came back carry `remake: { reason, replaced }`
+// (replaced = the dish it replaces when it's another one, else null), and
 // their tickets come first: the guest is waiting.
 router.get('/kitchen', async (req, res) => {
     const [cooking, held, served, heldOrders, returned] = await Promise.all([
         prisma.orderItem.findMany({
             where: { status: 'PREPARING', order: { status: 'OPEN' } },
-            select: { id: true, seat: true, toGo: true, round: true, firedAt: true, startedAt: true, startedBy: { select: { name: true } }, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT }, remakeOf: { select: { return: { select: { reason: true } } } } },
+            select: { id: true, seat: true, toGo: true, round: true, firedAt: true, startedAt: true, startedBy: { select: { name: true } }, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT }, menuItemId: true, remakeOf: { select: { menuItemId: true, menuItem: { select: { name: true } }, return: { select: { reason: true } } } } },
             orderBy: [{ firedAt: 'asc' }, { id: 'asc' }],
         }),
         prisma.orderItem.findMany({
@@ -70,7 +78,7 @@ router.get('/kitchen', async (req, res) => {
             _max: { sentOutAt: true },
         }),
         prisma.itemReturn.findMany({
-            where: { createdAt: { gte: new Date(Date.now() - CAME_BACK_MINUTES * 60_000) } },
+            where: { kind: 'RETURN', createdAt: { gte: new Date(Date.now() - CAME_BACK_MINUTES * 60_000) } },
             select: {
                 reason: true,
                 note: true,
@@ -107,7 +115,7 @@ router.get('/kitchen', async (req, res) => {
             ticket.startedBy = item.startedBy?.name ?? null
         }
         // toGo: pack it, the guest takes it home; startedAt: its prep time counts from then
-        ticket.dishes.push({ id: item.id, name: item.menuItem.name, seat: item.seat, toGo: item.toGo, startedAt: item.startedAt, prepMinutes: item.menuItem.prepMinutes, remake: item.remakeOf ? { reason: item.remakeOf.return?.reason ?? null } : null })
+        ticket.dishes.push({ id: item.id, name: item.menuItem.name, seat: item.seat, toGo: item.toGo, startedAt: item.startedAt, prepMinutes: item.menuItem.prepMinutes, remake: item.remakeOf ? remakeInfo(item) : null })
     }
     const bySeat = (a, b) => (a.seat ?? Infinity) - (b.seat ?? Infinity) || a.id - b.id
     for (const ticket of tickets.values()) ticket.dishes.sort(bySeat)
@@ -227,6 +235,42 @@ router.post('/order-items/:id/serve', allow('advanceDish'), validate({ params: i
         await tx.orderItem.updateMany({ where: { id, startedAt: null }, data: { startedAt: now, startedById: req.staff.id } })
     })
     res.status(204).end()
+})
+
+// POST /api/taim/order-items/:id/redo { note? } (advanceDish: Chef, Cook) –
+// the kitchen made it wrong (burnt, wrong plate) and makes it again. The
+// ruined plate is kept as a WASTED copy (a loss, reason MADE_WRONG, who and
+// why); the dish itself stays in the kitchen, started again now.
+router.post('/order-items/:id/redo', allow('advanceDish'), validate({ params: idParams, body: redo }), async (req, res) => {
+    const { id } = req.valid.params
+    const now = new Date()
+    await prisma.$transaction(async (tx) => {
+        const dish = await tx.orderItem.findUnique({ where: { id }, include: { order: { select: { status: true } } } })
+        if (!dish) throw new HttpError(404, 'Dish not found')
+        // Restart it, only while it's in the kitchen (guarded: two taps can't both redo)
+        const { count } = await tx.orderItem.updateMany({
+            where: { id, status: 'PREPARING', order: { status: 'OPEN' } },
+            data: { startedAt: now, startedById: req.staff.id },
+        })
+        if (count === 0) throw new HttpError(409, 'Only a dish in the kitchen can be redone')
+        const ruined = await tx.orderItem.create({
+            data: {
+                orderId: dish.orderId,
+                menuItemId: dish.menuItemId,
+                price: dish.price,
+                seat: dish.seat,
+                toGo: dish.toGo,
+                status: 'WASTED',
+                round: dish.round,
+                firedAt: dish.firedAt,
+                firedById: dish.firedById,
+                startedAt: dish.startedAt ?? now,
+                startedById: dish.startedById ?? req.staff.id,
+            },
+        })
+        await tx.itemReturn.create({ data: { orderItemId: ruined.id, kind: 'WASTE', reason: 'MADE_WRONG', note: req.valid.body.note, staffId: req.staff.id } })
+    })
+    res.status(201).end()
 })
 
 // POST /api/taim/order-items/:id/unserve – served by mistake: back to the

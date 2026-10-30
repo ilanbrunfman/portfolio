@@ -4,7 +4,7 @@ import { validate } from '../../../shared/middleware/validate.js'
 import { HttpError } from '../../../shared/lib/httpError.js'
 import { idParams } from '../../../shared/schemas/common.js'
 import { allow, allowDishChanges } from '../middleware/staff.js'
-import { tableCreate, tableUpdate, tablesCombine, orderCreate, orderUpdate, orderItemsAdd, orderItemUpdate, orderSend, orderListQuery, orderItemParams, cameBack } from '../schemas/floor.js'
+import { tableCreate, tableUpdate, tablesCombine, orderCreate, orderUpdate, orderItemsAdd, orderItemUpdate, orderSend, orderListQuery, orderItemParams, cameBack, waste } from '../schemas/floor.js'
 import { ORDER_INCLUDE, billTotal, getOrder, requireOpenOrder, toOrderJson } from '../services/orders.js'
 
 // The floor (tables) and orders. Everyone picked can read them; changing
@@ -126,7 +126,7 @@ router.get('/tables', async (req, res) => {
                           id: open.id,
                           guests: open.guests,
                           openedAt: open.openedAt,
-                          dishCount: open.items.length,
+                          dishCount: open.items.filter((item) => item.status !== 'WASTED').length,
                           notSent: open.items.filter((item) => item.status === 'NEW' && !item.held).length,
                           onHold: open.items.filter((item) => item.held).length,
                           inKitchen: cooking.length,
@@ -411,44 +411,91 @@ router.post('/orders/:id/hold', validate({ params: idParams, body: orderSend }),
     res.json(await getOrder(id))
 })
 
-// POST /api/taim/orders/:id/items/:itemId/came-back { reason, note?, remake? }
-// (markCameBack: Manager, Chef, Waiter) – the guest gave a served dish
-// back. It leaves the bill and counts as a loss, with the reason, note and
-// who recorded it. remake: the same dish (same seat, to go or not) is made
-// again on the house – free on the bill, its price a loss too – and goes
-// straight to the kitchen as the next round, so the guest doesn't wait for
-// a Send. Only a served dish on an open bill; a sold-out dish can't be
-// remade (choose something else from the menu).
+/**
+ * Add a dish to an order for the same seat (and to go or not) as `item`:
+ * straight to the kitchen as the next round (sendNow) or waiting on the
+ * bill as not sent. remakeOfId set = free, given instead of `item`.
+ */
+async function addDishLike(tx, { orderId, item, menuItemId, price, sendNow, staffId, remakeOfId = null }) {
+    const sent = sendNow ? { status: 'PREPARING', firedAt: new Date(), firedById: staffId, round: await nextRound(tx, orderId) } : { status: 'NEW' }
+    return tx.orderItem.create({ data: { orderId, menuItemId, price, seat: item.seat, toGo: item.toGo, remakeOfId, ...sent } })
+}
+
+/** The order's next "Send to kitchen" round number */
+async function nextRound(tx, orderId) {
+    const { _max } = await tx.orderItem.aggregate({ where: { orderId }, _max: { round: true } })
+    return (_max.round ?? 0) + 1
+}
+
+// POST /api/taim/orders/:id/items/:itemId/came-back
+//   { reason, note?, remake?, replaceWithId?, sendNow? }
+// (markCameBack: Manager, Chef, Waiter) – the guest gave a served dish back.
+// It leaves the bill and counts as a loss, with the reason, note and who
+// recorded it. What the guest gets instead is on the house – free on the
+// bill, its price a loss too:
+//   remake        the same dish again (same seat, to go or not)
+//   replaceWithId another dish: the right one, something else, or a
+//                 dessert on us
+// sendNow (default): straight to the kitchen as the next round, so the
+// guest doesn't wait for a Send; false: it waits on the bill as not sent
+// (the dessert comes later). Only a served dish on an open bill; a sold-out
+// dish can't be given (choose something else).
 router.post('/orders/:id/items/:itemId/came-back', allow('markCameBack'), validate({ params: orderItemParams, body: cameBack }), async (req, res) => {
+    const { id, itemId } = req.valid.params
+    const { reason, note, remake, replaceWithId, sendNow } = req.valid.body
+    await prisma.$transaction(async (tx) => {
+        await requireOpenOrder(id, tx)
+        const item = await tx.orderItem.findFirst({ where: { id: itemId, orderId: id }, include: { menuItem: { select: { name: true, hidden: true } } } })
+        if (!item) throw new HttpError(404, 'Dish not found on this order')
+
+        // What the guest gets instead, if anything
+        let instead = null
+        if (remake) instead = { ...item.menuItem, id: item.menuItemId, price: item.price }
+        if (replaceWithId) {
+            instead = await tx.menuItem.findUnique({ where: { id: replaceWithId }, select: { id: true, name: true, hidden: true, price: true } })
+            if (!instead) throw new HttpError(400, 'Validation failed', { fields: { replaceWithId: 'That dish is not on the menu' } })
+        }
+        if (instead?.hidden) throw new HttpError(409, `${instead.name} is sold out: choose something else from the menu`)
+
+        // Only from SENT_OUT, in one UPDATE: two taps can't both succeed
+        const { count } = await tx.orderItem.updateMany({ where: { id: itemId, status: 'SENT_OUT' }, data: { status: 'CAME_BACK' } })
+        if (count === 0) throw new HttpError(409, 'Only a served dish can come back')
+        await tx.itemReturn.create({ data: { orderItemId: itemId, kind: 'RETURN', reason, note, staffId: req.staff.id } })
+
+        if (instead) {
+            await addDishLike(tx, { orderId: id, item, menuItemId: instead.id, price: instead.price, sendNow, staffId: req.staff.id, remakeOfId: itemId })
+        }
+    })
+    res.status(201).json(await getOrder(id))
+})
+
+// POST /api/taim/orders/:id/items/:itemId/waste { reason, note?, remake? }
+// (addDishes / takeoutOrders) – food lost without a guest giving it back:
+//   CANCELLED  the guest cancelled a dish the kitchen already started
+//              (one it hasn't started is just removed: nothing was cooked)
+//   DROPPED    a served dish never reached the guest; remake: made again
+//              and charged as usual (the guest pays once), straight to the
+//              kitchen
+// The dish stays on the order as WASTED: not on the bill, a loss.
+router.post('/orders/:id/items/:itemId/waste', validate({ params: orderItemParams, body: waste }), allowDishChanges, async (req, res) => {
     const { id, itemId } = req.valid.params
     const { reason, note, remake } = req.valid.body
     await prisma.$transaction(async (tx) => {
         await requireOpenOrder(id, tx)
         const item = await tx.orderItem.findFirst({ where: { id: itemId, orderId: id }, include: { menuItem: { select: { name: true, hidden: true } } } })
         if (!item) throw new HttpError(404, 'Dish not found on this order')
-        if (remake && item.menuItem.hidden) throw new HttpError(409, `${item.menuItem.name} is sold out: choose something else from the menu`)
 
-        // Only from SENT_OUT, in one UPDATE: two taps can't both succeed
-        const { count } = await tx.orderItem.updateMany({ where: { id: itemId, status: 'SENT_OUT' }, data: { status: 'CAME_BACK' } })
-        if (count === 0) throw new HttpError(409, 'Only a served dish can come back')
-        await tx.itemReturn.create({ data: { orderItemId: itemId, reason, note, staffId: req.staff.id } })
+        const from = reason === 'CANCELLED' ? { status: 'PREPARING', startedAt: { not: null } } : { status: 'SENT_OUT' }
+        if (reason === 'DROPPED' && remake && item.menuItem.hidden) throw new HttpError(409, `${item.menuItem.name} is sold out: choose something else from the menu`)
+        const { count } = await tx.orderItem.updateMany({ where: { id: itemId, ...from }, data: { status: 'WASTED' } })
+        if (count === 0) {
+            if (reason === 'CANCELLED' && item.status === 'PREPARING') throw new HttpError(409, "The kitchen hasn't started it: just remove it")
+            throw new HttpError(409, reason === 'CANCELLED' ? 'Only a dish the kitchen is cooking can be cancelled as waste' : 'Only a served dish can be dropped')
+        }
+        await tx.itemReturn.create({ data: { orderItemId: itemId, kind: 'WASTE', reason, note, staffId: req.staff.id } })
 
-        if (remake) {
-            const { _max } = await tx.orderItem.aggregate({ where: { orderId: id }, _max: { round: true } })
-            await tx.orderItem.create({
-                data: {
-                    orderId: id,
-                    menuItemId: item.menuItemId,
-                    price: item.price,
-                    seat: item.seat,
-                    toGo: item.toGo,
-                    status: 'PREPARING',
-                    firedAt: new Date(),
-                    firedById: req.staff.id,
-                    round: (_max.round ?? 0) + 1,
-                    remakeOfId: itemId,
-                },
-            })
+        if (reason === 'DROPPED' && remake) {
+            await addDishLike(tx, { orderId: id, item, menuItemId: item.menuItemId, price: item.price, sendNow: true, staffId: req.staff.id })
         }
     })
     res.status(201).json(await getOrder(id))

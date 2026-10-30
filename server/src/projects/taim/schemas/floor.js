@@ -89,20 +89,43 @@ export const orderItemUpdate = z
     })
     .refine((data) => data.seat !== undefined || data.toGo !== undefined, 'Nothing to update')
 
-// POST /api/taim/orders/:id/items/:itemId/came-back – why, and whether to
-// make it again (a free remake, sent straight to the kitchen)
+const note = z
+    .string({ error: 'Note must be text' })
+    .trim()
+    .max(200, 'Max 200 characters')
+    .transform((text) => text || null)
+    .nullable()
+    .default(null)
+
+// POST /api/taim/orders/:id/items/:itemId/came-back – why, and what the
+// guest gets instead, on the house: the same dish again (remake), another
+// dish (replaceWithId, e.g. a dessert), or nothing. sendNow: the free dish
+// goes straight to the kitchen (default), or waits on the bill as not sent
+// (a dessert for later).
 export const RETURN_REASONS = ['COLD', 'WRONG_DISH', 'TASTE', 'UNDERCOOKED', 'ALLERGY', 'TOO_SLOW', 'OTHER']
-export const cameBack = z.object({
-    reason: z.enum(RETURN_REASONS, { error: 'Pick a reason' }),
-    note: z
-        .string({ error: 'Note must be text' })
-        .trim()
-        .max(200, 'Max 200 characters')
-        .transform((note) => note || null)
-        .nullable()
-        .default(null),
+export const cameBack = z
+    .object({
+        reason: z.enum(RETURN_REASONS, { error: 'Pick a reason' }),
+        note,
+        remake: z.boolean({ error: 'Remake must be true or false' }).default(false),
+        replaceWithId: z.number({ error: 'Invalid dish' }).int('Invalid dish').positive('Invalid dish').nullable().default(null),
+        sendNow: z.boolean({ error: 'Send now must be true or false' }).default(true),
+    })
+    .refine((body) => !(body.remake && body.replaceWithId), 'Make it again or another dish, not both')
+
+// POST /api/taim/orders/:id/items/:itemId/waste – food lost without a guest
+// giving it back: CANCELLED (the guest cancelled after the kitchen started
+// it) or DROPPED (on the way; remake = make it again, charged as usual since
+// the guest never got it)
+export const WASTE_REASONS = ['CANCELLED', 'DROPPED']
+export const waste = z.object({
+    reason: z.enum(WASTE_REASONS, { error: 'Pick a reason' }),
+    note,
     remake: z.boolean({ error: 'Remake must be true or false' }).default(false),
 })
+
+// POST /api/taim/order-items/:id/redo – the kitchen made it wrong: { note? }
+export const redo = z.object({ note })
 
 // POST /api/taim/orders/:id/send { itemIds? } – which dishes not sent yet go
 // now; the others are put on hold. No itemIds = every dish not sent yet.
