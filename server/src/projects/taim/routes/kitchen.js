@@ -34,17 +34,17 @@ router.get('/kitchen', async (req, res) => {
     const [cooking, held, served, heldOrders] = await Promise.all([
         prisma.orderItem.findMany({
             where: { status: 'PREPARING', order: { status: 'OPEN' } },
-            select: { id: true, seat: true, round: true, firedAt: true, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT } },
+            select: { id: true, seat: true, toGo: true, round: true, firedAt: true, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT } },
             orderBy: [{ firedAt: 'asc' }, { id: 'asc' }],
         }),
         prisma.orderItem.findMany({
             where: { held: true, order: { status: 'OPEN' } },
-            select: { id: true, seat: true, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT } },
+            select: { id: true, seat: true, toGo: true, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT } },
             orderBy: [{ orderId: 'asc' }, { id: 'asc' }],
         }),
         prisma.orderItem.findMany({
             where: { status: 'SENT_OUT', order: { status: 'OPEN' }, sentOutAt: { gte: new Date(Date.now() - UNDO_MINUTES * 60_000) } },
-            select: { id: true, seat: true, sentOutAt: true, menuItem: { select: { name: true } }, order: { select: ORDER_SELECT } },
+            select: { id: true, seat: true, toGo: true, sentOutAt: true, menuItem: { select: { name: true } }, order: { select: ORDER_SELECT } },
             orderBy: { sentOutAt: 'desc' },
         }),
         // For each order with held dishes: is anything still cooking, and when was the last dish served
@@ -70,7 +70,8 @@ router.get('/kitchen', async (req, res) => {
                 dishes: [],
             })
         }
-        tickets.get(key).dishes.push({ id: item.id, name: item.menuItem.name, seat: item.seat, prepMinutes: item.menuItem.prepMinutes })
+        // toGo: pack it, the guest takes it home
+        tickets.get(key).dishes.push({ id: item.id, name: item.menuItem.name, seat: item.seat, toGo: item.toGo, prepMinutes: item.menuItem.prepMinutes })
     }
     const bySeat = (a, b) => (a.seat ?? Infinity) - (b.seat ?? Infinity) || a.id - b.id
     for (const ticket of tickets.values()) ticket.dishes.sort(bySeat)
@@ -88,7 +89,7 @@ router.get('/kitchen', async (req, res) => {
                 dishes: [],
             })
         }
-        onHold.get(item.orderId).dishes.push({ id: item.id, name: item.menuItem.name, seat: item.seat, prepMinutes: item.menuItem.prepMinutes })
+        onHold.get(item.orderId).dishes.push({ id: item.id, name: item.menuItem.name, seat: item.seat, toGo: item.toGo, prepMinutes: item.menuItem.prepMinutes })
     }
     for (const order of onHold.values()) order.dishes.sort(bySeat)
 
@@ -96,7 +97,7 @@ router.get('/kitchen', async (req, res) => {
         tickets: [...tickets.values()],
         onHold: [...onHold.values()],
         fireAfterMinutes: FIRE_AFTER_MINUTES,
-        recentlyServed: served.map((item) => ({ id: item.id, name: item.menuItem.name, seat: item.seat, title: titleOf(item.order), sentOutAt: item.sentOutAt })),
+        recentlyServed: served.map((item) => ({ id: item.id, name: item.menuItem.name, seat: item.seat, toGo: item.toGo, title: titleOf(item.order), sentOutAt: item.sentOutAt })),
     })
 })
 

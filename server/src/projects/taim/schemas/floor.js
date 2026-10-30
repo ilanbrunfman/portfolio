@@ -63,6 +63,8 @@ export const orderItemsAdd = z.object({
                 quantity: positiveInt('Quantity must be a whole number above 0').max(20, 'Max 20 at a time').default(1),
                 // Which guest gets it (1…guests); null or missing = shared / take-out
                 seat: positiveInt('Seat must be a whole number above 0').nullable().default(null),
+                // The guest takes it home: packed, on the same bill (tables only)
+                toGo: z.boolean({ error: 'To go must be true or false' }).default(false),
             }),
             { error: 'Pick at least one dish' }
         )
@@ -79,9 +81,13 @@ export const orderUpdate = z
     .refine((data) => Object.keys(data).length > 0, 'Nothing to update')
 
 // PATCH /api/taim/orders/:id/items/:itemId – move a dish to another seat (null = shared)
-export const orderItemUpdate = z.object({
-    seat: positiveInt('Seat must be a whole number above 0').nullable(),
-})
+// PATCH /api/taim/orders/:id/items/:itemId – another seat, and/or to go or not
+export const orderItemUpdate = z
+    .object({
+        seat: positiveInt('Seat must be a whole number above 0').nullable().optional(),
+        toGo: z.boolean({ error: 'To go must be true or false' }).optional(),
+    })
+    .refine((data) => data.seat !== undefined || data.toGo !== undefined, 'Nothing to update')
 
 // POST /api/taim/orders/:id/send { itemIds? } – which dishes not sent yet go
 // now; the others are put on hold. No itemIds = every dish not sent yet.

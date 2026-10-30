@@ -7,7 +7,7 @@ export const ORDER_INCLUDE = {
     table: { select: { id: true, label: true, joined: { select: { label: true }, orderBy: { position: 'asc' } } } },
     openedBy: { select: { id: true, name: true } },
     items: {
-        select: { id: true, menuItemId: true, price: true, seat: true, status: true, createdAt: true, firedAt: true, round: true, held: true, kitchenFired: true, firedBy: { select: { name: true } }, sentOutAt: true, menuItem: { select: { name: true, category: { select: { name: true } } } } },
+        select: { id: true, menuItemId: true, price: true, seat: true, status: true, createdAt: true, firedAt: true, round: true, held: true, toGo: true, kitchenFired: true, firedBy: { select: { name: true } }, sentOutAt: true, menuItem: { select: { name: true, category: { select: { name: true } } } } },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     },
 }
