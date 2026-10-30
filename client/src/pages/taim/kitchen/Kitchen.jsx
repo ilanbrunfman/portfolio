@@ -8,7 +8,8 @@ import { seatLabel } from '@/pages/taim/utils/orders'
 import './Kitchen.scss'
 
 /**
- * /taim/kitchen – what the cooks have to make: one ticket per send
+ * /taim/kitchen – what the cooks have to make (the Manager only looks:
+ * "View only", no Start, Served, Undo or Fire): one ticket per send
  * (a table's round, or a take-out), oldest first, each dish against its
  * prep time. "Served" (advanceDish: Manager, Chef, Cook) takes a dish off;
  * "Coming up" lists dishes the waiters are holding back (mains while the
@@ -40,7 +41,10 @@ const Kitchen = () => {
     return (
         <div className="kitchen d-flex flex-column gap-2">
             <div className="d-flex flex-column">
-                <h2 className="taim__heading">Kitchen</h2>
+                <h2 className="taim__heading d-flex align-items-center gap-0-5">
+                    Kitchen
+                    {!canServe && <span className="taim__view-only">View only</span>}
+                </h2>
                 <span className="form__hint">
                     {dishes} {dishes === 1 ? 'dish' : 'dishes'} to make · {tickets.length} {tickets.length === 1 ? 'ticket' : 'tickets'}
                 </span>
