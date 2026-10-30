@@ -20,7 +20,7 @@ remaining height (handy for centering a card).
 <SideNavLayout
     label="Bank"
     links={[
-        { to: '/', icon: 'IconHome', label: 'Portfolio home', shortLabel: 'Home', end: true },
+        { to: '/', icon: 'IconHome', label: 'Portfolio', shortLabel: 'Home', end: true },
         { to: '/bank', icon: 'IconCards', label: 'Accounts' },
     ]}
     actions={[{ icon: 'IconSignOut', label: 'Log out', onClick: logout }]}
@@ -40,6 +40,6 @@ remaining height (handy for centering a card).
 
 `label` shows beside the icon in the sidebar and is the item's `aria-label`.
 The phone tab bar has little room per item, so it shows `shortLabel` when
-given (e.g. "Home" for "Portfolio home"), otherwise `label`, cut with "…" if
+given (e.g. "Home" for "Portfolio"), otherwise `label`, cut with "…" if
 it's still too long. Keep the short label a word from the full one, so voice
 control ("click Home") still matches. `icon` is a name from the `Icon` registry.
