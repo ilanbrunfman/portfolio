@@ -8,8 +8,9 @@ import { allow } from '../middleware/staff.js'
 import { TITLE_SELECT, titleOf } from '../services/orders.js'
 
 // The kitchen: what's waiting to be cooked, and marking dishes served.
-// Reading is open to everyone picked; serving needs advanceDish (Manager,
-// Chef, Cook); firing a table's held dishes needs fireHeld (Manager, Chef).
+// Reading is open to everyone picked (the Manager looks, view only);
+// starting and serving need advanceDish (Chef, Cook); firing a table's held
+// dishes needs fireHeld (Chef).
 const router = Router()
 
 // How long a served dish stays in "recently served", where it can be undone
@@ -130,7 +131,7 @@ async function moveDish(db, id, from, data, wrongState) {
     }
 }
 
-// POST /api/taim/orders/:id/kitchen-fire – the Chef (or Manager) starts a
+// POST /api/taim/orders/:id/kitchen-fire – the Chef starts a
 // table's held dishes from the kitchen. Only when nothing of that order is
 // still cooking and its last dish was served at least FIRE_AFTER_MINUTES ago
 // (so the guests had time to eat); the waiter's own "Fire held" has no such

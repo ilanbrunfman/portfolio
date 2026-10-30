@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { resetTaim, as, prisma } from './helpers.js'
 
-// The Chef (or Manager) fires a table's held dishes from the kitchen: only
+// The Chef fires a table's held dishes from the kitchen: only
 // when nothing of that table is cooking and its last dish was served at
 // least 10 minutes ago (TAIM_KITCHEN_FIRE_AFTER).
 let waiter, chef, cook, table, salad, kebab
@@ -91,12 +91,13 @@ describe('POST /api/taim/orders/:id/kitchen-fire', () => {
         await chef.post('/api/taim/orders/999/kitchen-fire').expect(404)
     })
 
-    it('only the Chef and Manager: not a Cook or the Waiter', async () => {
+    it('only the Chef: not the Manager (view only), a Cook or the Waiter', async () => {
         const order = await startersSentMainsHeld()
         await servedAgo(order.id, 15)
+        await (await as('MANAGER')).post(`/api/taim/orders/${order.id}/kitchen-fire`).expect(403)
         await cook.post(`/api/taim/orders/${order.id}/kitchen-fire`).expect(403)
         await waiter.post(`/api/taim/orders/${order.id}/kitchen-fire`).expect(403)
-        await (await as('MANAGER')).post(`/api/taim/orders/${order.id}/kitchen-fire`).expect(204)
+        await chef.post(`/api/taim/orders/${order.id}/kitchen-fire`).expect(204)
     })
 
     it('the database refuses a kitchen-fired dish that was never sent', async () => {

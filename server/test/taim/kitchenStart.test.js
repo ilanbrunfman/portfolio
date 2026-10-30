@@ -46,9 +46,13 @@ describe('starting a ticket', () => {
         await cook.post(`/api/taim/orders/${order.id}/rounds/2/start`).expect(404)
     })
 
-    it('only the kitchen can start (not a Waiter)', async () => {
+    it('only the kitchen can start or serve: not a Waiter, and not the Manager (view only)', async () => {
         const order = await sent()
+        const manager = await as('MANAGER')
         await waiter.post(`/api/taim/orders/${order.id}/rounds/1/start`).expect(403)
+        await manager.post(`/api/taim/orders/${order.id}/rounds/1/start`).expect(403)
+        await manager.post(`/api/taim/order-items/${order.items[0].id}/serve`).expect(403)
+        await manager.get('/api/taim/kitchen').expect(200)
     })
 })
 

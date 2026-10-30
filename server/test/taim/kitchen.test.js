@@ -58,7 +58,7 @@ describe('GET /api/taim/kitchen', () => {
     })
 })
 
-describe('serving dishes (advanceDish: Manager, Chef, Cook)', () => {
+describe('serving dishes (advanceDish: Chef, Cook)', () => {
     it('serve takes a dish off the kitchen list; undo puts it back', async () => {
         const order = await orderAt(t1, [[hummus, 1], [kebab, 2]])
         const [dish] = order.items
