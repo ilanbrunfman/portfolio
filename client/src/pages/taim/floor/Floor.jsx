@@ -249,6 +249,7 @@ const BillDialog = ({ orderId, canClose, canFixSeating, onChanged, onGone }) => 
             <Ticket order={order} className="floor__bill" onClose={canClose ? async () => { await close(); onGone() } : undefined} />
             {canFixSeating && order.status === 'OPEN' && (
                 <SeatingActions
+                    inDialog
                     order={order}
                     onUpdate={async (data) => { await update(data); onChanged() }}
                     onUndo={async () => { await undo(); onGone() }}

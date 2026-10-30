@@ -3,21 +3,23 @@ import { api } from '@/pages/taim/api/client'
 import Input from '@/components/ui/form/input/Input'
 import RadioGroup from '@/components/ui/form/radio/RadioGroup'
 import Button from '@/components/ui/button/Button'
+import Modal from '@/components/ui/modal/Modal'
 import './SeatingActions.scss'
 
 /**
  * Fix a seating mistake: "Move or change guests" (table orders) and
  * "Undo seating" (only while nothing is ordered). Shown to anyone with the
  * seatTable right, on the Order screen and in the Floor's bill dialog.
- * The move form opens in place (not in another dialog, since this may
- * already sit inside one).
+ * The move form opens in a popup, or in place with `inDialog` (the Floor's
+ * bill dialog: a popup can't open inside another one).
  *
  * @param {object} props
  * @param {object} props.order                    The open order.
+ * @param {boolean} [props.inDialog]              Already inside a dialog: open the form in place.
  * @param {({ tableId?, guests? }) => Promise} props.onUpdate  Move / change guests.
  * @param {() => Promise} props.onUndo            Undo the seating (the order is deleted).
  */
-const SeatingActions = ({ order, onUpdate, onUndo }) => {
+const SeatingActions = ({ order, onUpdate, onUndo, inDialog = false }) => {
     const [moving, setMoving] = useState(false)
     const [confirmUndo, setConfirmUndo] = useState(false)
     const [busy, setBusy] = useState(false)
@@ -39,7 +41,7 @@ const SeatingActions = ({ order, onUpdate, onUndo }) => {
     return (
         <div className="d-flex flex-column gap-0-5">
             <div className="d-flex flex-wrap gap-0-5">
-                {order.type === 'TABLE' && !moving && (
+                {order.type === 'TABLE' && !(inDialog && moving) && (
                     <Button size="sm" variant="secondary" onClick={() => setMoving(true)} disabled={busy}>
                         Move or change guests
                     </Button>
@@ -62,10 +64,16 @@ const SeatingActions = ({ order, onUpdate, onUndo }) => {
             </div>
             {error && <p className="form__error" role="alert">{error}</p>}
 
-            {moving && (
+            {inDialog && moving && (
                 <div className="seating-actions__move surface">
                     <MoveForm order={order} onSave={onUpdate} onDone={() => setMoving(false)} />
                 </div>
+            )}
+
+            {!inDialog && (
+                <Modal isOpen={moving} onClose={() => setMoving(false)} title={`Move or change guests · ${order.table?.label ?? ''}`} size="sm">
+                    {moving && <MoveForm order={order} onSave={onUpdate} onDone={() => setMoving(false)} />}
+                </Modal>
             )}
         </div>
     )
