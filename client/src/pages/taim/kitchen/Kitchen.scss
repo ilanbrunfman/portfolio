@@ -24,8 +24,8 @@
         flex: 1 1 34rem;
     }
 
-    &__served {
-        box-sizing: border-box;
+    // The side column: Coming up, Recently served
+    &__side {
         flex: 1 1 14rem;
         max-width: 22rem;
 
@@ -34,7 +34,16 @@
         }
     }
 
-    &__served-title {
+    &__panel {
+        box-sizing: border-box;
+    }
+
+    // Held dishes: a violet edge, like "On hold" on the bill
+    &__coming {
+        border-left: 4px solid #8b5cf6;
+    }
+
+    &__panel-title {
         margin: 0;
         font-size: 0.8rem;
         font-weight: 700;
@@ -43,13 +52,13 @@
         color: var(--text);
     }
 
-    &__served-list {
+    &__panel-list {
         list-style: none;
         margin: 0;
         padding: 0;
     }
 
-    &__served-item {
+    &__panel-item {
         padding: 0.5rem 0;
 
         & + & {

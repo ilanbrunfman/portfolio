@@ -163,7 +163,7 @@ const Floor = () => {
                         <ul className="floor__takeout-list">
                             {floor.takeouts.map((order) => {
                                 const progress = { dishCount: order.items.length, ...kitchenProgress(order.items) }
-                                const ready = progress.dishCount > 0 && progress.notSent === 0 && progress.inKitchen === 0
+                                const ready = progress.dishCount > 0 && progress.notSent === 0 && progress.onHold === 0 && progress.inKitchen === 0
                                 return (
                                     <li key={order.id}>
                                         <button

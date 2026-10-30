@@ -11,6 +11,8 @@ import './Kitchen.scss'
  * /taim/kitchen – what the cooks have to make: one ticket per send
  * (a table's round, or a take-out), oldest first, each dish against its
  * prep time. "Served" (advanceDish: Manager, Chef, Cook) takes a dish off;
+ * "Coming up" lists dishes the waiters are holding back (mains while the
+ * starters are eaten), so the cooks can plan; they become a ticket when fired.
  * "Recently served" keeps the last 10 minutes so a wrong tap can be undone.
  * Reloads every 5 seconds so new orders show up on their own.
  */
@@ -30,7 +32,7 @@ const Kitchen = () => {
     }
     if (!kitchen.data) return <p role="status">Loading the kitchen…</p>
 
-    const { tickets, recentlyServed } = kitchen.data
+    const { tickets, onHold, recentlyServed } = kitchen.data
     const dishes = tickets.reduce((sum, t) => sum + t.dishes.length, 0)
 
     return (
@@ -59,11 +61,34 @@ const Kitchen = () => {
                     </ul>
                 )}
 
-                <RecentlyServed dishes={recentlyServed} now={now} onUndo={canServe ? kitchen.unserve : undefined} />
+                <div className="kitchen__side d-flex flex-column gap-1">
+                    {onHold.length > 0 && <ComingUp orders={onHold} />}
+                    <RecentlyServed dishes={recentlyServed} now={now} onUndo={canServe ? kitchen.unserve : undefined} />
+                </div>
             </div>
         </div>
     )
 }
+
+/** Held dishes per order: not cooking yet, but the cooks can plan for them */
+const ComingUp = ({ orders }) => (
+    <section className="kitchen__panel kitchen__coming surface d-flex flex-column gap-0-5" aria-labelledby="coming-title">
+        <h3 id="coming-title" className="kitchen__panel-title">Coming up · on hold</h3>
+        <ul className="kitchen__panel-list">
+            {orders.map((order) => (
+                <li key={order.orderId} className="kitchen__panel-item d-flex flex-column">
+                    <strong>{order.title}</strong>
+                    <span className="form__hint">
+                        {order.dishes
+                            .map((dish) => `${dish.name}${order.type === 'TABLE' ? ` (${seatLabel(dish.seat)})` : ''}${dish.prepMinutes ? ` · ${dish.prepMinutes} min` : ''}`)
+                            .join(', ')}
+                    </span>
+                </li>
+            ))}
+        </ul>
+        <p className="form__hint">They become a ticket when the waiter fires them.</p>
+    </section>
+)
 
 /** "just now" / "3 min ago" */
 const agoText = (minutes) => (minutes === 0 ? 'just now' : `${minutes} min ago`)
@@ -86,15 +111,15 @@ const RecentlyServed = ({ dishes, now, onUndo }) => {
     }
 
     return (
-        <section className="kitchen__served surface d-flex flex-column gap-0-5" aria-labelledby="served-title">
-            <h3 id="served-title" className="kitchen__served-title">Recently served</h3>
+        <section className="kitchen__panel surface d-flex flex-column gap-0-5" aria-labelledby="served-title">
+            <h3 id="served-title" className="kitchen__panel-title">Recently served</h3>
             {error && <p className="form__error" role="alert">{error}</p>}
             {dishes.length === 0 ? (
                 <p className="form__hint">Nothing in the last 10 minutes.</p>
             ) : (
-                <ul className="kitchen__served-list">
+                <ul className="kitchen__panel-list">
                     {dishes.map((dish) => (
-                        <li key={dish.id} className="kitchen__served-item d-flex align-items-center justify-between gap-0-5">
+                        <li key={dish.id} className="kitchen__panel-item d-flex align-items-center justify-between gap-0-5">
                             <span className="d-flex flex-column">
                                 <strong>{dish.name}</strong>
                                 <span className="form__hint">

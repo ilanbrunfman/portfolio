@@ -10,7 +10,8 @@ import './TableCard.scss'
  *   grey   = dining: guests, minutes since seated, dishes and the bill so far
  *   blue   = dining, and every dish ordered is served (time for dessert or the bill)
  * A dining table also shows how its food is coming along, so the waiter
- * knows whom to ask the kitchen about: "2 not sent", "In kitchen: 3 ·
+ * knows whom to ask the kitchen about: "2 not sent", "2 on hold" (mains
+ * waiting for the waiter to fire them), "In kitchen: 3 ·
  * 14 min" with the seats still waiting, or "All served". A small red tag
  * shows when a dish came back.
  *
@@ -76,11 +77,11 @@ const TableCard = ({ table, now, onClick, disabled = false, selected }) => {
 }
 
 /** Has dishes, and none of them is still to send or in the kitchen */
-const allServed = (order) => order.dishCount > 0 && order.notSent === 0 && order.inKitchen === 0
+const allServed = (order) => order.dishCount > 0 && order.notSent === 0 && !order.onHold && order.inKitchen === 0
 
 /**
  * How a dining table's (or take-out's) food is coming along, from the floor
- * summary: { notSent, inKitchen, waitingSince, waitingSeats, dishCount }.
+ * summary: { notSent, onHold, inKitchen, waitingSince, waitingSeats, dishCount }.
  * `doneText` is what shows once everything is out ("Ready for pickup" for
  * a take-out).
  */
@@ -90,6 +91,7 @@ export const KitchenProgress = ({ order, now, doneText = 'All served' }) => {
     return (
         <span className="table-card__progress d-flex flex-column">
             {order.notSent > 0 && <span className="table-card__not-sent">{order.notSent} not sent</span>}
+            {order.onHold > 0 && <span className="table-card__on-hold">{order.onHold} on hold</span>}
             {order.inKitchen > 0 && (
                 <>
                     <span className="table-card__kitchen">
