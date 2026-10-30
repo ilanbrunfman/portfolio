@@ -61,7 +61,7 @@ describe('another dish instead (free)', () => {
     it('not both remake and another dish; the other dish must be on the menu and not sold out', async () => {
         const { order, shak } = await shakshukaFor2()
         const url = `/api/taim/orders/${order.id}/items/${shak.id}/came-back`
-        expect((await waiter.post(url).send({ reason: 'COLD', remake: true, replaceWithId: kebab.id }).expect(400)).body.fields._).toBe('Make it again or another dish, not both')
+        expect((await waiter.post(url).send({ reason: 'COLD', remake: true, replaceWithId: kebab.id }).expect(400)).body.fields._).toBe('Pick one: fix it, make it again or another dish')
         expect((await waiter.post(url).send({ reason: 'COLD', replaceWithId: 999 }).expect(400)).body.fields.replaceWithId).toBe('That dish is not on the menu')
         await prisma.menuItem.update({ where: { id: malabi.id }, data: { hidden: true } })
         expect((await waiter.post(url).send({ reason: 'COLD', replaceWithId: malabi.id }).expect(409)).body.error).toBe('Malabi is sold out: choose something else from the menu')

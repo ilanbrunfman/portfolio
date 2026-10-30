@@ -428,8 +428,13 @@ async function nextRound(tx, orderId) {
 }
 
 // POST /api/taim/orders/:id/items/:itemId/came-back
-//   { reason, note?, remake?, replaceWithId?, sendNow? }
-// (markCameBack: Manager, Chef, Waiter) – the guest gave a served dish back.
+//   { reason, note?, fix?, remake?, replaceWithId?, sendNow? }
+// (markCameBack: Manager, Chef, Waiter) – the guest sent a served dish back.
+//   fix: the kitchen fixes the same plate (cook it more, more spice). It
+//        goes straight back to the kitchen as the next round, marked as a
+//        fix with the reason and note; it stays on the bill (the guest eats
+//        it) and costs nothing, but the fix is recorded.
+// Otherwise the guest gave it back:
 // It leaves the bill and counts as a loss, with the reason, note and who
 // recorded it. What the guest gets instead is on the house – free on the
 // bill, its price a loss too:
@@ -442,11 +447,22 @@ async function nextRound(tx, orderId) {
 // dish can't be given (choose something else).
 router.post('/orders/:id/items/:itemId/came-back', allow('markCameBack'), validate({ params: orderItemParams, body: cameBack }), async (req, res) => {
     const { id, itemId } = req.valid.params
-    const { reason, note, remake, replaceWithId, sendNow } = req.valid.body
+    const { reason, note, fix, remake, replaceWithId, sendNow } = req.valid.body
     await prisma.$transaction(async (tx) => {
         await requireOpenOrder(id, tx)
         const item = await tx.orderItem.findFirst({ where: { id: itemId, orderId: id }, include: { menuItem: { select: { name: true, hidden: true } } } })
         if (!item) throw new HttpError(404, 'Dish not found on this order')
+
+        if (fix) {
+            // Back in the kitchen as a new round: sent now, not started, not served
+            const { count } = await tx.orderItem.updateMany({
+                where: { id: itemId, status: 'SENT_OUT' },
+                data: { status: 'PREPARING', round: await nextRound(tx, id), firedAt: new Date(), firedById: req.staff.id, startedAt: null, startedById: null, sentOutAt: null, servedById: null },
+            })
+            if (count === 0) throw new HttpError(409, 'Only a served dish can come back')
+            await tx.itemReturn.create({ data: { orderItemId: itemId, kind: 'FIX', reason, note, staffId: req.staff.id } })
+            return
+        }
 
         // What the guest gets instead, if anything
         let instead = null

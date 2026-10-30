@@ -97,9 +97,10 @@ const note = z
     .nullable()
     .default(null)
 
-// POST /api/taim/orders/:id/items/:itemId/came-back – why, and what the
-// guest gets instead, on the house: the same dish again (remake), another
-// dish (replaceWithId, e.g. a dessert), or nothing. sendNow: the free dish
+// POST /api/taim/orders/:id/items/:itemId/came-back – why, and what now:
+// fix the same plate (fix: cook it more, more spice – still charged), or
+// give something instead, on the house: the same dish again (remake),
+// another dish (replaceWithId, e.g. a dessert), or nothing. sendNow: the free dish
 // goes straight to the kitchen (default), or waits on the bill as not sent
 // (a dessert for later).
 export const RETURN_REASONS = ['COLD', 'WRONG_DISH', 'TASTE', 'UNDERCOOKED', 'ALLERGY', 'TOO_SLOW', 'OTHER']
@@ -107,11 +108,12 @@ export const cameBack = z
     .object({
         reason: z.enum(RETURN_REASONS, { error: 'Pick a reason' }),
         note,
+        fix: z.boolean({ error: 'Fix must be true or false' }).default(false),
         remake: z.boolean({ error: 'Remake must be true or false' }).default(false),
         replaceWithId: z.number({ error: 'Invalid dish' }).int('Invalid dish').positive('Invalid dish').nullable().default(null),
         sendNow: z.boolean({ error: 'Send now must be true or false' }).default(true),
     })
-    .refine((body) => !(body.remake && body.replaceWithId), 'Make it again or another dish, not both')
+    .refine((body) => [body.fix, body.remake, Boolean(body.replaceWithId)].filter(Boolean).length <= 1, 'Pick one: fix it, make it again or another dish')
 
 // POST /api/taim/orders/:id/items/:itemId/waste – food lost without a guest
 // giving it back: CANCELLED (the guest cancelled after the kitchen started

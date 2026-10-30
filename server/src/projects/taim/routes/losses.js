@@ -7,7 +7,7 @@ import { TITLE_SELECT, titleOf } from '../services/orders.js'
 
 // Losses (seeLosses: Manager, Chef): what lost dishes cost – returns (a
 // guest gave it back) and waste (cancelled after the kitchen started it,
-// dropped, made wrong). A return's value is the dish's price plus the free
+// dropped, made wrong) – and fixes (sent back to be fixed: $0, but counted). A return's value is the dish's price plus the free
 // dish given instead, if any; waste is the dish's price. Calculated from
 // the rows, never stored.
 const router = Router()
@@ -69,16 +69,18 @@ router.get('/losses', allow('seeLosses'), validate({ query: lossesQuery }), asyn
             note: row.note,
             by: row.staff.name,
             price: dish.price,
-            remakePrice,
+            remakePrice: row.kind === 'FIX' ? null : remakePrice,
             // what was given instead: the same dish (null = same) or another one
-            remakeName: dish.remake && dish.remake.menuItem.name !== dish.menuItem.name ? dish.remake.menuItem.name : null,
-            value: dish.price + (remakePrice ?? 0),
+            remakeName: row.kind !== 'FIX' && dish.remake && dish.remake.menuItem.name !== dish.menuItem.name ? dish.remake.menuItem.name : null,
+            // a fix costs nothing (the same plate, still charged)
+            value: row.kind === 'FIX' ? 0 : dish.price + (remakePrice ?? 0),
         }
     })
 
     res.json({
         total: returns.reduce((sum, row) => sum + row.value, 0),
         returnsTotal: returns.filter((row) => row.kind === 'RETURN').reduce((sum, row) => sum + row.value, 0),
+        fixes: returns.filter((row) => row.kind === 'FIX').length,
         wasteTotal: returns.filter((row) => row.kind === 'WASTE').reduce((sum, row) => sum + row.value, 0),
         count: returns.length,
         remakes: returns.filter((row) => row.remakePrice !== null).length,
