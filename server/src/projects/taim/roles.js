@@ -24,7 +24,7 @@ export const RIGHTS = {
 
 /** Screen → the roles that see it in the side nav */
 export const SCREENS = {
-    floor: ['MANAGER', 'HOST', 'WAITER'],
+    floor: ['MANAGER', 'CHEF', 'HOST', 'WAITER'], // the Chef only looks: no rights that change the floor
     order: ['MANAGER', 'HOST', 'WAITER'], // the Host uses it for take-outs (tables' bills read-only)
     kitchen: ['MANAGER', 'CHEF', 'COOK'],
     menu: ['MANAGER', 'CHEF'],

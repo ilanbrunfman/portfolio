@@ -58,6 +58,20 @@ describe('GET /api/taim/session', () => {
         })
     })
 
+    it('the Chef sees the floor but can change nothing on it', async () => {
+        const chef = await as('CHEF')
+        const res = await chef.get('/api/taim/session').expect(200)
+        expect(res.body.screens).toEqual(['floor', 'kitchen', 'menu', 'bills', 'losses'])
+        for (const right of ['seatTable', 'cleanTable', 'combineTables', 'setUpTables', 'closeBill', 'addDishes', 'takeoutOrders']) {
+            expect(res.body.rights).not.toContain(right)
+        }
+        const table = await prisma.diningTable.create({ data: { label: 'T1', seats: 4, position: 1 } })
+        await chef.get('/api/taim/tables').expect(200)
+        await chef.post('/api/taim/orders').send({ type: 'TABLE', tableId: table.id, guests: 2 }).expect(403)
+        await chef.post(`/api/taim/tables/${table.id}/needs-cleaning`).expect(403)
+        await chef.post('/api/taim/tables').send({ label: 'T2', seats: 2 }).expect(403)
+    })
+
     it('gives the manager every screen and every right', async () => {
         const manager = await as('MANAGER')
         const res = await manager.get('/api/taim/session').expect(200)
