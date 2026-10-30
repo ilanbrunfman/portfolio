@@ -74,3 +74,15 @@ export function groupByRound(order) {
     if (notSent.length > 0) groups.push({ key: 'not-sent', title: 'Not sent yet', sentAt: null, items: notSent })
     return groups
 }
+
+/**
+ * How a dish is doing against its prep time:
+ *   'ok'   – well within it (or no prep time set)
+ *   'soon' – 80% of the time used
+ *   'late' – past it
+ */
+export const timing = (elapsed, prepMinutes) => {
+    if (!prepMinutes) return 'ok'
+    if (elapsed > prepMinutes) return 'late'
+    return elapsed >= prepMinutes * 0.8 ? 'soon' : 'ok'
+}
