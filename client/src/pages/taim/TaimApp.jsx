@@ -6,7 +6,7 @@ import SideNavLayout from '@/components/layout/side-nav/SideNavLayout'
 import Button from '@/components/ui/button/Button'
 import './TaimApp.scss'
 
-const HOME_LINK = { to: '/', icon: 'IconHome', label: 'Portfolio home', shortLabel: 'Home', end: true }
+const HOME_LINK = { to: '/', icon: 'IconHome', label: 'Portfolio', shortLabel: 'Home', end: true }
 
 /**
  * Ta'im layout (/taim/*): icon nav (sidebar on tablet/desktop, bottom bar
