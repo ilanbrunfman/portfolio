@@ -150,12 +150,14 @@ model Order {
 // takes every closed bill not in a day yet; it's refused while bills are
 // open. The totals are saved as they were at closing (like a printed
 // end-of-day report), and the day's bills are locked from then on.
+// The Manager or Chef closes it by hand; if nobody did, the server closes it
+// at the set time (TAIM_DAY_ENDS_AT, 04:00) with closedById = null.
 model BusinessDay {
   id            Int      @id @default(autoincrement())
   openedAt      DateTime // the previous close, or the first bill's opening
   closedAt      DateTime @default(now())
-  closedById    Int
-  closedBy      Staff    @relation(fields: [closedById], references: [id], onDelete: Restrict)
+  closedById    Int? // null = closed automatically at the set time (e.g. 04:00)
+  closedBy      Staff?   @relation(fields: [closedById], references: [id], onDelete: Restrict)
   orders        Order[]
   billCount     Int // bills closed that day
   tableBills    Int
