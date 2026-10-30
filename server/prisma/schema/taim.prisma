@@ -18,12 +18,13 @@ enum StaffRole {
 // The people on the "Who are you?" screen. There are no passwords: picking
 // a person is the login, and the server checks their role on every request.
 model Staff {
-  id         Int           @id @default(autoincrement())
-  name       String
-  role       StaffRole
-  createdAt  DateTime      @default(now())
-  orders     Order[]
-  daysClosed BusinessDay[]
+  id          Int           @id @default(autoincrement())
+  name        String
+  role        StaffRole
+  createdAt   DateTime      @default(now())
+  orders      Order[]
+  daysClosed  BusinessDay[]
+  dishesFired OrderItem[]
 
   @@map("staff")
   @@schema("taim")
@@ -180,19 +181,25 @@ model BusinessDay {
 // now, mains later) and this one waits for "Fire". Only a dish not sent
 // yet (NEW) can be held (CHECK in the migration).
 model OrderItem {
-  id         Int        @id @default(autoincrement())
-  orderId    Int
-  order      Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menuItemId Int
-  menuItem   MenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
-  price      Int // cents, copied when ordered
-  seat       Int? // guest's seat number at the table; null = shared or take-out
-  status     DishStatus // no default: every insert says NEW (or, in the seed, later)
-  createdAt  DateTime   @default(now())
-  firedAt    DateTime? // when the waiter sent it to the kitchen
-  round      Int? // which "Send to kitchen" of this order: 1 = first (e.g. starters), 2 = next…
-  held       Boolean    @default(false) // waiting for "Fire" (mains after the starters)
-  sentOutAt  DateTime?
+  id           Int        @id @default(autoincrement())
+  orderId      Int
+  order        Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId   Int
+  menuItem     MenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+  price        Int // cents, copied when ordered
+  seat         Int? // guest's seat number at the table; null = shared or take-out
+  status       DishStatus // no default: every insert says NEW (or, in the seed, later)
+  createdAt    DateTime   @default(now())
+  firedAt      DateTime? // when the waiter sent it to the kitchen
+  round        Int? // which "Send to kitchen" of this order: 1 = first (e.g. starters), 2 = next…
+  held         Boolean    @default(false) // waiting for "Fire" (mains after the starters)
+  // Who sent it to the kitchen (null on dishes from before this was kept),
+  // and whether the kitchen fired it from "on hold" (Chef or Manager, once
+  // the table's earlier dishes were served a while ago)
+  firedById    Int?
+  firedBy      Staff?     @relation(fields: [firedById], references: [id], onDelete: Restrict)
+  kitchenFired Boolean    @default(false)
+  sentOutAt    DateTime?
 
   @@index([orderId])
   @@index([status])
