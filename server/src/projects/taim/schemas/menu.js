@@ -26,6 +26,13 @@ const dishFields = {
         .nullable()
         .transform((text) => text || null),
     price: cents.positive('Price must be more than 0'),
+    // How long the kitchen should take (minutes); null = not set
+    prepMinutes: z
+        .number({ error: 'Prep time must be a whole number of minutes' })
+        .int('Prep time must be a whole number of minutes')
+        .min(1, 'Prep time must be at least 1 minute')
+        .max(180, 'Max 180 minutes')
+        .nullable(),
     hidden: z.boolean({ error: 'Must be true or false' }),
 }
 
@@ -35,6 +42,7 @@ export const menuItemCreate = z.object({
     name: dishFields.name,
     description: dishFields.description.optional(),
     price: dishFields.price,
+    prepMinutes: dishFields.prepMinutes.default(null),
     hidden: dishFields.hidden.default(false),
 })
 

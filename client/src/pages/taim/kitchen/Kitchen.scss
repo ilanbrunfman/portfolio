@@ -1,0 +1,78 @@
+// Kitchen – visuals only (layout is utility classes in the markup)
+.kitchen {
+    width: 100%;
+
+    p {
+        margin: 0;
+    }
+
+    // Tickets: as many columns as fit, at least 16rem wide each
+    &__tickets {
+        flex: 1 1 34rem;
+        min-width: 0;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+        gap: 0.75rem;
+        align-items: start;
+    }
+
+    &__empty {
+        box-sizing: border-box;
+        flex: 1 1 34rem;
+    }
+
+    // The side column: Coming up, Recently served
+    &__side {
+        flex: 1 1 14rem;
+        max-width: 22rem;
+
+        @media (max-width: 768px) {
+            max-width: none;
+        }
+    }
+
+    &__panel {
+        box-sizing: border-box;
+    }
+
+    // Held dishes: a violet edge, like "On hold" on the bill
+    &__coming {
+        border-left: 4px solid #8b5cf6;
+    }
+
+    // "Served 4 min ago: fire from 10 min" under a held order
+    &__not-yet {
+        font-size: 0.8rem;
+        color: #8b5cf6;
+    }
+
+    &__panel-title {
+        margin: 0;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text);
+    }
+
+    &__panel-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    &__panel-item {
+        padding: 0.5rem 0;
+
+        & + & {
+            border-top: 1px solid var(--border);
+        }
+
+        strong {
+            color: var(--text-h);
+        }
+    }
+}

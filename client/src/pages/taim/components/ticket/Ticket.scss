@@ -60,6 +60,19 @@
         padding: 0;
     }
 
+    // "· fired by kitchen (Avi)" after a round's title
+    &__fired-by {
+        color: #8b5cf6;
+        text-transform: none;
+        letter-spacing: 0;
+        font-weight: 600;
+    }
+
+    // The "On hold" heading in violet, like its dishes
+    &__group.is-held &__round {
+        color: #8b5cf6;
+    }
+
     &__line {
         padding: 0.5rem 0;
         border-top: 1px dashed var(--border);
@@ -72,6 +85,12 @@
         &.is-new {
             padding-left: 0.5rem;
             border-left: 2px dashed var(--accent);
+        }
+
+        // On hold: like not sent, in violet
+        &.is-held {
+            padding-left: 0.5rem;
+            border-left: 2px dashed #8b5cf6;
         }
 
         // A dish that came back isn't on the bill
@@ -124,6 +143,10 @@
 
         &.is-new {
             color: var(--accent);
+        }
+
+        &.is-held {
+            color: #8b5cf6;
         }
 
         &.is-preparing {

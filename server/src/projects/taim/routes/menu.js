@@ -10,7 +10,7 @@ import { categoryCreate, categoryUpdate, menuItemCreate, menuItemUpdate, dishOrd
 // changing it needs the editMenu right (Manager, Chef).
 const router = Router()
 
-const DISH_FIELDS = { id: true, categoryId: true, name: true, description: true, price: true, hidden: true, position: true }
+const DISH_FIELDS = { id: true, categoryId: true, name: true, description: true, price: true, prepMinutes: true, hidden: true, position: true }
 const DISH_ORDER = [{ position: 'asc' }, { id: 'asc' }]
 
 /** Prisma's "unique value already used" error → 409 with a message under the Name input */

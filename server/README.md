@@ -147,7 +147,7 @@ src/
     taim/         Ta'im, the restaurant app
       index.js    all Ta'im routes as one router
       roles.js    who may do what: rights and screens per role
-      routes/     staff, session, menu, floor (tables and orders)
+      routes/     staff, session, menu, floor (tables and orders), kitchen
       services/   order JSON and the bill total
       schemas/    Zod schemas
       middleware/ requireStaff + allow(right)
@@ -159,7 +159,7 @@ test/
     *.test.js     one file per area (accounts, transactions, …)
   taim/
     helpers.js    resetTaim, as(role)
-    *.test.js     session, roles, menu, floor
+    *.test.js     session, roles, menu, floor, kitchen
 ```
 
 Each project lives in its own folder under `src/projects/` and only imports
@@ -295,7 +295,7 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | POST | `/api/taim/categories` | `{ name }` | 201, added at the end of the menu (409 if the name exists) |
 | PATCH | `/api/taim/categories/:id` | `{ name }` | The renamed category |
 | DELETE | `/api/taim/categories/:id` | | 204, only when it has no dishes (409 otherwise) |
-| POST | `/api/taim/menu-items` | `{ categoryId, name, price, description?, hidden? }` | 201 + the dish, at the top of its category (409 if the name exists) |
+| POST | `/api/taim/menu-items` | `{ categoryId, name, price, description?, prepMinutes?, hidden? }` | 201 + the dish, at the top of its category (409 if the name exists) |
 | PATCH | `/api/taim/menu-items/:id` | any of those fields | The updated dish; `{ hidden: true }` = sold out; a new `categoryId` puts it at the top there |
 | PUT | `/api/taim/categories/:id/dish-order` | `{ dishIds }`, top first | The category's dishes in their new order (400 unless the list is exactly that category's dishes) |
 | GET | `/api/taim/tables` | | Tables in floor order; `order` = the open order's summary (`guests`, `openedAt`, `dishCount`, `notSent`, `cameBack`, `total`) or `null` when free; `needsCleaning` after guests leave |
@@ -314,14 +314,18 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | POST | `/api/taim/orders/:id/send` | | Send every dish not sent yet to the kitchen as the order's next `round` (`NEW` → `PREPARING`, `firedAt` set); 409 if there's nothing new |
 | PATCH | `/api/taim/orders/:id/items/:itemId` | `{ seat }` (a number, or `null` = shared) | The order with the dish moved to that seat; any time while the bill is open |
 | DELETE | `/api/taim/orders/:id/items/:itemId` | | The order without that dish; while it's `NEW` or `PREPARING` (409 once sent out) |
-| POST | `/api/taim/orders/:id/close` | | The closed order; the table now needs cleaning (409 if already closed, or while dishes haven't been sent) |
+| POST | `/api/taim/orders/:id/close` | | The closed order; the table now needs cleaning (409 if already closed, or while dishes are not sent or still in the kitchen) |
+| GET | `/api/taim/kitchen` | | `tickets`: one per send (table round or take-out), oldest first, with the dishes still cooking (`name`, `seat`, `prepMinutes`); `recentlyServed`: dishes served in the last 10 minutes |
+| POST | `/api/taim/order-items/:id/serve` | | 204, the dish is out of the kitchen (`advanceDish`; 409 unless it's being prepared) |
+| POST | `/api/taim/order-items/:id/unserve` | | 204, served by mistake: back to the kitchen (409 unless it was served) |
 
 `rights` and `screens` are the role's entries from `roles.js`, so the
 client can show only the screens that person may use.
 
 Everything except `/staff` and `/session` needs a picked person (401).
 Changing the menu needs `editMenu` (403 for Cook, Host, Waiter). Dishes are
-never deleted, only hidden, because orders will point to them; a price
+never deleted, only hidden, because orders will point to them; each dish can have a `prepMinutes` (how long the kitchen should take, 1–180,
+set by the Chef; the Kitchen screen shows dishes against it); a price
 must be above 0, which the database itself also enforces (a `CHECK` rule
 added by hand to the migration).
 
@@ -350,7 +354,7 @@ take-outs have no seats.
 A dish's life: `NEW` (on the bill; the waiter can still change or remove
 it) → **Send to kitchen** → `PREPARING` → the kitchen sends it out →
 `SENT_OUT` → maybe `CAME_BACK` (step 6). A bill can't be closed while any
-dish is still `NEW`.
+dish is still `NEW` or in the kitchen (`PREPARING`).
 
 **Combined tables:** `POST /tables/combine` points the other tables of a
 group at its main table (the first on the floor, `joinedToId`). The main

@@ -18,11 +18,13 @@ enum StaffRole {
 // The people on the "Who are you?" screen. There are no passwords: picking
 // a person is the login, and the server checks their role on every request.
 model Staff {
-  id        Int       @id @default(autoincrement())
-  name      String
-  role      StaffRole
-  createdAt DateTime  @default(now())
-  orders    Order[]
+  id          Int           @id @default(autoincrement())
+  name        String
+  role        StaffRole
+  createdAt   DateTime      @default(now())
+  orders      Order[]
+  daysClosed  BusinessDay[]
+  dishesFired OrderItem[]
 
   @@map("staff")
   @@schema("taim")
@@ -52,6 +54,7 @@ model MenuItem {
   name        String       @unique
   description String?
   price       Int // cents: 1400 = 14.00
+  prepMinutes Int? // how long the kitchen should take, set by the Chef; null = not set
   position    Int // 1, 2, 3… within the category
   hidden      Boolean      @default(false)
   createdAt   DateTime     @default(now())
@@ -132,9 +135,41 @@ model Order {
   openedAt      DateTime     @default(now())
   closedAt      DateTime?
   items         OrderItem[]
+  // Set when the Manager or Chef closes the day: the bill then belongs to
+  // that day's report and can't change any more. null = today's bills.
+  businessDayId Int?
+  businessDay   BusinessDay? @relation(fields: [businessDayId], references: [id], onDelete: Restrict)
 
   @@index([status])
+  @@index([businessDayId])
   @@map("orders")
+  @@schema("taim")
+}
+
+// A closed business day: the end-of-day report. A day runs from the last
+// close to this one (so a night past midnight is still one day). Closing it
+// takes every closed bill not in a day yet; it's refused while bills are
+// open. The totals are saved as they were at closing (like a printed
+// end-of-day report), and the day's bills are locked from then on.
+// The Manager or Chef closes it by hand; if nobody did, the server closes it
+// at the set time (TAIM_DAY_ENDS_AT, 04:00) with closedById = null.
+model BusinessDay {
+  id            Int      @id @default(autoincrement())
+  openedAt      DateTime // the previous close, or the first bill's opening
+  closedAt      DateTime @default(now())
+  closedById    Int? // null = closed automatically at the set time (e.g. 04:00)
+  closedBy      Staff?   @relation(fields: [closedById], references: [id], onDelete: Restrict)
+  orders        Order[]
+  billCount     Int // bills closed that day
+  tableBills    Int
+  takeoutBills  Int
+  guests        Int // guests at tables
+  sales         Int // cents: the bills' totals (dishes that came back not counted)
+  cameBack      Int // dishes that came back
+  cameBackValue Int // cents: what they would have cost
+
+  @@index([closedAt])
+  @@map("business_days")
   @@schema("taim")
 }
 
@@ -142,19 +177,29 @@ model Order {
 // kitchen on its own). `price` is copied from the menu when the dish is
 // added, so later price changes never rewrite an old bill. `seat` says
 // which guest gets it (1…guests), or null = shared / take-out.
+// `held` = on hold: the waiter sent the order's other dishes first (starters
+// now, mains later) and this one waits for "Fire". Only a dish not sent
+// yet (NEW) can be held (CHECK in the migration).
 model OrderItem {
-  id         Int        @id @default(autoincrement())
-  orderId    Int
-  order      Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menuItemId Int
-  menuItem   MenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
-  price      Int // cents, copied when ordered
-  seat       Int? // guest's seat number at the table; null = shared or take-out
-  status     DishStatus // no default: every insert says NEW (or, in the seed, later)
-  createdAt  DateTime   @default(now())
-  firedAt    DateTime? // when the waiter sent it to the kitchen
-  round      Int? // which "Send to kitchen" of this order: 1 = first (e.g. starters), 2 = next…
-  sentOutAt  DateTime?
+  id           Int        @id @default(autoincrement())
+  orderId      Int
+  order        Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId   Int
+  menuItem     MenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+  price        Int // cents, copied when ordered
+  seat         Int? // guest's seat number at the table; null = shared or take-out
+  status       DishStatus // no default: every insert says NEW (or, in the seed, later)
+  createdAt    DateTime   @default(now())
+  firedAt      DateTime? // when the waiter sent it to the kitchen
+  round        Int? // which "Send to kitchen" of this order: 1 = first (e.g. starters), 2 = next…
+  held         Boolean    @default(false) // waiting for "Fire" (mains after the starters)
+  // Who sent it to the kitchen (null on dishes from before this was kept),
+  // and whether the kitchen fired it from "on hold" (Chef or Manager, once
+  // the table's earlier dishes were served a while ago)
+  firedById    Int?
+  firedBy      Staff?     @relation(fields: [firedById], references: [id], onDelete: Restrict)
+  kitchenFired Boolean    @default(false)
+  sentOutAt    DateTime?
 
   @@index([orderId])
   @@index([status])

@@ -11,7 +11,7 @@ export const anonymous = supertest(app)
 /** Empty the Ta'im tables, restart ids at 1, and add the demo staff (no menu, no tables) – call in beforeEach */
 export async function resetTaim() {
     if (!process.env.DATABASE_URL.includes('_test')) throw new Error('resetTaim() only runs on a _test database')
-    await prisma.$executeRaw`TRUNCATE TABLE taim.order_items, taim.orders, taim.dining_tables, taim.menu_items, taim.categories, taim.staff RESTART IDENTITY CASCADE`
+    await prisma.$executeRaw`TRUNCATE TABLE taim.order_items, taim.orders, taim.business_days, taim.dining_tables, taim.menu_items, taim.categories, taim.staff RESTART IDENTITY CASCADE`
     await prisma.staff.createMany({ data: STAFF })
 }
 

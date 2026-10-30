@@ -1,0 +1,60 @@
+// Send to kitchen, with dishes to hold – visuals only (layout is utility classes in the markup)
+.send-dialog {
+    p {
+        margin: 0;
+    }
+
+    &__group + &__group {
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border);
+    }
+
+    &__category {
+        margin: 0;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text);
+    }
+
+    &__dishes {
+        list-style: none;
+        margin: 0.25rem 0 0;
+        padding: 0;
+
+        li {
+            padding: 0.35rem 0;
+        }
+
+        // A dish on hold: dimmed name
+        .is-held .checkbox__label {
+            color: var(--text);
+        }
+    }
+
+    &__seat {
+        margin-left: 0.5rem;
+        padding: 0.05rem 0.45rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 600;
+    }
+
+    // "Hold 2": nothing is sent, so a violet outline rather than the main colour
+    &__hold-button.btn {
+        border-color: #8b5cf6;
+        color: #8b5cf6;
+    }
+
+    // Violet, like "On hold" on the bill and the floor
+    &__hold {
+        margin-left: 0.5rem;
+        color: #8b5cf6;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+}

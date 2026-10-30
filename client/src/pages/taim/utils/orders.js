@@ -26,7 +26,9 @@ export function seatsText(seats) {
 export function kitchenProgress(items) {
     const cooking = items.filter((item) => item.status === 'PREPARING')
     return {
-        notSent: items.filter((item) => item.status === 'NEW').length,
+        notSent: items.filter((item) => item.status === 'NEW' && !item.held).length,
+        onHold: items.filter((item) => item.held).length,
+        kitchenFiredBy: cooking.find((item) => item.kitchenFired)?.firedBy ?? null,
         inKitchen: cooking.length,
         waitingSince: cooking.reduce((oldest, item) => (!oldest || item.firedAt < oldest ? item.firedAt : oldest), null),
         waitingSeats: [...new Set(cooking.map((item) => item.seat))].sort((a, b) => (a ?? Infinity) - (b ?? Infinity)),
@@ -68,9 +70,24 @@ export function groupByRound(order) {
     const rounds = [...new Set(order.items.map((item) => item.round).filter((round) => round !== null))].sort((a, b) => a - b)
     const groups = rounds.map((round) => {
         const items = order.items.filter((item) => item.round === round).sort(bySeat)
-        return { key: `round-${round}`, title: `Round ${round}`, sentAt: items[0].firedAt, items }
+        // kitchenFiredBy: the kitchen fired this round from on hold ("Avi"), not the waiter
+        return { key: `round-${round}`, title: `Round ${round}`, sentAt: items[0].firedAt, kitchenFiredBy: items[0].kitchenFired ? items[0].firedBy : null, items }
     })
-    const notSent = order.items.filter((item) => item.round === null).sort(bySeat)
+    const held = order.items.filter((item) => item.held).sort(bySeat)
+    if (held.length > 0) groups.push({ key: 'on-hold', title: 'On hold', sentAt: null, items: held })
+    const notSent = order.items.filter((item) => item.round === null && !item.held).sort(bySeat)
     if (notSent.length > 0) groups.push({ key: 'not-sent', title: 'Not sent yet', sentAt: null, items: notSent })
     return groups
+}
+
+/**
+ * How a dish is doing against its prep time:
+ *   'ok'   – well within it (or no prep time set)
+ *   'soon' – 80% of the time used
+ *   'late' – past it
+ */
+export const timing = (elapsed, prepMinutes) => {
+    if (!prepMinutes) return 'ok'
+    if (elapsed > prepMinutes) return 'late'
+    return elapsed >= prepMinutes * 0.8 ? 'soon' : 'ok'
 }

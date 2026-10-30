@@ -54,6 +54,16 @@
         }
     }
 
+    // Everything served: blue, so the waiter sees whom to offer dessert or the bill
+    &.is-served {
+        border-color: rgba(59, 130, 246, 0.6);
+        background: rgba(59, 130, 246, 0.08);
+
+        &:hover:not(:disabled) {
+            border-color: #3b82f6;
+        }
+    }
+
     // Picked while combining tables
     &.is-selected {
         border-color: var(--accent);
@@ -109,6 +119,18 @@
         font-weight: 700;
     }
 
+    // Mains waiting for the waiter to fire them: violet, like on the bill
+    &__on-hold {
+        color: #8b5cf6;
+        font-weight: 700;
+    }
+
+    // The Chef fired the held dishes: violet, like on hold
+    &__fired-by {
+        color: #8b5cf6;
+        font-weight: 600;
+    }
+
     &__kitchen {
         color: #b7791f;
         font-weight: 700;
@@ -116,7 +138,7 @@
     }
 
     &__served {
-        color: #22a06b;
+        color: #3b82f6;
         font-weight: 700;
     }
 

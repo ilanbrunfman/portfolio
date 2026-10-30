@@ -4,7 +4,7 @@ import { validate } from '../../../shared/middleware/validate.js'
 import { HttpError } from '../../../shared/lib/httpError.js'
 import { idParams } from '../../../shared/schemas/common.js'
 import { allow, allowDishChanges } from '../middleware/staff.js'
-import { tableCreate, tableUpdate, tablesCombine, orderCreate, orderUpdate, orderItemsAdd, orderItemUpdate, orderListQuery, orderItemParams } from '../schemas/floor.js'
+import { tableCreate, tableUpdate, tablesCombine, orderCreate, orderUpdate, orderItemsAdd, orderItemUpdate, orderSend, orderListQuery, orderItemParams } from '../schemas/floor.js'
 import { ORDER_INCLUDE, billTotal, getOrder, requireOpenOrder, toOrderJson } from '../services/orders.js'
 
 // The floor (tables) and orders. Everyone picked can read them; changing
@@ -98,7 +98,7 @@ function checkSeat(order, seat, field) {
 // GET /api/taim/tables – every table in floor order; `order` is its open
 // order (a short summary) or null; `needsCleaning` = guests left, not cleaned yet.
 // The summary says how the food is coming along: dishes not sent yet,
-// dishes in the kitchen, since when the oldest is waiting, and for which
+// dishes on hold (mains waiting for "Fire"), dishes in the kitchen, since when the oldest is waiting, and for which
 // seats (null = shared) – so a waiter can ask the kitchen about them.
 router.get('/tables', async (req, res) => {
     const tables = await prisma.diningTable.findMany({
@@ -107,7 +107,7 @@ router.get('/tables', async (req, res) => {
             joined: { select: { id: true, label: true, seats: true }, orderBy: { position: 'asc' } },
             orders: {
                 where: { status: 'OPEN' },
-                select: { id: true, guests: true, openedAt: true, items: { select: { price: true, status: true, seat: true, firedAt: true } } },
+                select: { id: true, guests: true, openedAt: true, items: { select: { price: true, status: true, held: true, kitchenFired: true, firedBy: { select: { name: true } }, seat: true, firedAt: true } } },
             },
         },
     })
@@ -127,13 +127,16 @@ router.get('/tables', async (req, res) => {
                           guests: open.guests,
                           openedAt: open.openedAt,
                           dishCount: open.items.length,
-                          notSent: open.items.filter((item) => item.status === 'NEW').length,
+                          notSent: open.items.filter((item) => item.status === 'NEW' && !item.held).length,
+                          onHold: open.items.filter((item) => item.held).length,
                           inKitchen: cooking.length,
                           // the oldest dish still in the kitchen: since when it waits
                           waitingSince: cooking.reduce((oldest, item) => (!oldest || item.firedAt < oldest ? item.firedAt : oldest), null),
                           // seats still waiting for food, in order; null = shared, last
                           waitingSeats: [...new Set(cooking.map((item) => item.seat))].sort((a, b) => (a ?? Infinity) - (b ?? Infinity)),
                           cameBack: open.items.filter((item) => item.status === 'CAME_BACK').length,
+                          // the kitchen fired held dishes that are cooking now: who did ("Avi"), or null
+                          kitchenFiredBy: cooking.find((item) => item.kitchenFired)?.firedBy?.name ?? null,
                           total: billTotal(open.items),
                       }
                     : null,
@@ -348,19 +351,54 @@ router.patch('/orders/:id/items/:itemId', validate({ params: orderItemParams, bo
     res.json(await getOrder(id))
 })
 
-// POST /api/taim/orders/:id/send – send every dish not sent yet to the
-// kitchen (NEW → PREPARING), all at once, as the order's next round
-// (1 = first send, e.g. starters; 2 = the mains 20 minutes later…)
-router.post('/orders/:id/send', validate({ params: idParams }), allowDishChanges, async (req, res) => {
+// POST /api/taim/orders/:id/send { itemIds? } – send dishes to the kitchen
+// (NEW → PREPARING) as the order's next round (1 = first send, e.g.
+// starters; 2 = the mains 20 minutes later…).
+//   no itemIds: every dish not sent yet, held ones too
+//   itemIds:    only those (dishes not sent yet on this order); the other
+//               dishes not sent yet are put on hold – "starters now, mains
+//               later". Sending the held ones later is "Fire".
+router.post('/orders/:id/send', validate({ params: idParams, body: orderSend }), allowDishChanges, async (req, res) => {
     const { id } = req.valid.params
+    const { itemIds } = req.valid.body
     await prisma.$transaction(async (tx) => {
         await requireOpenOrder(id, tx)
+        const waiting = await tx.orderItem.findMany({ where: { orderId: id, status: 'NEW' }, select: { id: true } })
+        if (waiting.length === 0) throw new HttpError(409, 'Nothing new to send: add dishes first')
+        const toSend = itemIds ? [...new Set(itemIds)] : waiting.map((item) => item.id)
+        const waitingIds = new Set(waiting.map((item) => item.id))
+        if (toSend.some((itemId) => !waitingIds.has(itemId))) {
+            throw new HttpError(409, 'A dish was already sent or removed: refresh the order and try again')
+        }
+
         const { _max } = await tx.orderItem.aggregate({ where: { orderId: id }, _max: { round: true } })
-        const { count } = await tx.orderItem.updateMany({
-            where: { orderId: id, status: 'NEW' },
-            data: { status: 'PREPARING', firedAt: new Date(), round: (_max.round ?? 0) + 1 },
+        await tx.orderItem.updateMany({
+            where: { id: { in: toSend }, status: 'NEW' },
+            data: { status: 'PREPARING', firedAt: new Date(), round: (_max.round ?? 0) + 1, held: false, firedById: req.staff.id },
         })
-        if (count === 0) throw new HttpError(409, 'Nothing new to send: add dishes first')
+        // Whatever wasn't sent waits for "Fire"
+        await tx.orderItem.updateMany({ where: { orderId: id, status: 'NEW' }, data: { held: true } })
+    })
+    res.json(await getOrder(id))
+})
+
+// POST /api/taim/orders/:id/hold { itemIds? } – put dishes not sent yet on
+// hold without sending anything: the starters went earlier and the mains
+// should wait. No itemIds = every dish not sent yet. The kitchen sees them
+// under "Coming up"; "Fire" (send) sends them later.
+router.post('/orders/:id/hold', validate({ params: idParams, body: orderSend }), allowDishChanges, async (req, res) => {
+    const { id } = req.valid.params
+    const { itemIds } = req.valid.body
+    await prisma.$transaction(async (tx) => {
+        await requireOpenOrder(id, tx)
+        const waiting = await tx.orderItem.findMany({ where: { orderId: id, status: 'NEW', held: false }, select: { id: true } })
+        if (waiting.length === 0) throw new HttpError(409, 'Nothing to hold: add dishes first')
+        const waitingIds = new Set(waiting.map((item) => item.id))
+        const toHold = itemIds ? [...new Set(itemIds)] : [...waitingIds]
+        if (toHold.some((itemId) => !waitingIds.has(itemId))) {
+            throw new HttpError(409, 'A dish was already sent, held or removed: refresh the order and try again')
+        }
+        await tx.orderItem.updateMany({ where: { id: { in: toHold }, status: 'NEW' }, data: { held: true } })
     })
     res.json(await getOrder(id))
 })
@@ -384,10 +422,18 @@ router.delete('/orders/:id/items/:itemId', validate({ params: orderItemParams })
 router.post('/orders/:id/close', allow('closeBill'), validate({ params: idParams }), async (req, res) => {
     const { id } = req.valid.params
     await prisma.$transaction(async (tx) => {
-        // Guests don't pay for dishes the kitchen never got
+        // Guests don't pay for dishes the kitchen never got, or hasn't served yet
+        const held = await tx.orderItem.count({ where: { orderId: id, held: true } })
+        if (held > 0) {
+            throw new HttpError(409, `${held} ${held === 1 ? 'dish is' : 'dishes are'} on hold: fire or remove ${held === 1 ? 'it' : 'them'} first`)
+        }
         const notSent = await tx.orderItem.count({ where: { orderId: id, status: 'NEW' } })
         if (notSent > 0) {
             throw new HttpError(409, `${notSent} ${notSent === 1 ? "dish hasn't" : "dishes haven't"} been sent to the kitchen: send or remove ${notSent === 1 ? 'it' : 'them'} first`)
+        }
+        const cooking = await tx.orderItem.count({ where: { orderId: id, status: 'PREPARING' } })
+        if (cooking > 0) {
+            throw new HttpError(409, `${cooking} ${cooking === 1 ? 'dish is' : 'dishes are'} still in the kitchen: close the bill once everything is served`)
         }
         // Only an OPEN order changes; if it was already closed nothing is updated
         const { count } = await tx.order.updateMany({ where: { id, status: 'OPEN' }, data: { status: 'CLOSED', closedAt: new Date() } })

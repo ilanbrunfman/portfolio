@@ -3,8 +3,10 @@
 Add or edit one dish of the Ta'im menu. Meant to sit inside a `Modal`.
 
 Fields: **Name**, **Category** (radio buttons), **Price** (typed as dollars,
-sent as cents), **Description** (optional) and **On the menu** (untick =
-sold out, sent as `hidden: true`).
+sent as cents), **Prep time** (optional, whole minutes 1–180: how long the
+kitchen should take, so the Kitchen screen can show late dishes),
+**Description** (optional) and **On the menu** (untick = sold out, sent as
+`hidden: true`).
 
 The form checks the obvious things first (name, a price above 0); the server
 validates again and its messages appear under the matching input, e.g.
@@ -31,5 +33,5 @@ validates again and its messages appear under the matching input, e.g.
 | `dish`       | `object \| null`           | The dish to edit, or `null` to add one. |
 | `categories` | `{ id, name }[]`           | Categories to pick from. |
 | `categoryId` | `number`                   | Optional pre-picked category for a new dish. |
-| `onSave`     | `(data) => Promise`        | Saves `{ categoryId, name, price, description, hidden }`; throws with `err.fields` on failure. |
+| `onSave`     | `(data) => Promise`        | Saves `{ categoryId, name, price, prepMinutes, description, hidden }`; throws with `err.fields` on failure. |
 | `onDone`     | `() => void`               | Called after a successful save, and on Cancel. |

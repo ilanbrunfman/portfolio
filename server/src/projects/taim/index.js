@@ -4,6 +4,8 @@ import staffRouter from './routes/staff.js'
 import sessionRouter from './routes/session.js'
 import menuRouter from './routes/menu.js'
 import floorRouter from './routes/floor.js'
+import kitchenRouter from './routes/kitchen.js'
+import billsRouter from './routes/bills.js'
 
 // Every Ta'im route, as one router. app.js mounts it at /api/taim.
 //
@@ -23,5 +25,9 @@ taim.use(requireStaff)
 taim.use(menuRouter)
 // /tables, /orders
 taim.use(floorRouter)
+// /kitchen, /order-items/:id/serve|unserve
+taim.use(kitchenRouter)
+// /bills, /days/close
+taim.use(billsRouter)
 
 export default taim

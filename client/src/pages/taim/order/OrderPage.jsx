@@ -7,6 +7,7 @@ import Ticket from '@/pages/taim/components/ticket/Ticket'
 import SeatingActions from '@/pages/taim/components/seating-actions/SeatingActions'
 import DishDetails from '@/pages/taim/components/dish-details/DishDetails'
 import BillItemEditor from '@/pages/taim/components/bill-item-editor/BillItemEditor'
+import SendDialog from '@/pages/taim/components/send-dialog/SendDialog'
 import Modal from '@/components/ui/modal/Modal'
 import { seatOptions, seatFromValue } from '@/pages/taim/utils/orders'
 import Tabs from '@/components/ui/tabs/Tabs'
@@ -22,7 +23,10 @@ import './Order.scss'
  * describe it) with "For" (seat), "How many" and Add. At a table the seat
  * picked above the menu is the default; Shared is for the whole table.
  * Added dishes wait on the bill as "Not sent" until "Send to kitchen";
- * more rounds can follow (desserts). A tap on a dish on the bill opens its
+ * more rounds can follow (desserts). "Send to kitchen" opens a popup that
+ * asks which go now: the rest are put on hold (starters now, mains later)
+ * until "Fire held" on the bill. Unticking everything holds them all
+ * (the starter went earlier, the mains added now should wait). A tap on a dish on the bill opens its
  * editor: another seat (any time), or remove (until the kitchen sends it
  * out). Closing the bill is a separate, smaller button at the end.
  */
@@ -30,12 +34,13 @@ const OrderPage = () => {
     const orderId = Number(useParams().orderId)
     const navigate = useNavigate()
     const { can, canEditDishes } = useStaff()
-    const { order, error, addDish, moveDish, removeDish, send, close, update, undo } = useOrder(orderId)
+    const { order, error, addDish, moveDish, removeDish, send, hold, close, update, undo } = useOrder(orderId)
     const menu = useMenu()
     const [category, setCategory] = useState(null) // null = the first one
     const [seat, setSeat] = useState('1') // '1', '2'… or 'shared'
     const [details, setDetails] = useState(null) // the dish whose details are open
     const [editing, setEditing] = useState(null) // the bill line being edited
+    const [choosing, setChoosing] = useState(false) // the send dialog is open
     const [message, setMessage] = useState('')
 
     if (error && !order) {
@@ -59,22 +64,42 @@ const OrderPage = () => {
     const seats = seatOptions(order)
 
     // From the details popup; errors are shown there
-    const handleAdd = async (dish, { seat: value, quantity }) => {
-        const forSeat = atTable ? seatFromValue(value) : null
+    const handleAdd = async (dish, { seats: values, quantity }) => {
+        const forSeats = atTable ? values.map(seatFromValue) : [null]
         try {
-            await addDish(dish.id, forSeat, quantity)
+            await addDish(dish.id, forSeats, quantity)
         } catch (err) {
             menu.reload() // e.g. it was just marked sold out
             throw err
         }
-        if (atTable) setSeat(value) // the next dish defaults to the same guest
-        setMessage(`Added ${quantity > 1 ? `${quantity} × ` : ''}${dish.name}${forSeat ? ` for seat ${forSeat}` : atTable ? ' for the table' : ''} – not sent yet`)
+        if (atTable && values.length === 1) setSeat(values[0]) // the next dish defaults to the same guest
+        const count = quantity * forSeats.length
+        const who = !atTable ? '' : forSeats[0] === null ? ' for the table' : forSeats.length === 1 ? ` for seat ${forSeats[0]}` : ` for seats ${forSeats.slice(0, -1).join(', ')} and ${forSeats.at(-1)}`
+        setMessage(`Added ${count > 1 ? `${count} × ` : ''}${dish.name}${who} – not sent yet`)
     }
 
-    const handleSend = async () => {
-        const count = order.items.filter((item) => item.status === 'NEW').length
+    const waiting = order.items.filter((item) => item.status === 'NEW')
+    const fresh = waiting.filter((item) => !item.held) // added since the last send
+    const sentMessage = (count, held) =>
+        `Sent ${count} ${count === 1 ? 'dish' : 'dishes'} to the kitchen${held > 0 ? ` · ${held} on hold` : ''}`
+
+    // Always ask: which go now, which wait on hold
+    const handleSend = () => setChoosing(true)
+
+    const handlePick = async (itemIds) => {
+        await send(itemIds)
+        setMessage(sentMessage(itemIds.length, waiting.length - itemIds.length))
+    }
+
+    const handleHold = async () => {
+        await hold()
+        setMessage(`${fresh.length} ${fresh.length === 1 ? 'dish' : 'dishes'} on hold: tap "Fire held" when the table is ready`)
+    }
+
+    // Everything waiting goes: the held dishes and any added since
+    const handleFire = async () => {
         await send()
-        setMessage(`Sent ${count} ${count === 1 ? 'dish' : 'dishes'} to the kitchen`)
+        setMessage(`Fired ${waiting.length} ${waiting.length === 1 ? 'dish' : 'dishes'}: the kitchen has them now`)
     }
 
     return (
@@ -140,6 +165,7 @@ const OrderPage = () => {
                     className="order-page__ticket"
                     onEditItem={canEdit ? setEditing : undefined}
                     onSend={canEdit ? handleSend : undefined}
+                    onFire={canEdit ? handleFire : undefined}
                     onClose={can('closeBill') ? async () => { await close(); navigate('/taim/floor') } : undefined}
                 />
             </div>
@@ -153,6 +179,12 @@ const OrderPage = () => {
                         onAdd={(choice) => handleAdd(details, choice)}
                         onDone={() => setDetails(null)}
                     />
+                )}
+            </Modal>
+
+            <Modal isOpen={choosing} onClose={() => setChoosing(false)} title="Send to kitchen" size="sm">
+                {choosing && (
+                    <SendDialog items={waiting} atTable={atTable} onSend={handlePick} onHold={handleHold} onDone={() => setChoosing(false)} />
                 )}
             </Modal>
 

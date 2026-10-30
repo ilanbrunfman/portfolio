@@ -6,6 +6,18 @@
         margin: 0;
     }
 
+    // "View only" tag next to the heading (the Chef)
+    &__view-only {
+        padding: 0.1rem 0.55rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--text);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
     // "T1 + T4 + T7 · 10 seats  [Cancel] [Set tables]" while combining
     &__combine {
         box-sizing: border-box;
@@ -52,26 +64,35 @@
         list-style: none;
         margin: 0;
         padding: 0;
+        display: grid;
+        gap: 0.5rem;
     }
 
+    // A take-out: a small card like the table cards, blue when ready for pickup
     &__takeout {
         box-sizing: border-box;
         width: 100%;
-        padding: 0.6rem 0;
-        border: 0;
-        border-top: 1px solid var(--border);
-        background: none;
+        padding: 0.6rem 0.75rem;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        background: var(--social-bg);
         color: var(--text-h);
         font: inherit;
         text-align: left;
         cursor: pointer;
+        transition: border-color 0.15s ease;
 
-        li:first-child & {
-            border-top: 0;
+        &:hover {
+            border-color: var(--accent);
         }
 
-        &:hover strong {
-            color: var(--accent);
+        &.is-ready {
+            border-color: rgba(59, 130, 246, 0.6);
+            background: rgba(59, 130, 246, 0.08);
+
+            &:hover {
+                border-color: #3b82f6;
+            }
         }
 
         &:focus-visible {

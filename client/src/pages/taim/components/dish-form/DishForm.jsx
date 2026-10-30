@@ -20,6 +20,7 @@ const DishForm = ({ dish, categories, categoryId, onSave, onDone }) => {
     const [name, setName] = useState(dish?.name ?? '')
     const [category, setCategory] = useState(String(dish?.categoryId ?? categoryId ?? categories[0]?.id ?? ''))
     const [price, setPrice] = useState(dish ? centsToInput(dish.price) : '')
+    const [prep, setPrep] = useState(dish?.prepMinutes ? String(dish.prepMinutes) : '')
     const [description, setDescription] = useState(dish?.description ?? '')
     const [onMenu, setOnMenu] = useState(dish ? !dish.hidden : true)
     const [errors, setErrors] = useState({})
@@ -42,6 +43,11 @@ const DishForm = ({ dish, categories, categoryId, onSave, onDone }) => {
         if (!name.trim()) found.name = 'Name is required'
         if (cents === null) found.price = 'Enter a price like 14 or 14.50'
         else if (cents <= 0) found.price = 'Price must be more than 0'
+        // Prep time is optional: empty = not set
+        const prepMinutes = prep.trim() === '' ? null : Number(prep)
+        if (prepMinutes !== null && (!Number.isInteger(prepMinutes) || prepMinutes < 1 || prepMinutes > 180)) {
+            found.prepMinutes = 'Enter whole minutes, 1 to 180'
+        }
         if (Object.keys(found).length > 0) return setErrors(found)
 
         setSaving(true)
@@ -50,6 +56,7 @@ const DishForm = ({ dish, categories, categoryId, onSave, onDone }) => {
                 categoryId: Number(category),
                 name: name.trim(),
                 price: cents,
+                prepMinutes,
                 description: description.trim() || null,
                 hidden: !onMenu,
             })
@@ -93,6 +100,19 @@ const DishForm = ({ dish, categories, categoryId, onSave, onDone }) => {
                 inputMode="decimal"
                 autoComplete="off"
                 placeholder="14.00"
+            />
+
+            <Input
+                label="Prep time (minutes)"
+                hint="Optional. How long the kitchen should take; the Kitchen screen shows dishes running late."
+                value={prep}
+                onChange={(e) => { setPrep(e.target.value); clearError('prepMinutes') }}
+                error={errors.prepMinutes}
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={180}
+                placeholder="e.g. 12"
             />
 
             <Textarea

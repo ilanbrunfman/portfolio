@@ -22,9 +22,13 @@ export function useOrder(orderId) {
 
     const reload = useCallback(() => setAttempt((n) => n + 1), [])
 
-    /** Add a dish; `seat` = the guest's seat number, or null for shared / take-out */
-    const addDish = useCallback(async (menuItemId, seat = null, quantity = 1) => {
-        setOrder(await api(`/orders/${orderId}/items`, { method: 'POST', body: { items: [{ menuItemId, quantity, seat }] } }))
+    /**
+     * Add a dish for one or more seats, `quantity` each, in one request;
+     * a seat is the guest's seat number, or null for shared / take-out
+     */
+    const addDish = useCallback(async (menuItemId, seats = [null], quantity = 1) => {
+        const items = (seats.length > 0 ? seats : [null]).map((seat) => ({ menuItemId, quantity, seat }))
+        setOrder(await api(`/orders/${orderId}/items`, { method: 'POST', body: { items } }))
     }, [orderId])
 
     /** The dish is for another seat (or null = shared) */
@@ -36,9 +40,18 @@ export function useOrder(orderId) {
         setOrder(await api(`/orders/${orderId}/items/${itemId}`, { method: 'DELETE' }))
     }, [orderId])
 
-    /** Send every dish not sent yet to the kitchen */
-    const send = useCallback(async () => {
-        setOrder(await api(`/orders/${orderId}/send`, { method: 'POST' }))
+    /**
+     * Send dishes to the kitchen. itemIds: only those, and the other dishes
+     * not sent yet go on hold; none = every dish not sent yet, held ones too
+     * ("Fire").
+     */
+    const send = useCallback(async (itemIds) => {
+        setOrder(await api(`/orders/${orderId}/send`, { method: 'POST', body: itemIds ? { itemIds } : {} }))
+    }, [orderId])
+
+    /** Put every dish not sent yet on hold, without sending anything */
+    const hold = useCallback(async () => {
+        setOrder(await api(`/orders/${orderId}/hold`, { method: 'POST', body: {} }))
     }, [orderId])
 
     const close = useCallback(async () => {
@@ -55,5 +68,5 @@ export function useOrder(orderId) {
         await api(`/orders/${orderId}`, { method: 'DELETE' })
     }, [orderId])
 
-    return { order, error, reload, addDish, moveDish, removeDish, send, close, update, undo }
+    return { order, error, reload, addDish, moveDish, removeDish, send, hold, close, update, undo }
 }

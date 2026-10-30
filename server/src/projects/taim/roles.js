@@ -14,17 +14,21 @@ export const RIGHTS = {
     addDishes: ['MANAGER', 'WAITER'], // a table's order: add, send, move, remove dishes
     takeoutOrders: ['MANAGER', 'HOST', 'WAITER'], // the same on a take-out (the host takes phone orders)
     advanceDish: ['MANAGER', 'CHEF', 'COOK'], // preparing → sent out
+    fireHeld: ['MANAGER', 'CHEF'], // fire a table's held dishes from the kitchen, once its earlier dishes were served a while ago
     markCameBack: ['MANAGER', 'CHEF', 'WAITER'], // a dish came back, with a reason
     closeBill: ['MANAGER', 'HOST', 'WAITER'], // close the bill, free the table
     seeLosses: ['MANAGER', 'CHEF'], // the losses summary
+    reviewBills: ['MANAGER', 'CHEF', 'HOST'], // every bill of the day, week, month or year, with totals
+    closeDay: ['MANAGER', 'CHEF'], // end of the day: lock its bills and save the report
 }
 
 /** Screen → the roles that see it in the side nav */
 export const SCREENS = {
-    floor: ['MANAGER', 'HOST', 'WAITER'],
+    floor: ['MANAGER', 'CHEF', 'HOST', 'WAITER'], // the Chef only looks: no rights that change the floor
     order: ['MANAGER', 'HOST', 'WAITER'], // the Host uses it for take-outs (tables' bills read-only)
     kitchen: ['MANAGER', 'CHEF', 'COOK'],
     menu: ['MANAGER', 'CHEF'],
+    bills: ['MANAGER', 'CHEF', 'HOST'], // review bills; Manager and Chef close the day
     losses: ['MANAGER', 'CHEF'],
 }
 

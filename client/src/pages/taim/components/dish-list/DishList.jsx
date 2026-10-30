@@ -105,6 +105,7 @@ const DishRow = ({ dish, onToggle, onEdit, toggling }) => {
                         {dish.hidden && <span className="dish-list__tag">Sold out</span>}
                     </span>
                     {dish.description && <span className="form__hint">{dish.description}</span>}
+                    {dish.prepMinutes && <span className="dish-list__prep">Prep {dish.prepMinutes} min</span>}
                 </div>
                 {/* Price, toggle and Edit wrap together under the name on narrow screens */}
                 <div className="dish-list__controls d-flex align-items-center gap-1">

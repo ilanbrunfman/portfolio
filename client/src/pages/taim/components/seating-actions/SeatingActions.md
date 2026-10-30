@@ -2,13 +2,13 @@
 
 Lets a host (or waiter, or manager) fix a seating mistake:
 
-- **Move or change guests** (table orders): a form, opened in place, with the tables you can
+- **Move or change guests** (table orders): a form in a popup, with the tables you can
   move to (this one, plus every table that's free and clean) and the guest
   count. Sends `PATCH /api/taim/orders/:id`. The server still decides: a
   table seated a moment ago, one that needs cleaning, or fewer guests than
   a seat that already has dishes all come back as an error shown in the
-  form. It opens in place rather than in a dialog, because on the Floor
-  this already sits inside the bill dialog.
+  form. With `inDialog` it opens in place instead, because on the Floor
+  this already sits inside the bill dialog (a popup can't open in a popup).
 - **Undo seating** / **Cancel take-out**: only while nothing has been
   ordered. It asks once more ("Yes, undo seating" / "Keep seating", or for a
   take-out "Yes, cancel take-out" / "Keep it"), then sends
@@ -30,3 +30,4 @@ Lets a host (or waiter, or manager) fix a seating mistake:
 | `order`    | `object`                          | The open order. |
 | `onUpdate` | `({ tableId?, guests? }) => Promise` | Move and/or change guests; throws on failure. |
 | `onUndo`   | `() => Promise`                   | Undo the seating; throws on failure. |
+| `inDialog` | `boolean`                         | Already inside a dialog: open the move form in place, not in a popup. |
