@@ -75,3 +75,84 @@ Log in as **demo@bank.test / demo1234**, or sign up for an empty account.
 | `server/README.md` | Every endpoint, the login design, and all commands |
 
 ---
+
+## Ta'im — restaurant app (`/taim`)
+
+*Ta'im* (טעים) is Hebrew for "tasty". A restaurant system in the spirit of
+Toast: staff pick who they are, seat tables and take orders, the kitchen
+works a live list of tickets, and the manager sees each day's bills and what
+dishes that came back cost. Same stack as the bank tracker, in its own
+PostgreSQL schema next to the bank's.
+
+**Stack:** React 19 + Vite · Node 24 + Express 5 · Prisma 7 · PostgreSQL 17
+(Docker) · Zod validation · Vitest + Supertest (169 Ta'im API tests) · GitHub Actions
+
+![The floor: tables ready, dining, to clean; what's on hold, in the kitchen and to go](docs/screenshots/taim-floor.png)
+
+| A table's bill | The kitchen |
+|---|---|
+| ![T6's bill: a dish that came back cold, its free remake, and a dessert to go](docs/screenshots/taim-order.png) | ![Kitchen tickets: a remake and a fix first, late dishes in red, held dishes coming up](docs/screenshots/taim-kitchen.png) |
+
+| Bills of the week | Losses |
+|---|---|
+| ![Bills: totals and every bill of the week](docs/screenshots/taim-bills.png) | ![Losses: money lost per month, by reason and by dish](docs/screenshots/taim-losses.png) |
+
+<p>
+  <img src="docs/screenshots/taim-phone-floor.png" alt="The floor on a phone" width="260">
+  &nbsp;
+  <img src="docs/screenshots/taim-phone-kitchen.png" alt="The kitchen on a phone" width="260">
+  &nbsp;
+  <img src="docs/screenshots/taim-who.png" alt="Who are you? Pick a person to use Ta'im as them" width="420">
+</p>
+
+### What it does
+
+- **Who are you?** Pick one of five people (Manager, Chef, Cook, Host,
+  Waiter). There's no password: the role decides which screens you see, and
+  the server checks it on every request (403 if your role can't).
+- **Floor:** tables are green (ready), yellow (needs cleaning), grey (dining)
+  or blue (all served), with what's not sent, on hold, in the kitchen or to
+  go. Seat guests, combine tables for a big party, start take-outs, close
+  bills. A table can't be seated twice, even by two hosts at once (a unique
+  index in the database).
+- **Order:** the menu by category; a dish for one or more seats or shared,
+  to go or not. *Send to kitchen* asks what goes now and what waits on hold
+  (mains after the starters), fired later by the waiter or the chef.
+- **Kitchen:** one ticket per round, oldest first, refreshed every 5 seconds.
+  A cook taps *Start*, each dish counts against its prep time (amber near
+  it, red when late), then *Served*. Every dish keeps who sent, started and
+  served it, and when.
+- **When a guest sends a dish back:** fix the same plate (undercooked steak,
+  more spice – still charged), or take it off the bill and make it again or
+  give another dish instead (a dessert on us), free. Waste is recorded too:
+  cancelled after cooking started, dropped, or made wrong (*Redo*).
+- **Bills and end of day:** totals and every bill by day, week, month or
+  year. The manager or chef closes the day (refused while bills are open),
+  which saves a report and locks its bills; if nobody does, the server
+  closes it at 04:00 restaurant time.
+- **Losses:** money lost per month, by reason and by dish – returns, waste,
+  and fixes (which cost nothing but are counted).
+- **Prices are copied** when a dish is ordered, so a menu change never
+  rewrites an old bill. Money is in whole cents; totals are calculated from
+  rows, not stored.
+
+### Run it
+
+Same setup as the bank tracker above (Docker, `npm run db:migrate`,
+`npm run db:seed`), then open the app + `/taim`. The seed gives a busy
+evening (tables dining, tickets waiting, started, on hold, to go, a remake
+and a fix) and eight weeks of history for Bills and Losses. Pick **Lior**
+(Waiter) for the floor and orders, **Yossi** (Cook) for the kitchen, or
+**Noa** (Manager) for everything.
+
+### Where things are
+
+| Path | What |
+|---|---|
+| `client/src/pages/taim/` | Screens (floor, order, kitchen, menu, bills, losses), components, hooks |
+| `server/src/projects/taim/` | The Ta'im API: routes, Zod schemas, services, roles and rights (`roles.js`) |
+| `server/prisma/schema/taim.prisma` | Its tables, in the PostgreSQL schema "taim" (CHECK rules added in the migrations) |
+| `server/prisma/seeds/taim.js` | The demo restaurant |
+| `server/test/taim/` | Its API tests (each rule was broken on purpose once to see a test fail) |
+
+---
