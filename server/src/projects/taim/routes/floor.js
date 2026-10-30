@@ -517,7 +517,7 @@ router.delete('/orders/:id/items/:itemId/came-back', allow('markCameBack'), vali
             }
             await tx.orderItem.delete({ where: { id: item.remake.id } })
         }
-        await tx.itemReturn.delete({ where: { orderItemId: itemId } })
+        await tx.itemReturn.deleteMany({ where: { orderItemId: itemId, kind: 'RETURN' } })
         await tx.orderItem.update({ where: { id: itemId }, data: { status: 'SENT_OUT' } })
     })
     res.json(await getOrder(id))

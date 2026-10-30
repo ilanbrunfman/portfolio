@@ -174,18 +174,21 @@ enum ReturnReason {
 enum LossKind {
   RETURN // the guest gave it back (status CAME_BACK)
   WASTE // lost before or without a guest giving it back (status WASTED)
+  FIX // the guest sent it back to be fixed (cook it more, more spice): the same plate, still charged, no money lost
 
   @@schema("taim")
 }
 
-// A lost dish (step 6): a return (it came back) or waste. The reason, an
-// optional note, who recorded it and when. One per dish. The money lost is
-// the dish's price, plus its free remake or replacement's for a return;
-// it's calculated from these rows, not stored. The reason matches the kind
-// (CHECK in the migration).
+// A lost dish (step 6): a return (it came back) or waste – or a fix (sent
+// back to be fixed, no money lost). The reason, an optional note, who
+// recorded it and when. A dish can have several (fixed, then given back),
+// but at most one return or waste (unique index in the migration). The
+// money lost is the dish's price, plus its free remake or replacement's
+// for a return; it's calculated from these rows, not stored. The reason
+// matches the kind (CHECK in the migration).
 model ItemReturn {
   id          Int          @id @default(autoincrement())
-  orderItemId Int          @unique
+  orderItemId Int // a dish can have several: fixed first, then given back
   orderItem   OrderItem    @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
   kind        LossKind     @default(RETURN)
   reason      ReturnReason
@@ -195,6 +198,7 @@ model ItemReturn {
   createdAt   DateTime     @default(now())
 
   @@index([createdAt])
+  @@index([orderItemId])
   @@map("item_returns")
   @@schema("taim")
 }
@@ -234,44 +238,44 @@ model BusinessDay {
 // now, mains later) and this one waits for "Fire". Only a dish not sent
 // yet (NEW) can be held (CHECK in the migration).
 model OrderItem {
-  id           Int         @id @default(autoincrement())
+  id           Int          @id @default(autoincrement())
   orderId      Int
-  order        Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order        Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menuItemId   Int
-  menuItem     MenuItem    @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+  menuItem     MenuItem     @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
   price        Int // cents, copied when ordered
   seat         Int? // guest's seat number at the table; null = shared or take-out
   status       DishStatus // no default: every insert says NEW (or, in the seed, later)
-  createdAt    DateTime    @default(now())
+  createdAt    DateTime     @default(now())
   firedAt      DateTime? // when the waiter sent it to the kitchen
   round        Int? // which "Send to kitchen" of this order: 1 = first (e.g. starters), 2 = next…
-  held         Boolean     @default(false) // waiting for "Fire" (mains after the starters)
+  held         Boolean      @default(false) // waiting for "Fire" (mains after the starters)
   // Who sent it to the kitchen (null on dishes from before this was kept),
   // and whether the kitchen fired it from "on hold" (Chef or Manager, once
   // the table's earlier dishes were served a while ago)
   firedById    Int?
-  firedBy      Staff?      @relation("DishFiredBy", fields: [firedById], references: [id], onDelete: Restrict)
-  kitchenFired Boolean     @default(false)
+  firedBy      Staff?       @relation("DishFiredBy", fields: [firedById], references: [id], onDelete: Restrict)
+  kitchenFired Boolean      @default(false)
   // Step 5.2: a table's guest takes this dish home – packed, not plated, on
   // the same bill (take-out orders are to go as a whole and leave it false)
-  toGo         Boolean     @default(false)
+  toGo         Boolean      @default(false)
   // Step 5.3: when the kitchen started it (Start on the ticket, or Served
   // straight away) and who; who served it. With firedAt and sentOutAt that
   // is the dish's whole timeline: sent → started → served.
   startedAt    DateTime?
   startedById  Int?
-  startedBy    Staff?      @relation("DishStartedBy", fields: [startedById], references: [id], onDelete: Restrict)
+  startedBy    Staff?       @relation("DishStartedBy", fields: [startedById], references: [id], onDelete: Restrict)
   sentOutAt    DateTime?
   servedById   Int?
-  servedBy     Staff?      @relation("DishServedBy", fields: [servedById], references: [id], onDelete: Restrict)
+  servedBy     Staff?       @relation("DishServedBy", fields: [servedById], references: [id], onDelete: Restrict)
   // Step 6: why it came back or was wasted, and the free remake or
   // replacement made for a dish that came back. remakeOfId set = this dish
   // is on the house (the same dish again, or another one instead): not on
   // the bill, and its price counts as a loss with the dish it replaces.
-  return       ItemReturn?
-  remakeOfId   Int?        @unique
-  remakeOf     OrderItem?  @relation("Remake", fields: [remakeOfId], references: [id], onDelete: Restrict)
-  remake       OrderItem?  @relation("Remake")
+  returns      ItemReturn[] // why it came back, was wasted or sent back to be fixed
+  remakeOfId   Int?         @unique
+  remakeOf     OrderItem?   @relation("Remake", fields: [remakeOfId], references: [id], onDelete: Restrict)
+  remake       OrderItem?   @relation("Remake")
 
   @@index([orderId])
   @@index([status])

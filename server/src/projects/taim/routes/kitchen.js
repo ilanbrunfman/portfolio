@@ -28,7 +28,7 @@ const ORDER_SELECT = { id: true, ...TITLE_SELECT }
 
 /** A free dish for one that came back: why it came back, and what it replaces if it's another dish */
 const remakeInfo = (item) => ({
-    reason: item.remakeOf.return?.reason ?? null,
+    reason: item.remakeOf.returns[0]?.reason ?? null,
     replaced: item.remakeOf.menuItemId === item.menuItemId ? null : item.remakeOf.menuItem.name,
 })
 
@@ -57,7 +57,7 @@ router.get('/kitchen', async (req, res) => {
     const [cooking, held, served, heldOrders, returned] = await Promise.all([
         prisma.orderItem.findMany({
             where: { status: 'PREPARING', order: { status: 'OPEN' } },
-            select: { id: true, seat: true, toGo: true, round: true, firedAt: true, startedAt: true, startedBy: { select: { name: true } }, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT }, menuItemId: true, remakeOf: { select: { menuItemId: true, menuItem: { select: { name: true } }, return: { select: { reason: true } } } } },
+            select: { id: true, seat: true, toGo: true, round: true, firedAt: true, startedAt: true, startedBy: { select: { name: true } }, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT }, menuItemId: true, remakeOf: { select: { menuItemId: true, menuItem: { select: { name: true } }, returns: { where: { kind: 'RETURN' }, select: { reason: true } } } } },
             orderBy: [{ firedAt: 'asc' }, { id: 'asc' }],
         }),
         prisma.orderItem.findMany({
