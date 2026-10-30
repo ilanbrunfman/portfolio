@@ -8,13 +8,15 @@
         margin: 0;
     }
 
-    // One card per person: 5 across on wide screens, 3 + 2 on phones
+    // One card per person, stretched to fill the row: 5 across on wide
+    // screens, 3 + 2 on phones. auto-fit (not auto-fill) so no empty
+    // columns are kept on the right.
     &__list {
         list-style: none;
         margin: 0;
         padding: 0;
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
         gap: 0.75rem;
     }
 

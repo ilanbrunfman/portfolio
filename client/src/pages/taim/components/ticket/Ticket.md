@@ -23,8 +23,8 @@ Buttons, when the matching prop is given:
 
 - `onSend`: **Send to kitchen (3)**, the main button while dishes are
   waiting to be sent.
-- `onClose`: **Close bill**, then **Paid · $40.00** to confirm the guests
-  have paid (or "Not yet"). While dishes haven't been sent it's replaced by a hint: send
+- `onClose`: **Close bill**, then a green **Pay · $40.00** to take the
+  payment and close the bill (or "Not yet"). While dishes haven't been sent it's replaced by a hint: send
   or remove them first (the server refuses too).
 - `onEditItem`: every dish line is one button (the Order screen opens the
   dish editor: change seat, remove).
