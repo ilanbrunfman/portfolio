@@ -25,7 +25,9 @@ import './Order.scss'
  * Added dishes wait on the bill as "Not sent" until "Send to kitchen";
  * more rounds can follow (desserts). When the dishes waiting span more
  * than one course, "Send to kitchen" asks which go now: the rest are put
- * on hold (starters now, mains later) until "Fire held". A tap on a dish on the bill opens its
+ * on hold (starters now, mains later) until "Fire held". "Hold" beside
+ * Send keeps everything waiting back (the starter went earlier, the mains
+ * added now should wait). A tap on a dish on the bill opens its
  * editor: another seat (any time), or remove (until the kitchen sends it
  * out). Closing the bill is a separate, smaller button at the end.
  */
@@ -33,7 +35,7 @@ const OrderPage = () => {
     const orderId = Number(useParams().orderId)
     const navigate = useNavigate()
     const { can, canEditDishes } = useStaff()
-    const { order, error, addDish, moveDish, removeDish, send, close, update, undo } = useOrder(orderId)
+    const { order, error, addDish, moveDish, removeDish, send, hold, close, update, undo } = useOrder(orderId)
     const menu = useMenu()
     const [category, setCategory] = useState(null) // null = the first one
     const [seat, setSeat] = useState('1') // '1', '2'… or 'shared'
@@ -92,6 +94,11 @@ const OrderPage = () => {
     const handlePick = async (itemIds) => {
         await send(itemIds)
         setMessage(sentMessage(itemIds.length, waiting.length - itemIds.length))
+    }
+
+    const handleHold = async () => {
+        await hold()
+        setMessage(`${fresh.length} ${fresh.length === 1 ? 'dish' : 'dishes'} on hold: tap "Fire held" when the table is ready`)
     }
 
     // Everything waiting goes: the held dishes and any added since
@@ -163,6 +170,7 @@ const OrderPage = () => {
                     className="order-page__ticket"
                     onEditItem={canEdit ? setEditing : undefined}
                     onSend={canEdit ? handleSend : undefined}
+                    onHold={canEdit ? handleHold : undefined}
                     onFire={canEdit ? handleFire : undefined}
                     onClose={can('closeBill') ? async () => { await close(); navigate('/taim/floor') } : undefined}
                 />

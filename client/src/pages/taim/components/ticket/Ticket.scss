@@ -60,6 +60,20 @@
         padding: 0;
     }
 
+    &__send,
+    &__hold {
+        white-space: nowrap;
+    }
+
+    // Send takes the room; Hold fills its own row when they wrap (phone)
+    &__send {
+        flex: 3 1 auto;
+    }
+
+    &__hold {
+        flex: 1 1 auto;
+    }
+
     // The "On hold" heading in violet, like its dishes
     &__group.is-held &__round {
         color: #8b5cf6;

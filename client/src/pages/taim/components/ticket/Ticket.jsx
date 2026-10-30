@@ -29,8 +29,9 @@ const statusText = (item, now) =>
  * not sent yet – each with its seat (at a table) and where it is: not sent,
  * on hold, in the kitchen (and for how long), served, came back. Then the
  * total.
- * When allowed: "Send to kitchen (n)" for the dishes not sent yet, "Fire
- * held (n)" for the ones on hold, and "Close bill" → a green "Pay · $40.00"
+ * When allowed: "Send to kitchen (n)" for the dishes not sent yet (with
+ * "Hold (n)" beside it to keep them back instead), "Fire held (n)" for the
+ * ones on hold, and "Close bill" → a green "Pay · $40.00"
  * to take the payment (refused while dishes haven't been sent). Used on the
  * Order screen and in the Floor's bill dialog.
  *
@@ -38,14 +39,15 @@ const statusText = (item, now) =>
  * @param {object} props.order                          An order from the API (items, total, …).
  * @param {(item: object) => void} [props.onEditItem]   Makes each dish tappable (change its seat, remove it).
  * @param {() => Promise|void} [props.onSend]           Send the dishes not sent yet (may open a dialog to hold some).
+ * @param {() => Promise} [props.onHold]                Put the dishes not sent yet on hold.
  * @param {() => Promise} [props.onFire]                Send the dishes on hold.
  * @param {() => Promise} [props.onClose]               Close the bill (asks to confirm first).
  * @param {string} [props.className]
  */
-const Ticket = ({ order, onEditItem, onSend, onFire, onClose, className = '' }) => {
+const Ticket = ({ order, onEditItem, onSend, onHold: onHoldDishes, onFire, onClose, className = '' }) => {
     const now = useNow()
     const [confirming, setConfirming] = useState(false)
-    const [busy, setBusy] = useState(null) // 'send' | 'fire' | 'close'
+    const [busy, setBusy] = useState(null) // 'send' | 'hold' | 'fire' | 'close'
     const [error, setError] = useState('')
     const isOpen = order.status === 'OPEN'
     const notSent = order.items.filter((item) => item.status === 'NEW' && !item.held).length
@@ -131,9 +133,16 @@ const Ticket = ({ order, onEditItem, onSend, onFire, onClose, className = '' }) 
             </div>
 
             {onSend && isOpen && notSent > 0 && (
-                <Button onClick={() => run('send', onSend)} disabled={busy !== null}>
-                    {busy === 'send' ? 'Sending…' : `Send to kitchen (${notSent})`}
-                </Button>
+                <div className="d-flex flex-wrap gap-0-5">
+                    <Button className="ticket__send" onClick={() => run('send', onSend)} disabled={busy !== null}>
+                        {busy === 'send' ? 'Sending…' : `Send to kitchen (${notSent})`}
+                    </Button>
+                    {onHoldDishes && (
+                        <Button variant="secondary" className="ticket__hold" onClick={() => run('hold', onHoldDishes)} disabled={busy !== null}>
+                            {busy === 'hold' ? 'Holding…' : `Hold (${notSent})`}
+                        </Button>
+                    )}
+                </div>
             )}
 
             {onFire && isOpen && onHold > 0 && (

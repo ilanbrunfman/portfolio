@@ -45,6 +45,11 @@ export function useOrder(orderId) {
         setOrder(await api(`/orders/${orderId}/send`, { method: 'POST', body: itemIds ? { itemIds } : {} }))
     }, [orderId])
 
+    /** Put every dish not sent yet on hold, without sending anything */
+    const hold = useCallback(async () => {
+        setOrder(await api(`/orders/${orderId}/hold`, { method: 'POST', body: {} }))
+    }, [orderId])
+
     const close = useCallback(async () => {
         setOrder(await api(`/orders/${orderId}/close`, { method: 'POST' }))
     }, [orderId])
@@ -59,5 +64,5 @@ export function useOrder(orderId) {
         await api(`/orders/${orderId}`, { method: 'DELETE' })
     }, [orderId])
 
-    return { order, error, reload, addDish, moveDish, removeDish, send, close, update, undo }
+    return { order, error, reload, addDish, moveDish, removeDish, send, hold, close, update, undo }
 }
