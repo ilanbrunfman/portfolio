@@ -4,10 +4,11 @@ import { seatsText } from '@/pages/taim/utils/orders'
 import './TableCard.scss'
 
 /**
- * One table on the Floor, as a button, in one of three colours:
+ * One table on the Floor, as a button, in one of four colours:
  *   green  = ready: free and clean, can be seated
  *   yellow = needs cleaning: the guests left, not cleaned yet
  *   grey   = dining: guests, minutes since seated, dishes and the bill so far
+ *   blue   = dining, and every dish ordered is served (time for dessert or the bill)
  * A dining table also shows how its food is coming along, so the waiter
  * knows whom to ask the kitchen about: "2 not sent", "In kitchen: 3 ·
  * 14 min" with the seats still waiting, or "All served". A small red tag
@@ -25,7 +26,7 @@ import './TableCard.scss'
  */
 const TableCard = ({ table, now, onClick, disabled = false, selected }) => {
     const { order } = table
-    const state = order ? 'is-dining' : table.needsCleaning ? 'is-cleaning' : 'is-free'
+    const state = order ? (allServed(order) ? 'is-served' : 'is-dining') : table.needsCleaning ? 'is-cleaning' : 'is-free'
     const label = table.groupLabel ?? table.label
     const seats = table.groupSeats ?? table.seats
     const combined = table.joined?.length > 0
@@ -74,13 +75,18 @@ const TableCard = ({ table, now, onClick, disabled = false, selected }) => {
     )
 }
 
+/** Has dishes, and none of them is still to send or in the kitchen */
+const allServed = (order) => order.dishCount > 0 && order.notSent === 0 && order.inKitchen === 0
+
 /**
  * How a dining table's (or take-out's) food is coming along, from the floor
  * summary: { notSent, inKitchen, waitingSince, waitingSeats, dishCount }.
+ * `doneText` is what shows once everything is out ("Ready for pickup" for
+ * a take-out).
  */
-export const KitchenProgress = ({ order, now }) => {
+export const KitchenProgress = ({ order, now, doneText = 'All served' }) => {
     if (order.dishCount === 0) return null
-    const served = order.notSent === 0 && order.inKitchen === 0
+    const served = allServed(order)
     return (
         <span className="table-card__progress d-flex flex-column">
             {order.notSent > 0 && <span className="table-card__not-sent">{order.notSent} not sent</span>}
@@ -94,7 +100,7 @@ export const KitchenProgress = ({ order, now }) => {
                     )}
                 </>
             )}
-            {served && <span className="table-card__served">All served</span>}
+            {served && <span className="table-card__served">{doneText}</span>}
         </span>
     )
 }

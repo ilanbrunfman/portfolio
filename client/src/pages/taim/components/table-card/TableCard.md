@@ -1,12 +1,14 @@
 # TableCard
 
-One table on the Ta'im Floor, drawn as a button, in one of three colours:
+One table on the Ta'im Floor, drawn as a button, in one of four colours:
 
 - **Green, ready:** label, seats, "Ready". Can be seated.
 - **Yellow, needs cleaning:** the guests left (the bill was closed) and
   nobody has marked it clean yet. It can't be seated until then.
 - **Grey, dining:** guests and minutes since they were seated, number of
   dishes and the bill so far.
+- **Blue, all served:** dining, and every dish ordered has come out of the
+  kitchen, so it's time to offer dessert or bring the bill.
 
 A dining table also shows how its food is coming along, so the waiter can
 ask the kitchen about "table 5, seat 3":
@@ -14,7 +16,7 @@ ask the kitchen about "table 5, seat 3":
 - **2 not sent** (accent): dishes on the bill the kitchen doesn't have yet.
 - **In kitchen: 3 · 14 min** (amber): dishes being prepared, and how long
   the oldest has waited; **Waiting: seat 1, seat 3, shared** under it.
-- **All served** (green): nothing left to come.
+- **All served** (blue): nothing left to come.
 
 When a dish came back, a small red "1 came back" tag appears too.
 
@@ -24,7 +26,8 @@ tag. While the Floor is choosing tables to combine, `selected` marks the
 picked ones (accent border, `aria-pressed`).
 
 `KitchenProgress` (the progress lines) is also exported, for the Floor's
-take-out list.
+take-out list; its `doneText` prop replaces "All served" (take-outs say
+"Ready for pickup").
 
 The minutes keep counting because the Floor passes the current time
 (`useNow`). The screen reader label sums it up: "T2, dining: 3 guests,

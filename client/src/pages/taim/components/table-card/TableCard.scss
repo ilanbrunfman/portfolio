@@ -54,6 +54,16 @@
         }
     }
 
+    // Everything served: blue, so the waiter sees whom to offer dessert or the bill
+    &.is-served {
+        border-color: rgba(59, 130, 246, 0.6);
+        background: rgba(59, 130, 246, 0.08);
+
+        &:hover:not(:disabled) {
+            border-color: #3b82f6;
+        }
+    }
+
     // Picked while combining tables
     &.is-selected {
         border-color: var(--accent);
@@ -116,7 +126,7 @@
     }
 
     &__served {
-        color: #22a06b;
+        color: #3b82f6;
         font-weight: 700;
     }
 

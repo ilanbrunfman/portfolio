@@ -17,8 +17,9 @@ import './Floor.scss'
 
 /**
  * /taim/floor – every table and the open take-outs, for the Manager, Host
- * and Waiter. Tables are green (ready), yellow (needs cleaning) or grey
- * (dining). A tap does what the person's role allows:
+ * and Waiter. Tables are green (ready), yellow (needs cleaning), grey
+ * (dining) or blue (dining, everything served); a take-out turns blue when
+ * it's ready for pickup. A tap does what the person's role allows:
  *   ready table    → seat it (seatTable); a Waiter or Manager then goes to the order.
  *                    Not clean enough? "Needs cleaning" turns it yellow again.
  *   needs cleaning → "Mark as clean" (cleanTable)
@@ -160,21 +161,29 @@ const Floor = () => {
                         <p className="form__hint">No take-out orders.</p>
                     ) : (
                         <ul className="floor__takeout-list">
-                            {floor.takeouts.map((order) => (
-                                <li key={order.id}>
-                                    <button type="button" className="floor__takeout d-flex justify-between gap-0-5" onClick={() => openOrder(order.id, 'TAKEOUT')}>
-                                        <span className="d-flex flex-column">
-                                            <strong>{order.customerName}</strong>
-                                            {order.customerPhone && <span className="form__hint">{order.customerPhone}</span>}
-                                            <span className="form__hint">
-                                                {order.items.length} {order.items.length === 1 ? 'dish' : 'dishes'} · {minutesSince(order.openedAt, now)} min
+                            {floor.takeouts.map((order) => {
+                                const progress = { dishCount: order.items.length, ...kitchenProgress(order.items) }
+                                const ready = progress.dishCount > 0 && progress.notSent === 0 && progress.inKitchen === 0
+                                return (
+                                    <li key={order.id}>
+                                        <button
+                                            type="button"
+                                            className={`floor__takeout ${ready ? 'is-ready' : ''} d-flex justify-between gap-0-5`}
+                                            onClick={() => openOrder(order.id, 'TAKEOUT')}
+                                        >
+                                            <span className="d-flex flex-column">
+                                                <strong>{order.customerName}</strong>
+                                                {order.customerPhone && <span className="form__hint">{order.customerPhone}</span>}
+                                                <span className="form__hint">
+                                                    {order.items.length} {order.items.length === 1 ? 'dish' : 'dishes'} · {minutesSince(order.openedAt, now)} min
+                                                </span>
+                                                <KitchenProgress order={progress} now={now} doneText="Ready for pickup" />
                                             </span>
-                                            <KitchenProgress order={{ dishCount: order.items.length, ...kitchenProgress(order.items) }} now={now} />
-                                        </span>
-                                        <span className="floor__takeout-total">{formatMoney(order.total)}</span>
-                                    </button>
-                                </li>
-                            ))}
+                                            <span className="floor__takeout-total">{formatMoney(order.total)}</span>
+                                        </button>
+                                    </li>
+                                )
+                            })}
                         </ul>
                     )}
                 </section>
