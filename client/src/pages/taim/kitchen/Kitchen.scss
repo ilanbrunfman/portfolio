@@ -43,6 +43,12 @@
         border-left: 4px solid #8b5cf6;
     }
 
+    // "Served 4 min ago: fire from 10 min" under a held order
+    &__not-yet {
+        font-size: 0.8rem;
+        color: #8b5cf6;
+    }
+
     &__panel-title {
         margin: 0;
         font-size: 0.8rem;

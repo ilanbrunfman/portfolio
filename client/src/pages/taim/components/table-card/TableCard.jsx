@@ -81,7 +81,9 @@ const allServed = (order) => order.dishCount > 0 && order.notSent === 0 && !orde
 
 /**
  * How a dining table's (or take-out's) food is coming along, from the floor
- * summary: { notSent, onHold, inKitchen, waitingSince, waitingSeats, dishCount }.
+ * summary: { notSent, onHold, inKitchen, waitingSince, waitingSeats, dishCount,
+ * kitchenFiredBy }. "Fired by kitchen (Avi)" shows while dishes the Chef
+ * fired from on hold are cooking.
  * `doneText` is what shows once everything is out ("Ready for pickup" for
  * a take-out).
  */
@@ -94,6 +96,7 @@ export const KitchenProgress = ({ order, now, doneText = 'All served' }) => {
             {order.onHold > 0 && <span className="table-card__on-hold">{order.onHold} on hold</span>}
             {order.inKitchen > 0 && (
                 <>
+                    {order.kitchenFiredBy && <span className="table-card__fired-by">Fired by kitchen ({order.kitchenFiredBy})</span>}
                     <span className="table-card__kitchen">
                         In kitchen: {order.inKitchen} · {minutesSince(order.waitingSince, now)} min
                     </span>

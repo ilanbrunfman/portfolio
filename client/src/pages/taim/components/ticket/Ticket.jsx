@@ -86,7 +86,10 @@ const Ticket = ({ order, onEditItem, onSend, onFire, onClose, className = '' }) 
                 groupByRound(order).map((group) => (
                     <div key={group.key} className={`ticket__group ${group.key === 'on-hold' ? 'is-held' : ''}`}>
                         <h4 className="ticket__round d-flex justify-between gap-0-5">
-                            <span>{group.title}</span>
+                            <span>
+                                {group.title}
+                                {group.kitchenFiredBy && <span className="ticket__fired-by"> · fired by kitchen ({group.kitchenFiredBy})</span>}
+                            </span>
                             {group.sentAt && <span className="ticket__round-time">sent {clockTime(group.sentAt)}</span>}
                         </h4>
                         <ul className="ticket__lines">

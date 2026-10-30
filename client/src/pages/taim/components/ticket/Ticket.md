@@ -16,7 +16,8 @@ Where a dish is:
 
 The dishes are grouped the way they were ordered: **Round 1 · sent 20:05**
 (e.g. the starters), **Round 2 · sent 20:25** (the mains added later), …
-then **On hold**, and **Not sent yet** last. At a table every dish carries a seat tag
+then **On hold**, and **Not sent yet** last. A round the Chef fired from the
+kitchen says so: **Round 2 · fired by kitchen (Avi)**. At a table every dish carries a seat tag
 (**Seat 2**, **Shared**), and inside a round dishes go seat by seat, so
 whoever brings the food knows who gets what. Rounds come from
 `groupByRound(order)` in `utils/orders.js`.

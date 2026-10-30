@@ -16,6 +16,8 @@ ask the kitchen about "table 5, seat 3":
 - **2 not sent** (accent): dishes on the bill the kitchen doesn't have yet.
 - **2 on hold** (violet): dishes held back on purpose (the mains while
   the starters are eaten), waiting for the waiter to fire them.
+- **Fired by kitchen (Avi)** (violet): the Chef fired the held dishes from
+  the kitchen; shown while they cook, so the waiter knows the mains are coming.
 - **In kitchen: 3 · 14 min** (amber): dishes being prepared, and how long
   the oldest has waited; **Waiting: seat 1, seat 3, shared** under it.
 - **All served** (blue): nothing left to come (nothing on hold either).

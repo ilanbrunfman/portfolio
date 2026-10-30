@@ -60,6 +60,14 @@
         padding: 0;
     }
 
+    // "· fired by kitchen (Avi)" after a round's title
+    &__fired-by {
+        color: #8b5cf6;
+        text-transform: none;
+        letter-spacing: 0;
+        font-weight: 600;
+    }
+
     // The "On hold" heading in violet, like its dishes
     &__group.is-held &__round {
         color: #8b5cf6;

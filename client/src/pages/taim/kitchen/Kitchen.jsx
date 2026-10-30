@@ -13,6 +13,8 @@ import './Kitchen.scss'
  * prep time. "Served" (advanceDish: Manager, Chef, Cook) takes a dish off;
  * "Coming up" lists dishes the waiters are holding back (mains while the
  * starters are eaten), so the cooks can plan; they become a ticket when fired.
+ * The Chef (fireHeld) can fire them from here once nothing of that table is
+ * cooking and its last dish was served 10+ minutes ago.
  * "Recently served" keeps the last 10 minutes so a wrong tap can be undone.
  * Reloads every 5 seconds so new orders show up on their own.
  */
@@ -32,7 +34,7 @@ const Kitchen = () => {
     }
     if (!kitchen.data) return <p role="status">Loading the kitchen…</p>
 
-    const { tickets, onHold, recentlyServed } = kitchen.data
+    const { tickets, onHold, recentlyServed, fireAfterMinutes } = kitchen.data
     const dishes = tickets.reduce((sum, t) => sum + t.dishes.length, 0)
 
     return (
@@ -62,7 +64,9 @@ const Kitchen = () => {
                 )}
 
                 <div className="kitchen__side d-flex flex-column gap-1">
-                    {onHold.length > 0 && <ComingUp orders={onHold} />}
+                    {onHold.length > 0 && (
+                        <ComingUp orders={onHold} now={now} fireAfter={fireAfterMinutes} onFire={can('fireHeld') ? kitchen.fire : undefined} />
+                    )}
                     <RecentlyServed dishes={recentlyServed} now={now} onUndo={canServe ? kitchen.unserve : undefined} />
                 </div>
             </div>
@@ -70,25 +74,74 @@ const Kitchen = () => {
     )
 }
 
-/** Held dishes per order: not cooking yet, but the cooks can plan for them */
-const ComingUp = ({ orders }) => (
-    <section className="kitchen__panel kitchen__coming surface d-flex flex-column gap-0-5" aria-labelledby="coming-title">
-        <h3 id="coming-title" className="kitchen__panel-title">Coming up · on hold</h3>
-        <ul className="kitchen__panel-list">
-            {orders.map((order) => (
-                <li key={order.orderId} className="kitchen__panel-item d-flex flex-column">
-                    <strong>{order.title}</strong>
-                    <span className="form__hint">
-                        {order.dishes
-                            .map((dish) => `${dish.name}${order.type === 'TABLE' ? ` (${seatLabel(dish.seat)})` : ''}${dish.prepMinutes ? ` · ${dish.prepMinutes} min` : ''}`)
-                            .join(', ')}
-                    </span>
-                </li>
-            ))}
-        </ul>
-        <p className="form__hint">They become a ticket when the waiter fires them.</p>
-    </section>
-)
+/**
+ * Why the kitchen can't fire this order's held dishes yet, or null if it can:
+ * something of the table is still cooking, or its last dish was served less
+ * than `fireAfter` minutes ago (the guests are still eating).
+ */
+function notYet(order, now, fireAfter) {
+    if (order.cooking > 0) return 'Still cooking for this table'
+    if (!order.lastServedAt) return null
+    const minutes = minutesSince(order.lastServedAt, now)
+    return minutes < fireAfter ? `Served ${minutes} min ago: fire from ${fireAfter} min` : null
+}
+
+/**
+ * Held dishes per order: not cooking yet, but the cooks can plan for them.
+ * With onFire (Chef, Manager) each order gets "Fire", disabled with the
+ * reason until the table is ready for it.
+ */
+const ComingUp = ({ orders, now, fireAfter, onFire }) => {
+    const [busy, setBusy] = useState(null)
+    const [error, setError] = useState('')
+
+    const fire = async (orderId) => {
+        setBusy(orderId)
+        setError('')
+        try {
+            await onFire(orderId)
+        } catch (err) {
+            setError(err.message)
+        } finally {
+            setBusy(null)
+        }
+    }
+
+    return (
+        <section className="kitchen__panel kitchen__coming surface d-flex flex-column gap-0-5" aria-labelledby="coming-title">
+            <h3 id="coming-title" className="kitchen__panel-title">Coming up · on hold</h3>
+            {error && <p className="form__error" role="alert">{error}</p>}
+            <ul className="kitchen__panel-list">
+                {orders.map((order) => {
+                    const reason = notYet(order, now, fireAfter)
+                    return (
+                        <li key={order.orderId} className="kitchen__panel-item d-flex flex-column gap-0-5">
+                            <span className="d-flex align-items-center justify-between gap-0-5">
+                                <strong>{order.title}</strong>
+                                {onFire && (
+                                    <Button size="sm" variant="secondary" onClick={() => fire(order.orderId)} disabled={busy !== null || reason !== null}>
+                                        {busy === order.orderId ? 'Firing…' : 'Fire'}
+                                    </Button>
+                                )}
+                            </span>
+                            <span className="form__hint">
+                                {order.dishes
+                                    .map((dish) => `${dish.name}${order.type === 'TABLE' ? ` (${seatLabel(dish.seat)})` : ''}${dish.prepMinutes ? ` · ${dish.prepMinutes} min` : ''}`)
+                                    .join(', ')}
+                            </span>
+                            {onFire && reason && <span className="kitchen__not-yet">{reason}</span>}
+                        </li>
+                    )
+                })}
+            </ul>
+            <p className="form__hint">
+                {onFire
+                    ? `They become a ticket when the waiter fires them, or when you do: once the table's dishes were served ${fireAfter}+ min ago.`
+                    : 'They become a ticket when the waiter fires them.'}
+            </p>
+        </section>
+    )
+}
 
 /** "just now" / "3 min ago" */
 const agoText = (minutes) => (minutes === 0 ? 'just now' : `${minutes} min ago`)

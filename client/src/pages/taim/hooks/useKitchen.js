@@ -37,5 +37,11 @@ export function useKitchen() {
         reload()
     }, [reload])
 
-    return { data, error, reload, serve, unserve }
+    /** Chef / Manager: start a table's held dishes (refused until its earlier dishes were served a while ago) */
+    const fire = useCallback(async (orderId) => {
+        await api(`/orders/${orderId}/kitchen-fire`, { method: 'POST' })
+        reload()
+    }, [reload])
+
+    return { data, error, reload, serve, unserve, fire }
 }
