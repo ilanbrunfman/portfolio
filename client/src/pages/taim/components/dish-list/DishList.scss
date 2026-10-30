@@ -70,6 +70,12 @@
         min-width: 0;
     }
 
+    &__prep {
+        color: var(--text);
+        font-size: 0.8rem;
+        font-variant-numeric: tabular-nums;
+    }
+
     &__name {
         color: var(--text-h);
         font-weight: 600;

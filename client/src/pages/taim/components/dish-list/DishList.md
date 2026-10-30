@@ -4,7 +4,8 @@ One menu category's dishes as rows you can **drag to reorder**. Built on
 [dnd-kit](https://dndkit.com) (`@dnd-kit/core` + `@dnd-kit/sortable`), which
 handles mouse, touch and keyboard.
 
-Each row: a grip handle, the name (with a "Sold out" tag) and description,
+Each row: a grip handle, the name (with a "Sold out" tag), description and
+prep time ("Prep 12 min"),
 the price, an "On menu" checkbox and Edit.
 
 ## Dragging
