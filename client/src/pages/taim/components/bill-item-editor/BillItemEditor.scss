@@ -8,5 +8,11 @@
         background: rgba(229, 72, 77, 0.1);
         color: #e5484d;
         font-weight: 600;
+
+        // Waste (no guest gave it back): amber
+        &.is-waste {
+            background: rgba(214, 158, 46, 0.12);
+            color: #b7791f;
+        }
     }
 }

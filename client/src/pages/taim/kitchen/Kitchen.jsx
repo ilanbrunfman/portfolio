@@ -68,6 +68,7 @@ const Kitchen = () => {
                                     now={now}
                                     onServe={canServe ? kitchen.serve : undefined}
                                     onStart={canServe ? () => kitchen.start(ticket.orderId, ticket.round) : undefined}
+                                    onRedo={canServe ? kitchen.redo : undefined}
                                 />
                             </li>
                         ))}

@@ -37,7 +37,12 @@ export function useOrder(orderId) {
         setOrder(await api(`/orders/${orderId}/items/${itemId}`, { method: 'PATCH', body: changes }))
     }, [orderId])
 
-    /** The guest gave a served dish back: { reason, note, remake } (remake = make it again, free) */
+    /** Food lost without a guest giving it back: { reason: 'CANCELLED' | 'DROPPED', note, remake } */
+    const waste = useCallback(async (itemId, data) => {
+        setOrder(await api(`/orders/${orderId}/items/${itemId}/waste`, { method: 'POST', body: data }))
+    }, [orderId])
+
+    /** The guest gave a served dish back: { reason, note, remake, replaceWithId, sendNow } (the dish given instead is free) */
     const cameBack = useCallback(async (itemId, data) => {
         setOrder(await api(`/orders/${orderId}/items/${itemId}/came-back`, { method: 'POST', body: data }))
     }, [orderId])
@@ -79,5 +84,5 @@ export function useOrder(orderId) {
         await api(`/orders/${orderId}`, { method: 'DELETE' })
     }, [orderId])
 
-    return { order, error, reload, addDish, updateDish, cameBack, undoCameBack, removeDish, send, hold, close, update, undo }
+    return { order, error, reload, addDish, updateDish, cameBack, undoCameBack, waste, removeDish, send, hold, close, update, undo }
 }

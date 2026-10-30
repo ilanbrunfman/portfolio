@@ -103,5 +103,12 @@ export const RETURN_REASONS = [
     { value: 'OTHER', label: 'Other' },
 ]
 
-/** 'COLD' → 'Cold' */
-export const reasonLabel = (value) => RETURN_REASONS.find((reason) => reason.value === value)?.label ?? value
+/** Waste: food lost without a guest giving it back */
+export const WASTE_REASONS = [
+    { value: 'CANCELLED', label: 'Cancelled after cooking started' },
+    { value: 'DROPPED', label: 'Dropped / spilled' },
+    { value: 'MADE_WRONG', label: 'Made wrong in the kitchen' },
+]
+
+/** 'COLD' → 'Cold', 'DROPPED' → 'Dropped / spilled' */
+export const reasonLabel = (value) => [...RETURN_REASONS, ...WASTE_REASONS].find((reason) => reason.value === value)?.label ?? value

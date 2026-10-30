@@ -7,18 +7,24 @@ bill item editor, after tapping **Came back**):
   Allergy / something in it, Too slow, Other (required).
 - **Note** (optional, up to 200 characters): "lukewarm in the middle".
 - **What now?**
-  - **Make it again (free):** a new one, same seat, goes to the kitchen
-    straight away, marked REMAKE; it's on the house.
-  - **Nothing more:** just take it off. If the guest wants something else,
-    the waiter adds it from the menu as usual (charged normally).
+  - **Make it again (free):** the same dish, same seat, on the house.
+  - **Another dish instead (free):** pick it from a small menu (sold-out
+    dishes greyed): the right dish when the wrong one was served, something
+    else, or a dessert on us.
+  - **Nothing more:** just take it off. Anything the guest orders after that
+    is added from the menu and charged as usual.
+- **Send to the kitchen now** (for a free dish, on by default): untick it
+  for a dessert that should come later – it waits on the bill as not sent,
+  free, and goes with the next send.
 - A line says what will happen and the loss: "Shakshuka comes off the
-  bill, and a new one goes to the kitchen now, on the house. Loss: $28.00."
-- The button stays off until a reason and "what now" are picked.
+  bill; Malabi on the house waits on the bill for the next send. Loss:
+  $21.00."
+- The button stays off until a reason, "what now" (and the dish) are picked.
 
 ## Usage
 
 ```jsx
-<CameBackForm item={item} onSubmit={(data) => cameBack(item.id, data)} onCancel={back} />
+<CameBackForm item={item} menu={menu.categories} onSubmit={(data) => cameBack(item.id, data)} onCancel={back} />
 ```
 
 ## Props
@@ -26,5 +32,6 @@ bill item editor, after tapping **Came back**):
 | Prop       | Type                                     | Description |
 |------------|------------------------------------------|-------------|
 | `item`     | `object`                                 | The served dish: `{ name, price }`. |
-| `onSubmit` | `({ reason, note, remake }) => Promise`  | Records it; throws on failure. |
+| `menu`     | `object[]`                               | Menu categories with dishes, for "another dish". |
+| `onSubmit` | `({ reason, note, remake, replaceWithId, sendNow }) => Promise` | Records it; throws on failure. |
 | `onCancel` | `() => void`                             | Back to the editor. |

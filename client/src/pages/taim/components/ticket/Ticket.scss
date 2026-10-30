@@ -121,9 +121,11 @@
             border-left: 2px dashed #8b5cf6;
         }
 
-        // A dish that came back isn't on the bill
+        // A dish that came back, or was wasted, isn't on the bill
         &.is-back .ticket__name,
-        &.is-back .ticket__price {
+        &.is-back .ticket__price,
+        &.is-waste .ticket__name,
+        &.is-waste .ticket__price {
             text-decoration: line-through;
             opacity: 0.6;
         }
@@ -187,6 +189,11 @@
 
         &.is-back {
             color: #e5484d;
+        }
+
+        // Waste (no guest gave it back): amber
+        &.is-waste {
+            color: #b7791f;
         }
     }
 
