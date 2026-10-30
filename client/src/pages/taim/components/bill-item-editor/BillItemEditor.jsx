@@ -3,7 +3,15 @@ import RadioGroup from '@/components/ui/form/radio/RadioGroup'
 import Checkbox from '@/components/ui/form/checkbox/Checkbox'
 import Button from '@/components/ui/button/Button'
 import { formatMoney } from '@/pages/taim/utils/money'
-import { valueFromSeat } from '@/pages/taim/utils/orders'
+import { valueFromSeat, clockTime } from '@/pages/taim/utils/orders'
+
+/** "Sent 20:05 (Lior) · started 20:07 (Yossi) · served 20:19 (Avi)" – as far as it got */
+function timeline(item) {
+    const step = (label, at, by) => (at ? `${label} ${clockTime(at)}${by ? ` (${by})` : ''}` : null)
+    return [step('Sent', item.firedAt, item.firedBy), step('started', item.startedAt, item.startedBy), step('served', item.sentOutAt, item.servedBy)]
+        .filter(Boolean)
+        .join(' · ')
+}
 
 /**
  * Edit one dish on the bill: move it to another seat or make it to go (or
@@ -45,6 +53,7 @@ const BillItemEditor = ({ item, seats, onSave, onRemove, onDone }) => {
             <p className="form__hint">
                 {formatMoney(item.price)} · {{ NEW: 'not sent to the kitchen yet', PREPARING: 'in the kitchen', SENT_OUT: 'served', CAME_BACK: 'came back' }[item.status]}
             </p>
+            {item.firedAt && <p className="form__hint">{timeline(item)}</p>}
             {error && <p className="form__error" role="alert">{error}</p>}
 
             {seats.length > 0 && <RadioGroup label="For" options={seats} value={seat} onChange={setSeat} direction="row" />}

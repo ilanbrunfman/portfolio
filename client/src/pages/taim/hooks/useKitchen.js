@@ -25,6 +25,12 @@ export function useKitchen() {
         return () => { cancelled = true; clearTimeout(timer) }
     }, [attempt, reload])
 
+    /** Start a ticket: its dishes' prep times count from now */
+    const start = useCallback(async (orderId, round) => {
+        await api(`/orders/${orderId}/rounds/${round}/start`, { method: 'POST' })
+        reload()
+    }, [reload])
+
     /** The dish is out of the kitchen */
     const serve = useCallback(async (dishId) => {
         await api(`/order-items/${dishId}/serve`, { method: 'POST' })
@@ -43,5 +49,5 @@ export function useKitchen() {
         reload()
     }, [reload])
 
-    return { data, error, reload, serve, unserve, fire }
+    return { data, error, reload, start, serve, unserve, fire }
 }

@@ -3,6 +3,10 @@
 One ticket on the Kitchen screen: what one table sent in one round (or one
 take-out), so the cooks see it the way it was ordered.
 
+- **Waiting / started:** a new ticket shows **Waiting 3 min** and a **Start**
+  button (amber after 5 minutes). After Start: **Started 20:07 · Yossi**, and
+  each dish's prep time counts from then. Before Start the dishes just show
+  their prep time. Served works in both states.
 - **Header:** "T5" / "T1 + T4 + T7" / "Take-out · Maya", "Round 2 · sent
   20:25", and the minutes since it was sent.
 - **Each dish:** its name, seat tag (Seat 2 / Shared, tables only) and the
@@ -21,7 +25,7 @@ The colours come from `timing(elapsedMinutes, prepMinutes)` in `utils/orders.js`
 ## Usage
 
 ```jsx
-<KitchenTicket ticket={ticket} now={now} onServe={can('advanceDish') ? serve : undefined} />
+<KitchenTicket ticket={ticket} now={now} onServe={serve} onStart={() => start(ticket.orderId, ticket.round)} />
 ```
 
 ## Props
@@ -31,3 +35,4 @@ The colours come from `timing(elapsedMinutes, prepMinutes)` in `utils/orders.js`
 | `ticket`  | `object`                   | From `GET /api/taim/kitchen`: `{ title, type, round, firedAt, dishes }`. |
 | `now`     | `number`                   | Current time in ms, so minutes keep counting. |
 | `onServe` | `(dishId) => Promise`      | Optional. Mark a dish served; throws on failure. |
+| `onStart` | `() => Promise`            | Optional. Start the ticket; throws on failure. |

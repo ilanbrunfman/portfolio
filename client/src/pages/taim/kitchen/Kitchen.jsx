@@ -57,7 +57,12 @@ const Kitchen = () => {
                     <ul className="kitchen__tickets" aria-label="Tickets">
                         {tickets.map((ticket) => (
                             <li key={`${ticket.orderId}-${ticket.round}`}>
-                                <KitchenTicket ticket={ticket} now={now} onServe={canServe ? kitchen.serve : undefined} />
+                                <KitchenTicket
+                                    ticket={ticket}
+                                    now={now}
+                                    onServe={canServe ? kitchen.serve : undefined}
+                                    onStart={canServe ? () => kitchen.start(ticket.orderId, ticket.round) : undefined}
+                                />
                             </li>
                         ))}
                     </ul>

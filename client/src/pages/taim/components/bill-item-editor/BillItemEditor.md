@@ -1,5 +1,8 @@
 # BillItemEditor
 
+Once a dish was sent, it shows its timeline under the price: "Sent 20:05
+(Lior) · started 20:07 (Yossi) · served 20:19 (Avi)".
+
 Opens when the waiter taps a dish on the bill (Order screen). Two fixes:
 
 - **For:** move the dish to another seat, or to Shared. Allowed any time
