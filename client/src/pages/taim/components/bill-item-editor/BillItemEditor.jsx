@@ -49,7 +49,7 @@ const BillItemEditor = ({ item, seats, onSave, onRemove, onDone }) => {
 
             {seats.length > 0 && <RadioGroup label="For" options={seats} value={seat} onChange={setSeat} direction="row" />}
             {seats.length > 0 && (
-                <Checkbox label="To go: the guests take it home" checked={toGo} onChange={(e) => setToGo(e.target.checked)} />
+                <Checkbox label="To go" checked={toGo} onChange={(e) => setToGo(e.target.checked)} />
             )}
 
             {!canRemove && (

@@ -106,7 +106,7 @@ const DishDetails = ({ dish, seats, seat: initialSeat = seats[0]?.value ?? 'shar
                     {atTable && (
                         <Checkbox
                             className="dish-details__to-go-choice"
-                            label="To go: the guests take it home (packed, same bill)"
+                            label="To go"
                             checked={toGo}
                             onChange={(e) => setToGo(e.target.checked)}
                         />
