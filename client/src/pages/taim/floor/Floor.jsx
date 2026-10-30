@@ -17,7 +17,8 @@ import './Floor.scss'
 
 /**
  * /taim/floor – every table and the open take-outs, for the Manager, Host
- * and Waiter. Tables are green (ready), yellow (needs cleaning), grey
+ * and Waiter, and for the Chef to look at ("View only": no buttons, and a
+ * tap on a dining table or take-out shows its bill read-only). Tables are green (ready), yellow (needs cleaning), grey
  * (dining) or blue (dining, everything served); a take-out turns blue when
  * it's ready for pickup. A tap does what the person's role allows:
  *   ready table    → seat it (seatTable); a Waiter or Manager then goes to the order.
@@ -96,12 +97,17 @@ const Floor = () => {
     const toClean = shown.filter((table) => !table.order && table.needsCleaning).length
     const pickedTables = picked ? floor.tables.filter((table) => picked.includes(table.id)) : []
     const nextLabel = `T${floor.tables.length + 1}`
+    // The Chef: sees everything, changes nothing
+    const viewOnly = !['seatTable', 'cleanTable', 'combineTables', 'setUpTables'].some((right) => can(right))
 
     return (
         <div className="floor d-flex flex-column gap-2">
             <div className="d-flex flex-wrap align-items-center justify-between gap-1">
                 <div className="d-flex flex-column">
-                    <h2 className="taim__heading">Floor</h2>
+                    <h2 className="taim__heading d-flex align-items-center gap-0-5">
+                        Floor
+                        {viewOnly && <span className="floor__view-only">View only</span>}
+                    </h2>
                     <span className="form__hint">
                         {taken} of {shown.length} tables dining
                         {toClean > 0 && ` · ${toClean} to clean`} · {floor.takeouts.length} take-out

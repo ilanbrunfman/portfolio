@@ -6,6 +6,18 @@
         margin: 0;
     }
 
+    // "View only" tag next to the heading (the Chef)
+    &__view-only {
+        padding: 0.1rem 0.55rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--text);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
     // "T1 + T4 + T7 · 10 seats  [Cancel] [Set tables]" while combining
     &__combine {
         box-sizing: border-box;
