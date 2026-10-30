@@ -1,0 +1,74 @@
+// One open order on the Order screen – visuals only (layout is utility classes in the markup)
+// Matches the Floor's table cards: grey while food is coming, blue when all
+// is served, a dashed border while nothing is ordered yet.
+.order-card {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 7.5rem;
+    padding: 0.85rem 1rem;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    background: var(--social-bg);
+    color: var(--text);
+    text-decoration: none;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+
+    &:hover {
+        border-color: var(--accent);
+        transform: translateY(-2px);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+
+    &.is-served {
+        border-color: rgba(59, 130, 246, 0.6);
+        background: rgba(59, 130, 246, 0.08);
+    }
+
+    &.is-empty {
+        border-style: dashed;
+        background: var(--bg);
+    }
+
+    &__title {
+        color: var(--text-h);
+        font-size: 1.25rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    &__total {
+        color: var(--text-h);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__meta {
+        font-size: 0.9rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    // "1 came back": a small red tag, like the Floor's
+    &__came-back {
+        align-self: flex-start;
+        padding: 0.05rem 0.5rem;
+        border-radius: 999px;
+        background: rgba(229, 72, 77, 0.15);
+        color: #e5484d;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        transition: none;
+
+        &:hover {
+            transform: none;
+        }
+    }
+}

@@ -168,7 +168,7 @@ const Floor = () => {
                     ) : (
                         <ul className="floor__takeout-list">
                             {floor.takeouts.map((order) => {
-                                const progress = { dishCount: order.items.length, ...kitchenProgress(order.items) }
+                                const progress = kitchenProgress(order.items)
                                 const ready = progress.dishCount > 0 && progress.notSent === 0 && progress.onHold === 0 && progress.inKitchen === 0
                                 return (
                                     <li key={order.id}>
@@ -181,7 +181,7 @@ const Floor = () => {
                                                 <strong>{order.customerName}</strong>
                                                 {order.customerPhone && <span className="form__hint">{order.customerPhone}</span>}
                                                 <span className="form__hint">
-                                                    {order.items.length} {order.items.length === 1 ? 'dish' : 'dishes'} · {minutesSince(order.openedAt, now)} min
+                                                    {progress.dishCount} {progress.dishCount === 1 ? 'dish' : 'dishes'} · {minutesSince(order.openedAt, now)} min
                                                 </span>
                                                 <KitchenProgress order={progress} now={now} doneText="Ready for pickup" />
                                             </span>

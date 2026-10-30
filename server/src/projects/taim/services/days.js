@@ -72,6 +72,24 @@ export function lastDayEnd(now = new Date(), at = DAY_ENDS_AT, timeZone = TIME_Z
 }
 
 /**
+ * A time on the restaurant's wall clock → the instant. Month is 0–11; days
+ * and hours past the end roll over like Date.UTC does.
+ * zonedTime(2026, 9, 30, 4, 0) → 30 Oct 2026, 04:00 in Asia/Jerusalem (02:00 UTC)
+ */
+export function zonedTime(year, month, day, hour = 0, minute = 0, timeZone = TIME_ZONE) {
+    const wall = Date.UTC(year, month, day, hour, minute)
+    let instant = wall - zoneOffset(new Date(wall), timeZone)
+    instant = wall - zoneOffset(new Date(instant), timeZone)
+    return new Date(instant)
+}
+
+/** Today's date on the restaurant's clock: { year, month (0–11), day, weekday (0 = Sunday) } */
+export function restaurantToday(now = new Date(), timeZone = TIME_ZONE) {
+    const local = new Date(now.getTime() + zoneOffset(now, timeZone))
+    return { year: local.getUTCFullYear(), month: local.getUTCMonth(), day: local.getUTCDate(), weekday: local.getUTCDay() }
+}
+
+/**
  * Close the business day: save its report and lock its bills.
  *   closedById  who tapped "Close the day"; null = closed automatically
  *   before      automatic close: only bills opened before this time (the

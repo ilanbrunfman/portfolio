@@ -4,6 +4,10 @@ import isaThumb from '@/assets/thumbnails/isa.svg'
 // Bank Tracker: still poster (first frame) + a short recording played on hover
 import bankPoster from '@/assets/thumbnails/bank.webp'
 import bankGif from '@/assets/thumbnails/bank.gif'
+// Ta'im: the floor as a still poster + a phone recording played on hover
+// (pick the waiter, add a dessert, send it, the cook starts and serves it)
+import taimPoster from '@/assets/thumbnails/taim.webp'
+import taimGif from '@/assets/thumbnails/taim.gif'
 
 // Heights vary in the URL on purpose (900, 1500, 800, 1050, 1600, 900) just
 // to demonstrate the masonry effect with Picsum's placeholder service.
@@ -97,6 +101,16 @@ export const portfolioProjects = [
         tags: ['React', 'Node.js', 'PostgreSQL'],
         link: '#',
         route: '/bank',
+    },
+    {
+        id: 'taim',
+        title: "Ta'im — Restaurant App",
+        description: 'Full-stack restaurant system: floor, orders, a live kitchen screen, bills and end of day, and what dishes that come back cost. Five roles, each seeing its own screens.',
+        image: taimPoster,
+        preview: { type: 'gif', src: taimGif },
+        tags: ['React', 'Node.js', 'PostgreSQL'],
+        link: '#',
+        route: '/taim',
     }
 ]
 
