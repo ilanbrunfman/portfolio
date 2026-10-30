@@ -4,6 +4,19 @@
         margin: 0;
     }
 
+    // "For": seat checkboxes and the Shared radio on one row
+    &__for {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        min-width: 0;
+
+        legend {
+            padding: 0;
+            margin-bottom: 0.25rem;
+        }
+    }
+
     &__price {
         color: var(--text-h);
         font-size: 1.3rem;
