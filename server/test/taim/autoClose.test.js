@@ -91,3 +91,13 @@ describe('autoCloseDay', () => {
         expect(res.autoClose).toMatchObject({ at: '04:00', due: true, waiting: 1 })
     })
 })
+
+describe('zonedTime / restaurantToday: the restaurant clock', () => {
+    it('turns a wall-clock time into the right instant, in winter and summer', async () => {
+        const { zonedTime, restaurantToday } = await import('../../src/projects/taim/services/days.js')
+        expect(zonedTime(2026, 9, 30, 4, 0, 'Asia/Jerusalem').toISOString()).toBe('2026-10-30T02:00:00.000Z')
+        expect(zonedTime(2026, 6, 1, 12, 30, 'Asia/Jerusalem').toISOString()).toBe('2026-07-01T09:30:00.000Z')
+        expect(zonedTime(2026, 9, 31, 26, 0, 'UTC').toISOString()).toBe('2026-11-01T02:00:00.000Z') // rolls over
+        expect(restaurantToday(new Date('2026-10-30T23:30:00Z'), 'Asia/Jerusalem')).toEqual({ year: 2026, month: 9, day: 31, weekday: 6 })
+    })
+})
