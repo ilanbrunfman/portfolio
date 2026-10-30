@@ -76,6 +76,43 @@ describe('send some dishes, hold the rest', () => {
     })
 })
 
+describe('hold without sending (the starters went earlier)', () => {
+    it('the mains added later go on hold; the kitchen sees them coming; Fire sends them', async () => {
+        const order = (await waiter.post('/api/taim/orders').send({ type: 'TABLE', tableId: table.id, guests: 2 }).expect(201)).body
+        await waiter.post(`/api/taim/orders/${order.id}/items`).send({ items: [{ menuItemId: hummus.id, seat: 1 }] }).expect(201)
+        await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200)
+        await waiter.post(`/api/taim/orders/${order.id}/items`).send({ items: [{ menuItemId: kebab.id, seat: 1, quantity: 2 }] }).expect(201)
+
+        const held = (await waiter.post(`/api/taim/orders/${order.id}/hold`).expect(200)).body
+        expect(held.items.filter((item) => item.held).map((item) => item.name)).toEqual(['Kebab', 'Kebab'])
+        expect(await floorOrder()).toMatchObject({ notSent: 0, onHold: 2, inKitchen: 1 })
+        const kitchen = (await cook.get('/api/taim/kitchen').expect(200)).body
+        expect(kitchen.tickets).toHaveLength(1)
+        expect(kitchen.onHold[0].dishes.map((d) => d.name)).toEqual(['Kebab', 'Kebab'])
+
+        const fired = (await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200)).body
+        expect(fired.items.filter((item) => item.round === 2)).toHaveLength(2)
+    })
+
+    it('can hold just some dishes; nothing waiting or a dish already sent is refused', async () => {
+        const order = await wholeOrder()
+        const [kebab1] = order.items.filter((item) => item.name === 'Kebab')
+        const res = (await waiter.post(`/api/taim/orders/${order.id}/hold`).send({ itemIds: [kebab1.id] }).expect(200)).body
+        expect(res.items.filter((item) => item.held).map((item) => item.id)).toEqual([kebab1.id])
+
+        await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200) // everything goes
+        const again = await waiter.post(`/api/taim/orders/${order.id}/hold`).send({ itemIds: [kebab1.id] }).expect(409)
+        expect(again.body.error).toBe('Nothing to hold: add dishes first')
+        await waiter.post(`/api/taim/orders/${order.id}/items`).send({ items: [{ menuItemId: salad.id, seat: 1 }] }).expect(201)
+        await waiter.post(`/api/taim/orders/${order.id}/hold`).send({ itemIds: [kebab1.id] }).expect(409)
+    })
+
+    it('a Host cannot hold dishes at a table', async () => {
+        const order = await wholeOrder()
+        await (await as('HOST')).post(`/api/taim/orders/${order.id}/hold`).expect(403)
+    })
+})
+
 describe('what is refused', () => {
     it('only dishes not sent yet on this order can be picked', async () => {
         const order = await wholeOrder()

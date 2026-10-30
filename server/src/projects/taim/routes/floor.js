@@ -380,6 +380,27 @@ router.post('/orders/:id/send', validate({ params: idParams, body: orderSend }),
     res.json(await getOrder(id))
 })
 
+// POST /api/taim/orders/:id/hold { itemIds? } – put dishes not sent yet on
+// hold without sending anything: the starters went earlier and the mains
+// should wait. No itemIds = every dish not sent yet. The kitchen sees them
+// under "Coming up"; "Fire" (send) sends them later.
+router.post('/orders/:id/hold', validate({ params: idParams, body: orderSend }), allowDishChanges, async (req, res) => {
+    const { id } = req.valid.params
+    const { itemIds } = req.valid.body
+    await prisma.$transaction(async (tx) => {
+        await requireOpenOrder(id, tx)
+        const waiting = await tx.orderItem.findMany({ where: { orderId: id, status: 'NEW', held: false }, select: { id: true } })
+        if (waiting.length === 0) throw new HttpError(409, 'Nothing to hold: add dishes first')
+        const waitingIds = new Set(waiting.map((item) => item.id))
+        const toHold = itemIds ? [...new Set(itemIds)] : [...waitingIds]
+        if (toHold.some((itemId) => !waitingIds.has(itemId))) {
+            throw new HttpError(409, 'A dish was already sent, held or removed: refresh the order and try again')
+        }
+        await tx.orderItem.updateMany({ where: { id: { in: toHold }, status: 'NEW' }, data: { held: true } })
+    })
+    res.json(await getOrder(id))
+})
+
 // DELETE /api/taim/orders/:id/items/:itemId – take back a dish: any time
 // before it's sent to the kitchen, or while the kitchen is preparing it
 router.delete('/orders/:id/items/:itemId', validate({ params: orderItemParams }), allowDishChanges, async (req, res) => {

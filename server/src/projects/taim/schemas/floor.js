@@ -85,6 +85,7 @@ export const orderItemUpdate = z.object({
 
 // POST /api/taim/orders/:id/send { itemIds? } – which dishes not sent yet go
 // now; the others are put on hold. No itemIds = every dish not sent yet.
+// Also POST /orders/:id/hold { itemIds? }: which to hold (none = all waiting).
 export const orderSend = z.object({
     itemIds: z
         .array(positiveInt('Invalid dish'), { error: 'Pick the dishes to send' })
