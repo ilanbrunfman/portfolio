@@ -83,6 +83,16 @@ export const orderItemUpdate = z.object({
     seat: positiveInt('Seat must be a whole number above 0').nullable(),
 })
 
+// POST /api/taim/orders/:id/send { itemIds? } – which dishes not sent yet go
+// now; the others are put on hold. No itemIds = every dish not sent yet.
+export const orderSend = z.object({
+    itemIds: z
+        .array(positiveInt('Invalid dish'), { error: 'Pick the dishes to send' })
+        .min(1, 'Pick at least one dish to send')
+        .max(200, 'Too many dishes')
+        .optional(),
+})
+
 // GET /api/taim/orders?status=OPEN|CLOSED
 export const orderListQuery = z.object({
     status: z.enum(['OPEN', 'CLOSED'], { error: 'Status must be OPEN or CLOSED' }).default('OPEN'),

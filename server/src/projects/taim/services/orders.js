@@ -7,7 +7,7 @@ export const ORDER_INCLUDE = {
     table: { select: { id: true, label: true, joined: { select: { label: true }, orderBy: { position: 'asc' } } } },
     openedBy: { select: { id: true, name: true } },
     items: {
-        select: { id: true, menuItemId: true, price: true, seat: true, status: true, createdAt: true, firedAt: true, round: true, sentOutAt: true, menuItem: { select: { name: true } } },
+        select: { id: true, menuItemId: true, price: true, seat: true, status: true, createdAt: true, firedAt: true, round: true, held: true, sentOutAt: true, menuItem: { select: { name: true, category: { select: { name: true } } } } },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     },
 }
@@ -32,7 +32,8 @@ export function toOrderJson(order) {
         openedBy: order.openedBy,
         openedAt: order.openedAt,
         closedAt: order.closedAt,
-        items: order.items.map(({ menuItem, ...item }) => ({ ...item, name: menuItem.name })),
+        // `category` lets the waiter hold a whole course ("Hold Mains")
+        items: order.items.map(({ menuItem, ...item }) => ({ ...item, name: menuItem.name, category: menuItem.category.name })),
         total: billTotal(order.items),
     }
 }

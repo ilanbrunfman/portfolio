@@ -27,14 +27,21 @@ const titleOf = (order) =>
 // GET /api/taim/kitchen – the cooks' list:
 //   tickets: one per send of an order (table round or take-out), oldest
 //            first, with the dishes still to cook (by seat, shared last)
+//   onHold: per order, dishes the waiter is holding back (mains while the
+//            starters are eaten), so the kitchen can plan; not cooking yet
 //   recentlyServed: dishes served in the last 10 minutes, newest first, so
 //            a tap by mistake can be undone
 router.get('/kitchen', async (req, res) => {
-    const [cooking, served] = await Promise.all([
+    const [cooking, held, served] = await Promise.all([
         prisma.orderItem.findMany({
             where: { status: 'PREPARING', order: { status: 'OPEN' } },
             select: { id: true, seat: true, round: true, firedAt: true, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT } },
             orderBy: [{ firedAt: 'asc' }, { id: 'asc' }],
+        }),
+        prisma.orderItem.findMany({
+            where: { held: true, order: { status: 'OPEN' } },
+            select: { id: true, seat: true, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT } },
+            orderBy: [{ orderId: 'asc' }, { id: 'asc' }],
         }),
         prisma.orderItem.findMany({
             where: { status: 'SENT_OUT', order: { status: 'OPEN' }, sentOutAt: { gte: new Date(Date.now() - UNDO_MINUTES * 60_000) } },
@@ -59,10 +66,19 @@ router.get('/kitchen', async (req, res) => {
         }
         tickets.get(key).dishes.push({ id: item.id, name: item.menuItem.name, seat: item.seat, prepMinutes: item.menuItem.prepMinutes })
     }
-    for (const ticket of tickets.values()) ticket.dishes.sort((a, b) => (a.seat ?? Infinity) - (b.seat ?? Infinity) || a.id - b.id)
+    const bySeat = (a, b) => (a.seat ?? Infinity) - (b.seat ?? Infinity) || a.id - b.id
+    for (const ticket of tickets.values()) ticket.dishes.sort(bySeat)
+
+    const onHold = new Map()
+    for (const item of held) {
+        if (!onHold.has(item.orderId)) onHold.set(item.orderId, { orderId: item.orderId, type: item.order.type, title: titleOf(item.order), dishes: [] })
+        onHold.get(item.orderId).dishes.push({ id: item.id, name: item.menuItem.name, seat: item.seat, prepMinutes: item.menuItem.prepMinutes })
+    }
+    for (const order of onHold.values()) order.dishes.sort(bySeat)
 
     res.json({
         tickets: [...tickets.values()],
+        onHold: [...onHold.values()],
         recentlyServed: served.map((item) => ({ id: item.id, name: item.menuItem.name, seat: item.seat, title: titleOf(item.order), sentOutAt: item.sentOutAt })),
     })
 })
