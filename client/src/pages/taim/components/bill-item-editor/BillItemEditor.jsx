@@ -1,28 +1,31 @@
 import { useState } from 'react'
 import RadioGroup from '@/components/ui/form/radio/RadioGroup'
+import Checkbox from '@/components/ui/form/checkbox/Checkbox'
 import Button from '@/components/ui/button/Button'
 import { formatMoney } from '@/pages/taim/utils/money'
 import { valueFromSeat } from '@/pages/taim/utils/orders'
 
 /**
- * Edit one dish on the bill: move it to another seat (any time while the
- * bill is open) or remove it (before it's sent to the kitchen, or while the
- * kitchen is preparing it). Meant to sit inside a <Modal>.
+ * Edit one dish on the bill: move it to another seat or make it to go (or
+ * not), any time while the bill is open; or remove it (before it's sent to
+ * the kitchen, or while the kitchen is preparing it). Meant to sit inside a
+ * <Modal>.
  *
  * @param {object} props
- * @param {object} props.item                           A dish on the order ({ name, price, seat, status }).
+ * @param {object} props.item                           A dish on the order ({ name, price, seat, status, toGo }).
  * @param {{ value: string, label: string }[]} props.seats  Seat choices ([] for a take-out).
- * @param {(seat: string) => Promise} props.onMove      Save a new seat value; throws on failure.
+ * @param {({ seat: string, toGo: boolean }) => Promise} props.onSave  Save the seat value and to go; throws on failure.
  * @param {() => Promise} props.onRemove                Remove the dish; throws on failure.
  * @param {() => void} props.onDone                     Called after saving/removing, and on Close.
  */
-const BillItemEditor = ({ item, seats, onMove, onRemove, onDone }) => {
+const BillItemEditor = ({ item, seats, onSave, onRemove, onDone }) => {
     const [seat, setSeat] = useState(valueFromSeat(item.seat))
+    const [toGo, setToGo] = useState(Boolean(item.toGo))
     const [confirmRemove, setConfirmRemove] = useState(false)
     const [busy, setBusy] = useState(false)
     const [error, setError] = useState('')
     const canRemove = item.status === 'NEW' || item.status === 'PREPARING'
-    const changed = seat !== valueFromSeat(item.seat)
+    const changed = seat !== valueFromSeat(item.seat) || toGo !== Boolean(item.toGo)
 
     const run = async (action) => {
         setBusy(true)
@@ -45,6 +48,9 @@ const BillItemEditor = ({ item, seats, onMove, onRemove, onDone }) => {
             {error && <p className="form__error" role="alert">{error}</p>}
 
             {seats.length > 0 && <RadioGroup label="For" options={seats} value={seat} onChange={setSeat} direction="row" />}
+            {seats.length > 0 && (
+                <Checkbox label="To go: the guests take it home" checked={toGo} onChange={(e) => setToGo(e.target.checked)} />
+            )}
 
             {!canRemove && (
                 <p className="form__hint">The kitchen already sent it out, so it stays on the bill.</p>
@@ -70,8 +76,8 @@ const BillItemEditor = ({ item, seats, onMove, onRemove, onDone }) => {
             <div className="d-flex flex-wrap justify-end gap-0-5">
                 <Button variant="ghost" onClick={onDone} disabled={busy}>Close</Button>
                 {seats.length > 0 && (
-                    <Button onClick={() => run(() => onMove(seat))} disabled={busy || !changed}>
-                        Save seat
+                    <Button onClick={() => run(() => onSave({ seat, toGo }))} disabled={busy || !changed}>
+                        Save
                     </Button>
                 )}
             </div>

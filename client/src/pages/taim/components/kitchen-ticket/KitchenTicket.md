@@ -9,6 +9,8 @@ take-out), so the cooks see it the way it was ordered.
   time against its prep time: "8 of 12 min". **Amber** at 80% of the prep
   time, **red** with a **Late** tag once past it. A dish with no prep time
   just shows the minutes.
+- **To go** (teal): pack the dish, the guests take it home. When every dish
+  on a table's ticket is to go, the tag sits once on the title instead.
 - **The ticket's top edge** takes the colour of its worst dish, so a late
   ticket stands out in the grid.
 - **Served** on each dish, and **Serve all 3** at the bottom when there's

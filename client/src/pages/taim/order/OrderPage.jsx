@@ -34,7 +34,7 @@ const OrderPage = () => {
     const orderId = Number(useParams().orderId)
     const navigate = useNavigate()
     const { can, canEditDishes } = useStaff()
-    const { order, error, addDish, moveDish, removeDish, send, hold, close, update, undo } = useOrder(orderId)
+    const { order, error, addDish, updateDish, removeDish, send, hold, close, update, undo } = useOrder(orderId)
     const menu = useMenu()
     const [category, setCategory] = useState(null) // null = the first one
     const [seat, setSeat] = useState('1') // '1', '2'… or 'shared'
@@ -64,10 +64,10 @@ const OrderPage = () => {
     const seats = seatOptions(order)
 
     // From the details popup; errors are shown there
-    const handleAdd = async (dish, { seats: values, quantity }) => {
+    const handleAdd = async (dish, { seats: values, quantity, toGo }) => {
         const forSeats = atTable ? values.map(seatFromValue) : [null]
         try {
-            await addDish(dish.id, forSeats, quantity)
+            await addDish(dish.id, forSeats, quantity, toGo)
         } catch (err) {
             menu.reload() // e.g. it was just marked sold out
             throw err
@@ -75,7 +75,7 @@ const OrderPage = () => {
         if (atTable && values.length === 1) setSeat(values[0]) // the next dish defaults to the same guest
         const count = quantity * forSeats.length
         const who = !atTable ? '' : forSeats[0] === null ? ' for the table' : forSeats.length === 1 ? ` for seat ${forSeats[0]}` : ` for seats ${forSeats.slice(0, -1).join(', ')} and ${forSeats.at(-1)}`
-        setMessage(`Added ${count > 1 ? `${count} × ` : ''}${dish.name}${who} – not sent yet`)
+        setMessage(`Added ${count > 1 ? `${count} × ` : ''}${dish.name}${who}${toGo ? ', to go' : ''} – not sent yet`)
     }
 
     const waiting = order.items.filter((item) => item.status === 'NEW')
@@ -193,7 +193,7 @@ const OrderPage = () => {
                     <BillItemEditor
                         item={editing}
                         seats={seats}
-                        onMove={(value) => moveDish(editing.id, seatFromValue(value))}
+                        onSave={({ seat: value, toGo }) => updateDish(editing.id, { seat: seatFromValue(value), toGo })}
                         onRemove={() => removeDish(editing.id)}
                         onDone={() => setEditing(null)}
                     />

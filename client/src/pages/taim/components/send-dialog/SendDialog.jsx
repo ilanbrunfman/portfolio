@@ -89,6 +89,7 @@ const SendDialog = ({ items, atTable, onSend, onHold, onDone }) => {
                                         <>
                                             {item.name}
                                             {atTable && <span className="send-dialog__seat">{seatLabel(item.seat)}</span>}
+                                            {item.toGo && <span className="send-dialog__to-go">To go</span>}
                                             {!picked.has(item.id) && <span className="send-dialog__hold">On hold</span>}
                                         </>
                                     }

@@ -97,6 +97,7 @@ export const KitchenProgress = ({ order, now, doneText = 'All served' }) => {
             {order.inKitchen > 0 && (
                 <>
                     {order.kitchenFiredBy && <span className="table-card__fired-by">Fired by kitchen ({order.kitchenFiredBy})</span>}
+                    {order.toGoInKitchen > 0 && <span className="table-card__to-go">To go: {order.toGoInKitchen} in kitchen</span>}
                     <span className="table-card__kitchen">
                         In kitchen: {order.inKitchen} · {minutesSince(order.waitingSince, now)} min
                     </span>

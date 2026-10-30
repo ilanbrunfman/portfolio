@@ -126,7 +126,7 @@ const ComingUp = ({ orders, now, fireAfter, onFire }) => {
                             </span>
                             <span className="form__hint">
                                 {order.dishes
-                                    .map((dish) => `${dish.name}${order.type === 'TABLE' ? ` (${seatLabel(dish.seat)})` : ''}${dish.prepMinutes ? ` · ${dish.prepMinutes} min` : ''}`)
+                                    .map((dish) => `${dish.name}${order.type === 'TABLE' ? ` (${seatLabel(dish.seat)}${dish.toGo ? ', to go' : ''})` : ''}${dish.prepMinutes ? ` · ${dish.prepMinutes} min` : ''}`)
                                     .join(', ')}
                             </span>
                             {onFire && reason && <span className="kitchen__not-yet">{reason}</span>}
@@ -176,7 +176,7 @@ const RecentlyServed = ({ dishes, now, onUndo }) => {
                             <span className="d-flex flex-column">
                                 <strong>{dish.name}</strong>
                                 <span className="form__hint">
-                                    {dish.title}{dish.title.startsWith('Take-out') ? '' : ` · ${seatLabel(dish.seat)}`} · {agoText(minutesSince(dish.sentOutAt, now))}
+                                    {dish.title}{dish.title.startsWith('Take-out') ? '' : ` · ${seatLabel(dish.seat)}`}{dish.toGo ? ' · to go' : ''} · {agoText(minutesSince(dish.sentOutAt, now))}
                                 </span>
                             </span>
                             {onUndo && (

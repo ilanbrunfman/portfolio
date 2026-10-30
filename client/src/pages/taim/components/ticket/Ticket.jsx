@@ -100,6 +100,7 @@ const Ticket = ({ order, onEditItem, onSend, onFire, onClose, className = '' }) 
                                             <span className="ticket__name">
                                                 {item.name}
                                                 {order.type === 'TABLE' && <span className="ticket__seat-tag">{seatLabel(item.seat)}</span>}
+                                                {item.toGo && <span className="ticket__to-go">To go</span>}
                                             </span>
                                             <span className={`ticket__status ${statusOf(item).className}`}>{statusText(item, now)}</span>
                                         </span>
@@ -114,7 +115,7 @@ const Ticket = ({ order, onEditItem, onSend, onFire, onClose, className = '' }) 
                                                 type="button"
                                                 className="ticket__line-button d-flex align-items-start gap-0-5"
                                                 onClick={() => onEditItem(item)}
-                                                aria-label={`${item.name}${order.type === 'TABLE' ? `, ${seatLabel(item.seat)}` : ''}, ${statusText(item, now)}, ${formatMoney(item.price)}. Edit`}
+                                                aria-label={`${item.name}${order.type === 'TABLE' ? `, ${seatLabel(item.seat)}` : ''}, ${item.toGo ? 'to go, ' : ''}${statusText(item, now)}, ${formatMoney(item.price)}. Edit`}
                                             >
                                                 {content}
                                             </button>

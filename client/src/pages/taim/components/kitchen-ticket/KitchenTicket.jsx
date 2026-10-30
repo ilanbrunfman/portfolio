@@ -20,6 +20,8 @@ const KitchenTicket = ({ ticket, now, onServe }) => {
     const elapsed = minutesSince(ticket.firedAt, now)
     const states = ticket.dishes.map((dish) => timing(elapsed, dish.prepMinutes))
     const ticketState = states.includes('late') ? 'late' : states.includes('soon') ? 'soon' : 'ok'
+    // Every dish on it goes home: say so on the ticket itself
+    const allToGo = ticket.type === 'TABLE' && ticket.dishes.every((dish) => dish.toGo)
 
     const serve = async (key, ids) => {
         setBusy(key)
@@ -37,7 +39,10 @@ const KitchenTicket = ({ ticket, now, onServe }) => {
         <article className={`kitchen-ticket surface is-${ticketState} d-flex flex-column`} aria-label={`${ticket.title}, round ${ticket.round}`}>
             <header className="kitchen-ticket__head d-flex justify-between align-items-baseline gap-0-5">
                 <span className="d-flex flex-column">
-                    <strong className="kitchen-ticket__title">{ticket.title}</strong>
+                    <strong className="kitchen-ticket__title">
+                        {ticket.title}
+                        {allToGo && <span className="kitchen-ticket__to-go">To go</span>}
+                    </strong>
                     <span className="kitchen-ticket__round">
                         {ticket.type === 'TABLE' ? `Round ${ticket.round} · ` : ''}sent {clockTime(ticket.firedAt)}
                     </span>
@@ -54,6 +59,7 @@ const KitchenTicket = ({ ticket, now, onServe }) => {
                             <span className="kitchen-ticket__name">
                                 {dish.name}
                                 {ticket.type === 'TABLE' && <span className="kitchen-ticket__seat">{seatLabel(dish.seat)}</span>}
+                                {dish.toGo && !allToGo && <span className="kitchen-ticket__to-go">To go</span>}
                             </span>
                             <span className="kitchen-ticket__time">
                                 {dish.prepMinutes ? `${elapsed} of ${dish.prepMinutes} min` : `${elapsed} min · no prep time`}

@@ -21,7 +21,7 @@ A take-out has no seats, so only Remove (when allowed) and Close show.
         <BillItemEditor
             item={item}
             seats={seatOptions(order)}
-            onMove={(value) => moveDish(item.id, seatFromValue(value))}
+            onSave={({ seat, toGo }) => updateDish(item.id, { seat: seatFromValue(seat), toGo })}
             onRemove={() => removeDish(item.id)}
             onDone={close}
         />
@@ -35,6 +35,6 @@ A take-out has no seats, so only Remove (when allowed) and Close show.
 |------------|--------------------------|-------------|
 | `item`     | `object`                 | A dish on the order: `{ name, price, seat, status }`. |
 | `seats`    | `{ value, label }[]`     | Seat choices; `[]` for a take-out. |
-| `onMove`   | `(seatValue) => Promise` | Saves the new seat; throws on failure. |
+| `onSave`   | `({ seat, toGo }) => Promise` | Saves the seat value and to go; throws on failure. |
 | `onRemove` | `() => Promise`          | Removes the dish; throws on failure. |
 | `onDone`   | `() => void`             | Called after saving or removing, and on Close. |
