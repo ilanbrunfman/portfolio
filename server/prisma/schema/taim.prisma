@@ -18,13 +18,15 @@ enum StaffRole {
 // The people on the "Who are you?" screen. There are no passwords: picking
 // a person is the login, and the server checks their role on every request.
 model Staff {
-  id          Int           @id @default(autoincrement())
-  name        String
-  role        StaffRole
-  createdAt   DateTime      @default(now())
-  orders      Order[]
-  daysClosed  BusinessDay[]
-  dishesFired OrderItem[]
+  id            Int           @id @default(autoincrement())
+  name          String
+  role          StaffRole
+  createdAt     DateTime      @default(now())
+  orders        Order[]
+  daysClosed    BusinessDay[]
+  dishesFired   OrderItem[]   @relation("DishFiredBy")
+  dishesStarted OrderItem[]   @relation("DishStartedBy")
+  dishesServed  OrderItem[]   @relation("DishServedBy")
 
   @@map("staff")
   @@schema("taim")
@@ -197,12 +199,20 @@ model OrderItem {
   // and whether the kitchen fired it from "on hold" (Chef or Manager, once
   // the table's earlier dishes were served a while ago)
   firedById    Int?
-  firedBy      Staff?     @relation(fields: [firedById], references: [id], onDelete: Restrict)
+  firedBy      Staff?     @relation("DishFiredBy", fields: [firedById], references: [id], onDelete: Restrict)
   kitchenFired Boolean    @default(false)
   // Step 5.2: a table's guest takes this dish home – packed, not plated, on
   // the same bill (take-out orders are to go as a whole and leave it false)
   toGo         Boolean    @default(false)
+  // Step 5.3: when the kitchen started it (Start on the ticket, or Served
+  // straight away) and who; who served it. With firedAt and sentOutAt that
+  // is the dish's whole timeline: sent → started → served.
+  startedAt    DateTime?
+  startedById  Int?
+  startedBy    Staff?     @relation("DishStartedBy", fields: [startedById], references: [id], onDelete: Restrict)
   sentOutAt    DateTime?
+  servedById   Int?
+  servedBy     Staff?     @relation("DishServedBy", fields: [servedById], references: [id], onDelete: Restrict)
 
   @@index([orderId])
   @@index([status])
