@@ -140,6 +140,14 @@
         font-variant-numeric: tabular-nums;
     }
 
+    // "Open in Order →" under an open bill's total
+    &__to-order {
+        color: var(--accent);
+        font-size: 0.8rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
     &__days {
         list-style: none;
         margin: 0;

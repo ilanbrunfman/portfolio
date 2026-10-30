@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useStaff } from '@/pages/taim/context/StaffContext'
 import { useBills, periodStart } from '@/pages/taim/hooks/useBills'
 import { useOrder } from '@/pages/taim/hooks/useOrder'
@@ -37,14 +38,19 @@ function periodText(period, since) {
  * /taim/bills – every bill of today (since the last close), this week,
  * month or year, for the Manager, Chef and Host: totals on top (sales of
  * closed bills, bills, average bill, guests), All / Open / Closed, and the
- * list (a tap shows the bill, read-only). On "Day" the Manager and Chef
+ * list. A tap on an open bill you may edit (the Manager; the Host for a
+ * take-out) opens it on the Order screen; any other bill shows read-only. On "Day" the Manager and Chef
  * close the day: refused while bills are open; it saves the end-of-day
  * report and locks the day's bills. If nobody does, the server closes it at
  * the set time (04:00); a warning shows while open bills hold that back. Week, month and year also list the
  * days closed in them, with their reports.
  */
 const Bills = () => {
-    const { can } = useStaff()
+    const { can, canEditDishes } = useStaff()
+    const navigate = useNavigate()
+    // An open bill you may edit goes to the Order screen; the rest show read-only
+    const editable = (bill) => bill.status === 'OPEN' && canEditDishes(bill.type)
+    const openBill = (bill) => (editable(bill) ? navigate(`/taim/order/${bill.id}`) : setViewing(bill.id))
     const [period, setPeriod] = useState('today')
     const [status, setStatus] = useState('ALL')
     const bills = useBills(period, status)
@@ -93,7 +99,7 @@ const Bills = () => {
                                     <ul className="bills__list surface">
                                         {bills.data.bills.map((bill) => (
                                             <li key={bill.id}>
-                                                <BillRow bill={bill} withDate={period !== 'today'} onOpen={() => setViewing(bill.id)} />
+                                                <BillRow bill={bill} withDate={period !== 'today'} toOrder={editable(bill)} onOpen={() => openBill(bill)} />
                                             </li>
                                         ))}
                                     </ul>
@@ -155,13 +161,16 @@ const Totals = ({ totals }) => (
     </dl>
 )
 
-/** One bill in the list: title, status, times, who opened it, dishes, total */
-const BillRow = ({ bill, withDate, onOpen }) => (
+/**
+ * One bill in the list: title, status, times, who opened it, dishes, total.
+ * toOrder: the tap opens it on the Order screen ("Open in Order →").
+ */
+const BillRow = ({ bill, withDate, toOrder, onOpen }) => (
     <button
         type="button"
         className="bills__row d-flex align-items-center justify-between gap-1"
         onClick={onOpen}
-        aria-label={`${bill.title}, ${bill.status === 'OPEN' ? 'open' : 'closed'}, ${formatMoney(bill.total)}. Show the bill`}
+        aria-label={`${bill.title}, ${bill.status === 'OPEN' ? 'open' : 'closed'}, ${formatMoney(bill.total)}. ${toOrder ? 'Open in Order' : 'Show the bill'}`}
     >
         <span className="d-flex flex-column">
             <span className="d-flex flex-wrap align-items-center gap-0-5">
@@ -175,7 +184,10 @@ const BillRow = ({ bill, withDate, onOpen }) => (
                 {bill.guests ? ` · ${bill.guests} ${bill.guests === 1 ? 'guest' : 'guests'}` : ''}
             </span>
         </span>
-        <span className="bills__total">{formatMoney(bill.total)}</span>
+        <span className="d-flex flex-column align-items-end">
+            <span className="bills__total">{formatMoney(bill.total)}</span>
+            {toOrder && <span className="bills__to-order">Open in Order →</span>}
+        </span>
     </button>
 )
 
