@@ -5,6 +5,9 @@ import './DayReport.scss'
 /** "Fri 30 Oct" */
 const dayName = (date) => new Date(date).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
 
+/** Same calendar day on this device? */
+const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString()
+
 /**
  * One closed day's end-of-day report, as it was saved at closing: when it
  * ran and who closed it, bills (tables / take-outs), guests, sales, average
@@ -14,11 +17,14 @@ const dayName = (date) => new Date(date).toLocaleDateString(undefined, { weekday
  * @param {object} props.day  A BusinessDay from the API.
  */
 const DayReport = ({ day }) => (
-    <article className="day-report d-flex flex-column gap-0-5" aria-label={`Day closed ${dayName(day.closedAt)}`}>
+    <article className="day-report d-flex flex-column gap-0-5" aria-label={`Day of ${dayName(day.openedAt)}`}>
         <header className="d-flex flex-wrap justify-between align-items-baseline gap-0-5">
-            <strong className="day-report__title">{dayName(day.closedAt)}</strong>
+            {/* Named after the day it started: Thursday's night closed at 04:00 Friday is Thursday */}
+            <strong className="day-report__title">{dayName(day.openedAt)}</strong>
             <span className="form__hint">
-                {dayName(day.openedAt)} {clockTime(day.openedAt)} → {clockTime(day.closedAt)} · closed by {day.closedBy.name}
+                {clockTime(day.openedAt)} → {sameDay(day.openedAt, day.closedAt) ? '' : `${dayName(day.closedAt)} `}
+                {clockTime(day.closedAt)} ·{' '}
+                {day.closedBy ? `closed by ${day.closedBy.name}` : 'closed automatically'}
             </span>
         </header>
         <dl className="day-report__figures">

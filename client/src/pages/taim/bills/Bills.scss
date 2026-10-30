@@ -49,6 +49,16 @@
         }
     }
 
+    // "The day should have closed at 04:00: 2 bills … still open"
+    &__overdue {
+        box-sizing: border-box;
+        padding: 0.75rem 1rem;
+        border: 1px solid rgba(214, 158, 46, 0.6);
+        border-radius: 12px;
+        background: rgba(214, 158, 46, 0.1);
+        color: var(--text-h);
+    }
+
     &__close {
         box-sizing: border-box;
         border-left: 4px solid var(--accent);

@@ -39,7 +39,8 @@ function periodText(period, since) {
  * closed bills, bills, average bill, guests), All / Open / Closed, and the
  * list (a tap shows the bill, read-only). On "Day" the Manager and Chef
  * close the day: refused while bills are open; it saves the end-of-day
- * report and locks the day's bills. Week, month and year also list the
+ * report and locks the day's bills. If nobody does, the server closes it at
+ * the set time (04:00); a warning shows while open bills hold that back. Week, month and year also list the
  * days closed in them, with their reports.
  */
 const Bills = () => {
@@ -69,8 +70,16 @@ const Bills = () => {
                         <div className="d-flex flex-column gap-2">
                             <Totals totals={bills.data.totals} />
 
+                            {period === 'today' && bills.data.autoClose?.due && (
+                                <p className="bills__overdue" role="status">
+                                    {bills.data.autoClose.waiting > 0
+                                        ? `The day should have closed at ${bills.data.autoClose.at}: ${bills.data.autoClose.waiting} ${bills.data.autoClose.waiting === 1 ? 'bill from before then is' : 'bills from before then are'} still open. It closes by itself once ${bills.data.autoClose.waiting === 1 ? "it's" : "they're"} closed.`
+                                        : `The day ended at ${bills.data.autoClose.at}: it closes by itself within 15 minutes.`}
+                                </p>
+                            )}
+
                             {period === 'today' && can('closeDay') && (
-                                <CloseDay open={bills.data.totals.open} count={bills.data.totals.bills} onClose={bills.closeDay} />
+                                <CloseDay open={bills.data.totals.open} count={bills.data.totals.bills} autoAt={bills.data.autoClose?.at} onClose={bills.closeDay} />
                             )}
 
                             <section className="d-flex flex-column gap-1" aria-labelledby="bills-list-title">
@@ -182,7 +191,7 @@ const BillView = ({ orderId }) => {
  * "Close the day" (Manager, Chef): asks once, then saves the report and
  * shows it. While bills are open it says so instead (the server refuses too).
  */
-const CloseDay = ({ open, count, onClose }) => {
+const CloseDay = ({ open, count, autoAt, onClose }) => {
     const [state, setState] = useState('idle') // 'idle' | 'confirm' | 'busy'
     const [error, setError] = useState('')
     const [closed, setClosed] = useState(null) // the saved report
@@ -222,6 +231,7 @@ const CloseDay = ({ open, count, onClose }) => {
                             ? 'No bills since the last close.'
                             : `Saves the day's report and locks its ${count} ${count === 1 ? 'bill' : 'bills'}.`}
                 </span>
+                {autoAt && <span className="form__hint">If nobody does, it closes by itself at {autoAt}.</span>}
                 {error && <span className="form__error" role="alert">{error}</span>}
             </span>
             {state === 'confirm' || state === 'busy' ? (
