@@ -143,6 +143,9 @@ model Order {
 // kitchen on its own). `price` is copied from the menu when the dish is
 // added, so later price changes never rewrite an old bill. `seat` says
 // which guest gets it (1…guests), or null = shared / take-out.
+// `held` = on hold: the waiter sent the order's other dishes first (starters
+// now, mains later) and this one waits for "Fire". Only a dish not sent
+// yet (NEW) can be held (CHECK in the migration).
 model OrderItem {
   id         Int        @id @default(autoincrement())
   orderId    Int
@@ -155,6 +158,7 @@ model OrderItem {
   createdAt  DateTime   @default(now())
   firedAt    DateTime? // when the waiter sent it to the kitchen
   round      Int? // which "Send to kitchen" of this order: 1 = first (e.g. starters), 2 = next…
+  held       Boolean    @default(false) // waiting for "Fire" (mains after the starters)
   sentOutAt  DateTime?
 
   @@index([orderId])
