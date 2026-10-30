@@ -91,3 +91,24 @@ export const timing = (elapsed, prepMinutes) => {
     if (elapsed > prepMinutes) return 'late'
     return elapsed >= prepMinutes * 0.8 ? 'soon' : 'ok'
 }
+
+/** Why a guest gave a dish back: the API's values with their labels, in menu order */
+export const RETURN_REASONS = [
+    { value: 'COLD', label: 'Cold' },
+    { value: 'WRONG_DISH', label: 'Wrong dish' },
+    { value: 'TASTE', label: 'Taste' },
+    { value: 'UNDERCOOKED', label: 'Undercooked' },
+    { value: 'ALLERGY', label: 'Allergy / something in it' },
+    { value: 'TOO_SLOW', label: 'Too slow' },
+    { value: 'OTHER', label: 'Other' },
+]
+
+/** Waste: food lost without a guest giving it back */
+export const WASTE_REASONS = [
+    { value: 'CANCELLED', label: 'Cancelled after cooking started' },
+    { value: 'DROPPED', label: 'Dropped / spilled' },
+    { value: 'MADE_WRONG', label: 'Made wrong in the kitchen' },
+]
+
+/** 'COLD' → 'Cold', 'DROPPED' → 'Dropped / spilled' */
+export const reasonLabel = (value) => [...RETURN_REASONS, ...WASTE_REASONS].find((reason) => reason.value === value)?.label ?? value

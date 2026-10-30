@@ -37,6 +37,12 @@ export function useKitchen() {
         reload()
     }, [reload])
 
+    /** Made wrong: the ruined plate counts as waste and the dish starts again */
+    const redo = useCallback(async (dishId, note = null) => {
+        await api(`/order-items/${dishId}/redo`, { method: 'POST', body: { note } })
+        reload()
+    }, [reload])
+
     /** Served by mistake: back to the kitchen */
     const unserve = useCallback(async (dishId) => {
         await api(`/order-items/${dishId}/unserve`, { method: 'POST' })
@@ -49,5 +55,5 @@ export function useKitchen() {
         reload()
     }, [reload])
 
-    return { data, error, reload, start, serve, unserve, fire }
+    return { data, error, reload, start, serve, unserve, redo, fire }
 }

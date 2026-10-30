@@ -65,6 +65,11 @@
         font-weight: 600;
     }
 
+    // "Redo (waste)": confirming loses the plate
+    &__redo-yes.btn {
+        color: #b7791f;
+    }
+
     &__error {
         padding: 0 1rem;
     }
@@ -102,6 +107,48 @@
         letter-spacing: 0.04em;
         text-transform: uppercase;
         vertical-align: 0.1em;
+    }
+
+    // "Remake" on the title: the guest is waiting for this one (red)
+    &__remake {
+        margin-left: 0.4rem;
+        padding: 0.05rem 0.45rem;
+        border-radius: 999px;
+        background: #e5484d;
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        vertical-align: 0.15em;
+    }
+
+    // "Fix" on the title: the same plate, sent back to be fixed (blue)
+    &__fix {
+        margin-left: 0.4rem;
+        padding: 0.05rem 0.45rem;
+        border-radius: 999px;
+        background: #3b82f6;
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        vertical-align: 0.15em;
+    }
+
+    // "Fix · Undercooked: "medium, not rare"" under the dish name
+    &__fix-line {
+        color: #3b82f6;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    // "Remake · came back: Cold" under the dish name
+    &__came-back {
+        color: #e5484d;
+        font-size: 0.8rem;
+        font-weight: 600;
     }
 
     // "Seat 2" / "Shared" after the dish name

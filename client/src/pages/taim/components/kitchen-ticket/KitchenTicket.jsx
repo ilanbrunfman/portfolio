@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Button from '@/components/ui/button/Button'
 import { minutesSince } from '@/pages/taim/hooks/useNow'
-import { clockTime, seatLabel, timing } from '@/pages/taim/utils/orders'
+import { clockTime, seatLabel, timing, reasonLabel } from '@/pages/taim/utils/orders'
 import './KitchenTicket.scss'
 
 // A ticket nobody started for this long turns amber
@@ -19,15 +19,20 @@ const WAIT_ALERT_MINUTES = 5
  * The minutes in the header always count from when it was sent: how long
  * the guests have waited. Served works in both states (a drink can go out
  * without a start).
+ * A remake (a dish made again, free, because it came back) has a red
+ * REMAKE tag on the ticket and "came back: Cold" on the dish; the server
+ * lists those tickets first.
  *
  * @param {object} props
  * @param {object} props.ticket          { orderId, title, type, round, firedAt, startedAt, startedBy, dishes: [{ id, name, seat, toGo, startedAt, prepMinutes }] }
  * @param {number} props.now             Current time (ms), so the minutes keep counting.
  * @param {(dishId: number) => Promise} [props.onServe]  Mark a dish served (Manager, Chef, Cook).
- * @param {() => Promise} [props.onStart]                Start the ticket (Manager, Chef, Cook).
+ * @param {() => Promise} [props.onStart]                Start the ticket (Chef, Cook).
+ * @param {(dishId: number) => Promise} [props.onRedo]   Made wrong: the plate is waste, the dish starts again (Chef, Cook).
  */
-const KitchenTicket = ({ ticket, now, onServe, onStart }) => {
-    const [busy, setBusy] = useState(null) // dish id, 'all' or 'start'
+const KitchenTicket = ({ ticket, now, onServe, onStart, onRedo }) => {
+    const [busy, setBusy] = useState(null) // dish id, 'all', 'start' or 'redo-<id>'
+    const [redoing, setRedoing] = useState(null) // the dish whose Redo asks to confirm
     const [error, setError] = useState('')
     const sinceSent = minutesSince(ticket.firedAt, now)
     const started = Boolean(ticket.startedAt)
@@ -62,6 +67,12 @@ const KitchenTicket = ({ ticket, now, onServe, onStart }) => {
                 <span className="d-flex flex-column">
                     <strong className="kitchen-ticket__title">
                         {ticket.title}
+                        {ticket.fix && <span className="kitchen-ticket__fix">Fix</span>}
+                        {ticket.remake && (
+                            <span className="kitchen-ticket__remake">
+                                {ticket.dishes.every((dish) => !dish.remake || dish.remake.replaced) ? 'Replacement' : 'Remake'}
+                            </span>
+                        )}
                         {allToGo && <span className="kitchen-ticket__to-go">To go</span>}
                     </strong>
                     <span className="kitchen-ticket__round">
@@ -99,6 +110,16 @@ const KitchenTicket = ({ ticket, now, onServe, onStart }) => {
                                 {ticket.type === 'TABLE' && <span className="kitchen-ticket__seat">{seatLabel(dish.seat)}</span>}
                                 {dish.toGo && !allToGo && <span className="kitchen-ticket__to-go">To go</span>}
                             </span>
+                            {dish.fix && (
+                                <span className="kitchen-ticket__fix-line">
+                                    Fix · {reasonLabel(dish.fix.reason)}{dish.fix.note ? `: "${dish.fix.note}"` : ''}
+                                </span>
+                            )}
+                            {dish.remake && (
+                                <span className="kitchen-ticket__came-back">
+                                    {dish.remake.replaced ? `Instead of ${dish.remake.replaced}` : 'Remake'} · came back: {reasonLabel(dish.remake.reason)}
+                                </span>
+                            )}
                             <span className="kitchen-ticket__time">
                                 {!started
                                     ? dish.prepMinutes ? `Prep ${dish.prepMinutes} min` : 'No prep time'
@@ -106,11 +127,24 @@ const KitchenTicket = ({ ticket, now, onServe, onStart }) => {
                                 {states[i] === 'late' && <span className="kitchen-ticket__late">Late</span>}
                             </span>
                         </span>
-                        {onServe && (
-                            <Button size="sm" variant="secondary" onClick={() => serve(dish.id, [dish.id])} disabled={busy !== null}>
-                                {busy === dish.id ? '…' : 'Served'}
-                            </Button>
-                        )}
+                        <span className="d-flex flex-column align-items-end gap-0-5">
+                            {onServe && (
+                                <Button size="sm" variant="secondary" onClick={() => serve(dish.id, [dish.id])} disabled={busy !== null}>
+                                    {busy === dish.id ? '…' : 'Served'}
+                                </Button>
+                            )}
+                            {/* Made wrong: Redo asks once, then the plate counts as waste and the dish starts again */}
+                            {onRedo && started && (redoing === dish.id ? (
+                                <span className="d-flex gap-0-5">
+                                    <Button size="sm" variant="ghost" onClick={() => setRedoing(null)} disabled={busy !== null}>No</Button>
+                                    <Button size="sm" variant="ghost" className="kitchen-ticket__redo-yes" onClick={() => run(`redo-${dish.id}`, async () => { await onRedo(dish.id); setRedoing(null) })} disabled={busy !== null}>
+                                        {busy === `redo-${dish.id}` ? '…' : 'Redo (waste)'}
+                                    </Button>
+                                </span>
+                            ) : (
+                                <Button size="sm" variant="ghost" onClick={() => setRedoing(dish.id)} disabled={busy !== null}>Redo</Button>
+                            ))}
+                        </span>
                     </li>
                 ))}
             </ul>

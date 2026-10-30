@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Button from '@/components/ui/button/Button'
 import { formatMoney } from '@/pages/taim/utils/money'
 import { useNow, minutesSince } from '@/pages/taim/hooks/useNow'
-import { orderTitle, groupByRound, seatLabel, clockTime } from '@/pages/taim/utils/orders'
+import { orderTitle, groupByRound, seatLabel, clockTime, reasonLabel } from '@/pages/taim/utils/orders'
 import './Ticket.scss'
 
 const STATUS = {
@@ -11,16 +11,18 @@ const STATUS = {
     PREPARING: { label: 'In kitchen', className: 'is-preparing' },
     SENT_OUT: { label: 'Served', className: 'is-sent' },
     CAME_BACK: { label: 'Came back', className: 'is-back' },
+    WASTED: { label: 'Waste', className: 'is-waste' },
 }
 
 /** The dish's STATUS entry (a held dish counts as "On hold") */
 const statusOf = (item) => STATUS[item.held ? 'HELD' : item.status]
 
-/** "Not sent", "On hold", "In kitchen · 14 min", "Served", "Came back" */
-const statusText = (item, now) =>
-    item.status === 'PREPARING' && item.firedAt
-        ? `${STATUS.PREPARING.label} · ${minutesSince(item.firedAt, now)} min`
-        : statusOf(item).label
+/** "Not sent", "On hold", "In kitchen · 14 min", "Served", "Came back · Cold" */
+const statusText = (item, now) => {
+    if (item.status === 'PREPARING' && item.firedAt) return `${STATUS.PREPARING.label} · ${minutesSince(item.firedAt, now)} min`
+    if ((item.status === 'CAME_BACK' || item.status === 'WASTED') && item.returned) return `${STATUS[item.status].label} · ${reasonLabel(item.returned.reason)}`
+    return statusOf(item).label
+}
 
 /**
  * The bill of one order: its dishes in the order they were sent to the
@@ -101,10 +103,21 @@ const Ticket = ({ order, onEditItem, onSend, onFire, onClose, className = '' }) 
                                                 {item.name}
                                                 {order.type === 'TABLE' && <span className="ticket__seat-tag">{seatLabel(item.seat)}</span>}
                                                 {item.toGo && <span className="ticket__to-go">To go</span>}
+                                                {/* Sent back to be fixed: "Fixing" while in the kitchen, then "Fixed" */}
+                                                {item.fixes?.length > 0 && (
+                                                    <span className="ticket__fix">{item.status === 'PREPARING' ? 'Fixing' : 'Fixed'}</span>
+                                                )}
+                                                {/* Free for a dish that came back: "Remake" (the same dish) or "On us" (another one) */}
+                                                {item.remakeOfId && (
+                                                    <span className="ticket__remake">
+                                                        {order.items.find((other) => other.id === item.remakeOfId)?.menuItemId === item.menuItemId ? 'Remake' : 'On us'}
+                                                    </span>
+                                                )}
                                             </span>
                                             <span className={`ticket__status ${statusOf(item).className}`}>{statusText(item, now)}</span>
                                         </span>
-                                        <span className="ticket__price">{formatMoney(item.price)}</span>
+                                        {/* A free remake shows "Free"; a returned dish is crossed out */}
+                                        <span className="ticket__price">{item.remakeOfId ? 'Free' : formatMoney(item.price)}</span>
                                     </>
                                 )
                                 return (

@@ -1,0 +1,55 @@
+// "Came back" form – visuals only (layout is utility classes in the markup)
+.came-back-form {
+    p {
+        margin: 0;
+    }
+
+    // Seven reasons: keep the row tight so they wrap neatly
+    &__reasons .radio {
+        min-width: 7.5rem;
+    }
+}
+
+// "Another dish instead": a small menu to pick from
+.came-back-form {
+    &__dishes {
+        list-style: none;
+        margin: 0.5rem 0 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+        gap: 0.4rem;
+    }
+
+    &__dish {
+        box-sizing: border-box;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        padding: 0.5rem 0.6rem;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--bg);
+        color: var(--text-h);
+        font: inherit;
+        font-size: 0.9rem;
+        text-align: left;
+        cursor: pointer;
+
+        &.is-picked {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-bg);
+        }
+
+        &:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+    }
+
+    &__dish-price {
+        color: var(--text);
+        font-size: 0.78rem;
+    }
+}

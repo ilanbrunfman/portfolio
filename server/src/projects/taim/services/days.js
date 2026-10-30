@@ -1,6 +1,6 @@
 import { prisma } from '../../../shared/db.js'
 import { HttpError } from '../../../shared/lib/httpError.js'
-import { TITLE_SELECT, billTotal, titleOf } from './orders.js'
+import { TITLE_SELECT, billTotal, lossTotal, titleOf } from './orders.js'
 
 // Business days: closing one (by hand or automatically) and when the
 // automatic close is due.
@@ -94,7 +94,7 @@ export async function closeDay({ closedById = null, before } = {}) {
         const last = await tx.businessDay.findFirst({ orderBy: { closedAt: 'desc' }, select: { closedAt: true } })
         const bills = await tx.order.findMany({
             where: { status: 'CLOSED', businessDayId: null, ...opened },
-            select: { id: true, type: true, status: true, guests: true, openedAt: true, items: { select: { price: true, status: true } } },
+            select: { id: true, type: true, status: true, guests: true, openedAt: true, items: { select: { price: true, status: true, remakeOfId: true } } },
         })
         if (bills.length === 0 || (before && last && last.closedAt >= before)) {
             throw new HttpError(409, 'No bills since the last close: nothing to close')
@@ -102,7 +102,8 @@ export async function closeDay({ closedById = null, before } = {}) {
 
         const firstOpened = bills.reduce((min, bill) => (bill.openedAt < min ? bill.openedAt : min), bills[0].openedAt)
         const totals = totalsOf(bills)
-        const cameBack = bills.flatMap((bill) => bill.items).filter((item) => item.status === 'CAME_BACK')
+        const allItems = bills.flatMap((bill) => bill.items)
+        const cameBack = allItems.filter((item) => item.status === 'CAME_BACK')
 
         const day = await tx.businessDay.create({
             data: {
@@ -115,7 +116,8 @@ export async function closeDay({ closedById = null, before } = {}) {
                 guests: totals.guests,
                 sales: totals.sales,
                 cameBack: cameBack.length,
-                cameBackValue: cameBack.reduce((sum, item) => sum + item.price, 0),
+                // what came back plus the free remakes made for it
+                cameBackValue: lossTotal(allItems),
             },
             select: DAY_SELECT,
         })

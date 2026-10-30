@@ -37,6 +37,21 @@ export function useOrder(orderId) {
         setOrder(await api(`/orders/${orderId}/items/${itemId}`, { method: 'PATCH', body: changes }))
     }, [orderId])
 
+    /** Food lost without a guest giving it back: { reason: 'CANCELLED' | 'DROPPED', note, remake } */
+    const waste = useCallback(async (itemId, data) => {
+        setOrder(await api(`/orders/${orderId}/items/${itemId}/waste`, { method: 'POST', body: data }))
+    }, [orderId])
+
+    /** The guest gave a served dish back: { reason, note, remake, replaceWithId, sendNow } (the dish given instead is free) */
+    const cameBack = useCallback(async (itemId, data) => {
+        setOrder(await api(`/orders/${orderId}/items/${itemId}/came-back`, { method: 'POST', body: data }))
+    }, [orderId])
+
+    /** Came back marked by mistake: back on the bill (its unserved remake goes) */
+    const undoCameBack = useCallback(async (itemId) => {
+        setOrder(await api(`/orders/${orderId}/items/${itemId}/came-back`, { method: 'DELETE' }))
+    }, [orderId])
+
     const removeDish = useCallback(async (itemId) => {
         setOrder(await api(`/orders/${orderId}/items/${itemId}`, { method: 'DELETE' }))
     }, [orderId])
@@ -69,5 +84,5 @@ export function useOrder(orderId) {
         await api(`/orders/${orderId}`, { method: 'DELETE' })
     }, [orderId])
 
-    return { order, error, reload, addDish, updateDish, removeDish, send, hold, close, update, undo }
+    return { order, error, reload, addDish, updateDish, cameBack, undoCameBack, waste, removeDish, send, hold, close, update, undo }
 }

@@ -57,6 +57,34 @@
         vertical-align: 0.1em;
     }
 
+    // "Fixing" / "Fixed": sent back to the kitchen to be fixed (blue)
+    &__fix {
+        margin-left: 0.4rem;
+        padding: 0.05rem 0.45rem;
+        border-radius: 999px;
+        background: rgba(59, 130, 246, 0.15);
+        color: #3b82f6;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        vertical-align: 0.1em;
+    }
+
+    // "Remake": made again on the house for a dish that came back (red, like came back)
+    &__remake {
+        margin-left: 0.4rem;
+        padding: 0.05rem 0.45rem;
+        border-radius: 999px;
+        background: rgba(229, 72, 77, 0.15);
+        color: #e5484d;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        vertical-align: 0.1em;
+    }
+
     &__seat-tag {
         margin-left: 0.5rem;
         padding: 0.05rem 0.45rem;
@@ -107,9 +135,11 @@
             border-left: 2px dashed #8b5cf6;
         }
 
-        // A dish that came back isn't on the bill
+        // A dish that came back, or was wasted, isn't on the bill
         &.is-back .ticket__name,
-        &.is-back .ticket__price {
+        &.is-back .ticket__price,
+        &.is-waste .ticket__name,
+        &.is-waste .ticket__price {
             text-decoration: line-through;
             opacity: 0.6;
         }
@@ -173,6 +203,11 @@
 
         &.is-back {
             color: #e5484d;
+        }
+
+        // Waste (no guest gave it back): amber
+        &.is-waste {
+            color: #b7791f;
         }
     }
 

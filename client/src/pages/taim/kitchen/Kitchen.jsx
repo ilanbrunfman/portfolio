@@ -4,7 +4,7 @@ import { useKitchen } from '@/pages/taim/hooks/useKitchen'
 import { useNow, minutesSince } from '@/pages/taim/hooks/useNow'
 import KitchenTicket from '@/pages/taim/components/kitchen-ticket/KitchenTicket'
 import Button from '@/components/ui/button/Button'
-import { seatLabel } from '@/pages/taim/utils/orders'
+import { seatLabel, reasonLabel, clockTime } from '@/pages/taim/utils/orders'
 import './Kitchen.scss'
 
 /**
@@ -17,6 +17,8 @@ import './Kitchen.scss'
  * The Chef (fireHeld) can fire them from here once nothing of that table is
  * cooking and its last dish was served 10+ minutes ago.
  * "Recently served" keeps the last 10 minutes so a wrong tap can be undone.
+ * "Came back" tells the kitchen, for 30 minutes, which dishes guests gave
+ * back and why (their remakes are on top of the tickets).
  * Reloads every 5 seconds so new orders show up on their own.
  */
 const Kitchen = () => {
@@ -35,7 +37,7 @@ const Kitchen = () => {
     }
     if (!kitchen.data) return <p role="status">Loading the kitchen…</p>
 
-    const { tickets, onHold, recentlyServed, fireAfterMinutes } = kitchen.data
+    const { tickets, onHold, recentlyServed, fireAfterMinutes, cameBack } = kitchen.data
     const dishes = tickets.reduce((sum, t) => sum + t.dishes.length, 0)
 
     return (
@@ -66,6 +68,7 @@ const Kitchen = () => {
                                     now={now}
                                     onServe={canServe ? kitchen.serve : undefined}
                                     onStart={canServe ? () => kitchen.start(ticket.orderId, ticket.round) : undefined}
+                                    onRedo={canServe ? kitchen.redo : undefined}
                                 />
                             </li>
                         ))}
@@ -73,6 +76,7 @@ const Kitchen = () => {
                 )}
 
                 <div className="kitchen__side d-flex flex-column gap-1">
+                    {cameBack.length > 0 && <CameBack dishes={cameBack} />}
                     {onHold.length > 0 && (
                         <ComingUp orders={onHold} now={now} fireAfter={fireAfterMinutes} onFire={can('fireHeld') ? kitchen.fire : undefined} />
                     )}
@@ -82,6 +86,27 @@ const Kitchen = () => {
         </div>
     )
 }
+
+/** Dishes guests gave back in the last 30 minutes, newest first */
+const CameBack = ({ dishes }) => (
+    <section className="kitchen__panel kitchen__came-back surface d-flex flex-column gap-0-5" aria-labelledby="came-back-title">
+        <h3 id="came-back-title" className="kitchen__panel-title">Came back</h3>
+        <ul className="kitchen__panel-list">
+            {dishes.map((dish) => (
+                <li key={dish.id} className="kitchen__panel-item d-flex flex-column">
+                    <strong>
+                        {dish.name} · {reasonLabel(dish.reason)}
+                    </strong>
+                    {dish.note && <span className="kitchen__came-back-note">"{dish.note}"</span>}
+                    <span className="form__hint">
+                        {dish.title}{dish.title.startsWith('Take-out') ? '' : ` · ${seatLabel(dish.seat)}`} · {dish.by}, {clockTime(dish.at)}
+                        {dish.fix ? ' · being fixed' : dish.remade ? ' · remake on its way' : ''}
+                    </span>
+                </li>
+            ))}
+        </ul>
+    </section>
+)
 
 /**
  * Why the kitchen can't fire this order's held dishes yet, or null if it can:
