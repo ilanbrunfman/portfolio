@@ -103,6 +103,7 @@ Use custom styling via CSS or Tailwind.
 - IconBrowsers
 - IconCards
 - IconCaretRight
+- IconCurrencyDollar (money, bills)
 - IconDotsSixVertical (drag handle)
 - IconHome
 - IconLayout
