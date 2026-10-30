@@ -7,42 +7,49 @@ import './Ticket.scss'
 
 const STATUS = {
     NEW: { label: 'Not sent', className: 'is-new' },
+    HELD: { label: 'On hold', className: 'is-held' }, // NEW, but waiting for "Fire"
     PREPARING: { label: 'In kitchen', className: 'is-preparing' },
     SENT_OUT: { label: 'Served', className: 'is-sent' },
     CAME_BACK: { label: 'Came back', className: 'is-back' },
 }
 
-/** "Not sent", "In kitchen · 14 min", "Served", "Came back" */
+/** The dish's STATUS entry (a held dish counts as "On hold") */
+const statusOf = (item) => STATUS[item.held ? 'HELD' : item.status]
+
+/** "Not sent", "On hold", "In kitchen · 14 min", "Served", "Came back" */
 const statusText = (item, now) =>
     item.status === 'PREPARING' && item.firedAt
         ? `${STATUS.PREPARING.label} · ${minutesSince(item.firedAt, now)} min`
-        : STATUS[item.status].label
+        : statusOf(item).label
 
 /**
  * The bill of one order: its dishes in the order they were sent to the
  * kitchen – Round 1 (e.g. starters, sent 20:05), Round 2 (the mains added
- * later)…, then the ones not sent yet – each with its seat (at a table) and
- * where it is: not sent, in the kitchen (and for how long), served, came
- * back. Then the total.
- * When allowed: "Send to kitchen (n)" for the dishes not sent yet, and
- * "Close bill" → a green "Pay · $40.00" to take the payment (refused while
- * dishes haven't been sent). Used on the Order
- * screen and in the Floor's bill dialog.
+ * later)…, then the ones on hold (mains waiting for "Fire"), then the ones
+ * not sent yet – each with its seat (at a table) and where it is: not sent,
+ * on hold, in the kitchen (and for how long), served, came back. Then the
+ * total.
+ * When allowed: "Send to kitchen (n)" for the dishes not sent yet, "Fire
+ * held (n)" for the ones on hold, and "Close bill" → a green "Pay · $40.00"
+ * to take the payment (refused while dishes haven't been sent). Used on the
+ * Order screen and in the Floor's bill dialog.
  *
  * @param {object} props
  * @param {object} props.order                          An order from the API (items, total, …).
  * @param {(item: object) => void} [props.onEditItem]   Makes each dish tappable (change its seat, remove it).
- * @param {() => Promise} [props.onSend]                Send the dishes not sent yet to the kitchen.
+ * @param {() => Promise|void} [props.onSend]           Send the dishes not sent yet (may open a dialog to hold some).
+ * @param {() => Promise} [props.onFire]                Send the dishes on hold.
  * @param {() => Promise} [props.onClose]               Close the bill (asks to confirm first).
  * @param {string} [props.className]
  */
-const Ticket = ({ order, onEditItem, onSend, onClose, className = '' }) => {
+const Ticket = ({ order, onEditItem, onSend, onFire, onClose, className = '' }) => {
     const now = useNow()
     const [confirming, setConfirming] = useState(false)
-    const [busy, setBusy] = useState(null) // 'send' | 'close'
+    const [busy, setBusy] = useState(null) // 'send' | 'fire' | 'close'
     const [error, setError] = useState('')
     const isOpen = order.status === 'OPEN'
-    const notSent = order.items.filter((item) => item.status === 'NEW').length
+    const notSent = order.items.filter((item) => item.status === 'NEW' && !item.held).length
+    const onHold = order.items.filter((item) => item.held).length
 
     const run = async (key, action) => {
         setBusy(key)
@@ -76,7 +83,7 @@ const Ticket = ({ order, onEditItem, onSend, onClose, className = '' }) => {
                 <p className="form__hint">No dishes yet.</p>
             ) : (
                 groupByRound(order).map((group) => (
-                    <div key={group.key} className="ticket__group">
+                    <div key={group.key} className={`ticket__group ${group.key === 'on-hold' ? 'is-held' : ''}`}>
                         <h4 className="ticket__round d-flex justify-between gap-0-5">
                             <span>{group.title}</span>
                             {group.sentAt && <span className="ticket__round-time">sent {clockTime(group.sentAt)}</span>}
@@ -90,13 +97,13 @@ const Ticket = ({ order, onEditItem, onSend, onClose, className = '' }) => {
                                                 {item.name}
                                                 {order.type === 'TABLE' && <span className="ticket__seat-tag">{seatLabel(item.seat)}</span>}
                                             </span>
-                                            <span className={`ticket__status ${STATUS[item.status].className}`}>{statusText(item, now)}</span>
+                                            <span className={`ticket__status ${statusOf(item).className}`}>{statusText(item, now)}</span>
                                         </span>
                                         <span className="ticket__price">{formatMoney(item.price)}</span>
                                     </>
                                 )
                                 return (
-                                    <li key={item.id} className={`ticket__line ${STATUS[item.status].className}`}>
+                                    <li key={item.id} className={`ticket__line ${statusOf(item).className}`}>
                                         {onEditItem && isOpen ? (
                                             // Tappable: the whole line is one button
                                             <button
@@ -129,9 +136,17 @@ const Ticket = ({ order, onEditItem, onSend, onClose, className = '' }) => {
                 </Button>
             )}
 
+            {onFire && isOpen && onHold > 0 && (
+                <Button variant={notSent > 0 ? 'secondary' : 'primary'} className="ticket__fire" onClick={() => run('fire', onFire)} disabled={busy !== null}>
+                    {busy === 'fire' ? 'Firing…' : `Fire held (${onHold})`}
+                </Button>
+            )}
+
             {onClose && isOpen && (
-                notSent > 0 ? (
-                    <p className="form__hint">Send or remove the dishes not sent yet before closing the bill.</p>
+                notSent + onHold > 0 ? (
+                    <p className="form__hint">
+                        {onHold > 0 ? 'Fire, send or remove' : 'Send or remove'} the dishes not sent yet before closing the bill.
+                    </p>
                 ) : confirming ? (
                     <div className="d-flex flex-wrap gap-0-5">
                         <Button className="ticket__pay" onClick={() => run('close', onClose)} disabled={busy !== null}>

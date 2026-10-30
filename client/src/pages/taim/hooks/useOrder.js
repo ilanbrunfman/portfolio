@@ -36,9 +36,13 @@ export function useOrder(orderId) {
         setOrder(await api(`/orders/${orderId}/items/${itemId}`, { method: 'DELETE' }))
     }, [orderId])
 
-    /** Send every dish not sent yet to the kitchen */
-    const send = useCallback(async () => {
-        setOrder(await api(`/orders/${orderId}/send`, { method: 'POST' }))
+    /**
+     * Send dishes to the kitchen. itemIds: only those, and the other dishes
+     * not sent yet go on hold; none = every dish not sent yet, held ones too
+     * ("Fire").
+     */
+    const send = useCallback(async (itemIds) => {
+        setOrder(await api(`/orders/${orderId}/send`, { method: 'POST', body: itemIds ? { itemIds } : {} }))
     }, [orderId])
 
     const close = useCallback(async () => {

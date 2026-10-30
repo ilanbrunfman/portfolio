@@ -26,7 +26,8 @@ export function seatsText(seats) {
 export function kitchenProgress(items) {
     const cooking = items.filter((item) => item.status === 'PREPARING')
     return {
-        notSent: items.filter((item) => item.status === 'NEW').length,
+        notSent: items.filter((item) => item.status === 'NEW' && !item.held).length,
+        onHold: items.filter((item) => item.held).length,
         inKitchen: cooking.length,
         waitingSince: cooking.reduce((oldest, item) => (!oldest || item.firedAt < oldest ? item.firedAt : oldest), null),
         waitingSeats: [...new Set(cooking.map((item) => item.seat))].sort((a, b) => (a ?? Infinity) - (b ?? Infinity)),
@@ -70,7 +71,9 @@ export function groupByRound(order) {
         const items = order.items.filter((item) => item.round === round).sort(bySeat)
         return { key: `round-${round}`, title: `Round ${round}`, sentAt: items[0].firedAt, items }
     })
-    const notSent = order.items.filter((item) => item.round === null).sort(bySeat)
+    const held = order.items.filter((item) => item.held).sort(bySeat)
+    if (held.length > 0) groups.push({ key: 'on-hold', title: 'On hold', sentAt: null, items: held })
+    const notSent = order.items.filter((item) => item.round === null && !item.held).sort(bySeat)
     if (notSent.length > 0) groups.push({ key: 'not-sent', title: 'Not sent yet', sentAt: null, items: notSent })
     return groups
 }
