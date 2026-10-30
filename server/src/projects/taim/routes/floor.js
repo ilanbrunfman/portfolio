@@ -384,10 +384,14 @@ router.delete('/orders/:id/items/:itemId', validate({ params: orderItemParams })
 router.post('/orders/:id/close', allow('closeBill'), validate({ params: idParams }), async (req, res) => {
     const { id } = req.valid.params
     await prisma.$transaction(async (tx) => {
-        // Guests don't pay for dishes the kitchen never got
+        // Guests don't pay for dishes the kitchen never got, or hasn't served yet
         const notSent = await tx.orderItem.count({ where: { orderId: id, status: 'NEW' } })
         if (notSent > 0) {
             throw new HttpError(409, `${notSent} ${notSent === 1 ? "dish hasn't" : "dishes haven't"} been sent to the kitchen: send or remove ${notSent === 1 ? 'it' : 'them'} first`)
+        }
+        const cooking = await tx.orderItem.count({ where: { orderId: id, status: 'PREPARING' } })
+        if (cooking > 0) {
+            throw new HttpError(409, `${cooking} ${cooking === 1 ? 'dish is' : 'dishes are'} still in the kitchen: close the bill once everything is served`)
         }
         // Only an OPEN order changes; if it was already closed nothing is updated
         const { count } = await tx.order.updateMany({ where: { id, status: 'OPEN' }, data: { status: 'CLOSED', closedAt: new Date() } })

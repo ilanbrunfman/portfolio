@@ -20,6 +20,13 @@ beforeEach(async () => {
 })
 
 const seat = (agent, table = t1, guests = 2) => agent.post('/api/taim/orders').send({ type: 'TABLE', tableId: table.id, guests })
+
+/** The kitchen serves every dish of an order that's being prepared (as the Cook) */
+async function serveAll(orderId) {
+    const cook = await as('COOK')
+    const dishes = await prisma.orderItem.findMany({ where: { orderId, status: 'PREPARING' } })
+    for (const dish of dishes) await cook.post(`/api/taim/order-items/${dish.id}/serve`).expect(204)
+}
 const addDishes = (agent, orderId, items) => agent.post(`/api/taim/orders/${orderId}/items`).send({ items })
 
 describe('tables', () => {
@@ -164,6 +171,7 @@ describe('closing the bill (closeBill: Manager, Host, Waiter)', () => {
         const { items } = (await addDishes(waiter, order.id, [{ menuItemId: hummus.id }, { menuItemId: shakshuka.id }]).expect(201)).body
         await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200)
         await prisma.orderItem.update({ where: { id: items[1].id }, data: { round: 1, status: 'CAME_BACK' } })
+        await serveAll(order.id)
 
         const res = await host.post(`/api/taim/orders/${order.id}/close`).expect(200)
         expect(res.body).toMatchObject({ status: 'CLOSED', total: 900, closedAt: expect.any(String) })
@@ -362,6 +370,10 @@ describe('sending to the kitchen (addDishes: Manager, Waiter)', () => {
         expect((await prisma.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe('OPEN')
 
         await waiter.post(`/api/taim/orders/${order.id}/send`).expect(200)
+        const cooking = await host.post(`/api/taim/orders/${order.id}/close`).expect(409)
+        expect(cooking.body.error).toBe('2 dishes are still in the kitchen: close the bill once everything is served')
+
+        await serveAll(order.id)
         await host.post(`/api/taim/orders/${order.id}/close`).expect(200)
     })
 })
@@ -383,6 +395,7 @@ describe('take-out orders (takeoutOrders: Manager, Host, Waiter)', () => {
         await host.delete(`/api/taim/orders/${takeout.id}/items/${items[1].id}`).expect(200)
         const sent = await host.post(`/api/taim/orders/${takeout.id}/send`).expect(200)
         expect(sent.body.items.map((i) => [i.status, i.round])).toEqual([['PREPARING', 1]])
+        await serveAll(takeout.id)
         await host.post(`/api/taim/orders/${takeout.id}/close`).expect(200)
     })
 

@@ -147,7 +147,7 @@ src/
     taim/         Ta'im, the restaurant app
       index.js    all Ta'im routes as one router
       roles.js    who may do what: rights and screens per role
-      routes/     staff, session, menu, floor (tables and orders)
+      routes/     staff, session, menu, floor (tables and orders), kitchen
       services/   order JSON and the bill total
       schemas/    Zod schemas
       middleware/ requireStaff + allow(right)
@@ -159,7 +159,7 @@ test/
     *.test.js     one file per area (accounts, transactions, …)
   taim/
     helpers.js    resetTaim, as(role)
-    *.test.js     session, roles, menu, floor
+    *.test.js     session, roles, menu, floor, kitchen
 ```
 
 Each project lives in its own folder under `src/projects/` and only imports
@@ -314,7 +314,10 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | POST | `/api/taim/orders/:id/send` | | Send every dish not sent yet to the kitchen as the order's next `round` (`NEW` → `PREPARING`, `firedAt` set); 409 if there's nothing new |
 | PATCH | `/api/taim/orders/:id/items/:itemId` | `{ seat }` (a number, or `null` = shared) | The order with the dish moved to that seat; any time while the bill is open |
 | DELETE | `/api/taim/orders/:id/items/:itemId` | | The order without that dish; while it's `NEW` or `PREPARING` (409 once sent out) |
-| POST | `/api/taim/orders/:id/close` | | The closed order; the table now needs cleaning (409 if already closed, or while dishes haven't been sent) |
+| POST | `/api/taim/orders/:id/close` | | The closed order; the table now needs cleaning (409 if already closed, or while dishes are not sent or still in the kitchen) |
+| GET | `/api/taim/kitchen` | | `tickets`: one per send (table round or take-out), oldest first, with the dishes still cooking (`name`, `seat`, `prepMinutes`); `recentlyServed`: dishes served in the last 10 minutes |
+| POST | `/api/taim/order-items/:id/serve` | | 204, the dish is out of the kitchen (`advanceDish`; 409 unless it's being prepared) |
+| POST | `/api/taim/order-items/:id/unserve` | | 204, served by mistake: back to the kitchen (409 unless it was served) |
 
 `rights` and `screens` are the role's entries from `roles.js`, so the
 client can show only the screens that person may use.
@@ -351,7 +354,7 @@ take-outs have no seats.
 A dish's life: `NEW` (on the bill; the waiter can still change or remove
 it) → **Send to kitchen** → `PREPARING` → the kitchen sends it out →
 `SENT_OUT` → maybe `CAME_BACK` (step 6). A bill can't be closed while any
-dish is still `NEW`.
+dish is still `NEW` or in the kitchen (`PREPARING`).
 
 **Combined tables:** `POST /tables/combine` points the other tables of a
 group at its main table (the first on the floor, `joinedToId`). The main
