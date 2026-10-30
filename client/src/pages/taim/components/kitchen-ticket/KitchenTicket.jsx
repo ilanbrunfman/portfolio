@@ -4,46 +4,89 @@ import { minutesSince } from '@/pages/taim/hooks/useNow'
 import { clockTime, seatLabel, timing } from '@/pages/taim/utils/orders'
 import './KitchenTicket.scss'
 
+// A ticket nobody started for this long turns amber
+const WAIT_ALERT_MINUTES = 5
+
 /**
  * One kitchen ticket: everything one table sent in one round (or one
- * take-out), with each dish's seat and time against its prep time, and
- * "Served" buttons. The ticket turns red when any dish is late.
+ * take-out), with each dish's seat and "Served" buttons.
+ *
+ * Two states:
+ *   waiting – nobody started it yet: "Waiting 3 min" and a Start button
+ *             (amber after 5 minutes, so nothing sits unnoticed)
+ *   started – "Started 20:07 · Yossi"; each dish counts against its prep
+ *             time from the start ("8 of 12 min", amber near it, red LATE)
+ * The minutes in the header always count from when it was sent: how long
+ * the guests have waited. Served works in both states (a drink can go out
+ * without a start).
  *
  * @param {object} props
- * @param {object} props.ticket          { title, type, round, firedAt, dishes: [{ id, name, seat, prepMinutes }] }
+ * @param {object} props.ticket          { orderId, title, type, round, firedAt, startedAt, startedBy, dishes: [{ id, name, seat, toGo, startedAt, prepMinutes }] }
  * @param {number} props.now             Current time (ms), so the minutes keep counting.
  * @param {(dishId: number) => Promise} [props.onServe]  Mark a dish served (Manager, Chef, Cook).
+ * @param {() => Promise} [props.onStart]                Start the ticket (Manager, Chef, Cook).
  */
-const KitchenTicket = ({ ticket, now, onServe }) => {
-    const [busy, setBusy] = useState(null) // dish id, or 'all'
+const KitchenTicket = ({ ticket, now, onServe, onStart }) => {
+    const [busy, setBusy] = useState(null) // dish id, 'all' or 'start'
     const [error, setError] = useState('')
-    const elapsed = minutesSince(ticket.firedAt, now)
-    const states = ticket.dishes.map((dish) => timing(elapsed, dish.prepMinutes))
-    const ticketState = states.includes('late') ? 'late' : states.includes('soon') ? 'soon' : 'ok'
+    const sinceSent = minutesSince(ticket.firedAt, now)
+    const started = Boolean(ticket.startedAt)
+    // A dish's prep time counts from its own start (or the ticket's)
+    const cooking = (dish) => minutesSince(dish.startedAt ?? ticket.startedAt, now)
+    const states = ticket.dishes.map((dish) => (started ? timing(cooking(dish), dish.prepMinutes) : 'ok'))
+    const ticketState = started
+        ? states.includes('late') ? 'late' : states.includes('soon') ? 'soon' : 'ok'
+        : sinceSent >= WAIT_ALERT_MINUTES ? 'soon' : 'ok'
+    // Every dish on it goes home: say so on the ticket itself
+    const allToGo = ticket.type === 'TABLE' && ticket.dishes.every((dish) => dish.toGo)
 
-    const serve = async (key, ids) => {
+    const run = async (key, action) => {
         setBusy(key)
         setError('')
         try {
-            for (const id of ids) await onServe(id)
+            await action()
         } catch (err) {
             setError(err.message)
         } finally {
             setBusy(null)
         }
     }
+    const serve = (key, ids) => run(key, async () => { for (const id of ids) await onServe(id) })
 
     return (
-        <article className={`kitchen-ticket surface is-${ticketState} d-flex flex-column`} aria-label={`${ticket.title}, round ${ticket.round}`}>
+        <article
+            className={`kitchen-ticket surface is-${ticketState} ${started ? 'is-started' : 'is-waiting'} d-flex flex-column`}
+            aria-label={`${ticket.title}, round ${ticket.round}, ${started ? 'started' : 'waiting'}`}
+        >
             <header className="kitchen-ticket__head d-flex justify-between align-items-baseline gap-0-5">
                 <span className="d-flex flex-column">
-                    <strong className="kitchen-ticket__title">{ticket.title}</strong>
+                    <strong className="kitchen-ticket__title">
+                        {ticket.title}
+                        {allToGo && <span className="kitchen-ticket__to-go">To go</span>}
+                    </strong>
                     <span className="kitchen-ticket__round">
                         {ticket.type === 'TABLE' ? `Round ${ticket.round} · ` : ''}sent {clockTime(ticket.firedAt)}
                     </span>
                 </span>
-                <span className="kitchen-ticket__elapsed">{elapsed} min</span>
+                <span className="kitchen-ticket__elapsed">{sinceSent} min</span>
             </header>
+
+            <div className="kitchen-ticket__start d-flex align-items-center justify-between gap-0-5">
+                {started ? (
+                    <span className="kitchen-ticket__started">
+                        Started {clockTime(ticket.startedAt)}{ticket.startedBy ? ` · ${ticket.startedBy}` : ''}
+                    </span>
+                ) : (
+                    <>
+                        <span className="kitchen-ticket__waiting">Waiting {sinceSent} min</span>
+                        {onStart && (
+                            <Button size="sm" onClick={() => run('start', onStart)} disabled={busy !== null}>
+                                {busy === 'start' ? 'Starting…' : 'Start'}
+                            </Button>
+                        )}
+                    </>
+                )}
+            </div>
 
             {error && <p className="form__error kitchen-ticket__error" role="alert">{error}</p>}
 
@@ -54,9 +97,12 @@ const KitchenTicket = ({ ticket, now, onServe }) => {
                             <span className="kitchen-ticket__name">
                                 {dish.name}
                                 {ticket.type === 'TABLE' && <span className="kitchen-ticket__seat">{seatLabel(dish.seat)}</span>}
+                                {dish.toGo && !allToGo && <span className="kitchen-ticket__to-go">To go</span>}
                             </span>
                             <span className="kitchen-ticket__time">
-                                {dish.prepMinutes ? `${elapsed} of ${dish.prepMinutes} min` : `${elapsed} min · no prep time`}
+                                {!started
+                                    ? dish.prepMinutes ? `Prep ${dish.prepMinutes} min` : 'No prep time'
+                                    : dish.prepMinutes ? `${cooking(dish)} of ${dish.prepMinutes} min` : `${cooking(dish)} min · no prep time`}
                                 {states[i] === 'late' && <span className="kitchen-ticket__late">Late</span>}
                             </span>
                         </span>

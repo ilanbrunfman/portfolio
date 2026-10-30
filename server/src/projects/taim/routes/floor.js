@@ -107,7 +107,7 @@ router.get('/tables', async (req, res) => {
             joined: { select: { id: true, label: true, seats: true }, orderBy: { position: 'asc' } },
             orders: {
                 where: { status: 'OPEN' },
-                select: { id: true, guests: true, openedAt: true, items: { select: { price: true, status: true, held: true, kitchenFired: true, firedBy: { select: { name: true } }, seat: true, firedAt: true } } },
+                select: { id: true, guests: true, openedAt: true, items: { select: { price: true, status: true, held: true, toGo: true, kitchenFired: true, firedBy: { select: { name: true } }, seat: true, firedAt: true } } },
             },
         },
     })
@@ -135,6 +135,8 @@ router.get('/tables', async (req, res) => {
                           // seats still waiting for food, in order; null = shared, last
                           waitingSeats: [...new Set(cooking.map((item) => item.seat))].sort((a, b) => (a ?? Infinity) - (b ?? Infinity)),
                           cameBack: open.items.filter((item) => item.status === 'CAME_BACK').length,
+                          // to-go dishes still in the kitchen: wait before bringing the bill
+                          toGoInKitchen: cooking.filter((item) => item.toGo).length,
                           // the kitchen fired held dishes that are cooking now: who did ("Avi"), or null
                           kitchenFiredBy: cooking.find((item) => item.kitchenFired)?.firedBy?.name ?? null,
                           total: billTotal(open.items),
@@ -317,6 +319,9 @@ router.post('/orders/:id/items', validate({ params: idParams, body: orderItemsAd
         const current = await requireOpenOrder(id, tx)
 
         for (const { seat } of items) checkSeat(current, seat, 'items')
+        if (current.type === 'TAKEOUT' && items.some((item) => item.toGo)) {
+            throw new HttpError(400, 'Validation failed', { fields: { items: 'A take-out is to go already' } })
+        }
 
         const ids = [...new Set(items.map((item) => item.menuItemId))]
         const dishes = await tx.menuItem.findMany({ where: { id: { in: ids } } })
@@ -330,8 +335,8 @@ router.post('/orders/:id/items', validate({ params: idParams, body: orderItemsAd
         // One row per dish; the price is copied now, so a later price change
         // never rewrites this bill. NEW = on the bill, not sent to the kitchen yet.
         await tx.orderItem.createMany({
-            data: items.flatMap(({ menuItemId, quantity, seat }) =>
-                Array.from({ length: quantity }, () => ({ orderId: id, menuItemId, seat, price: byId.get(menuItemId).price, status: 'NEW' }))
+            data: items.flatMap(({ menuItemId, quantity, seat, toGo }) =>
+                Array.from({ length: quantity }, () => ({ orderId: id, menuItemId, seat, toGo, price: byId.get(menuItemId).price, status: 'NEW' }))
             ),
         })
         return getOrder(id, tx)
@@ -339,14 +344,17 @@ router.post('/orders/:id/items', validate({ params: idParams, body: orderItemsAd
     res.status(201).json(order)
 })
 
-// PATCH /api/taim/orders/:id/items/:itemId { seat } – the dish is for
-// another guest (or shared). Any time while the bill is open, whatever the
-// kitchen status: it only changes who gets it.
+// PATCH /api/taim/orders/:id/items/:itemId { seat?, toGo? } – the dish is
+// for another guest (or shared), or to take home (or not). Any time while
+// the bill is open, whatever the kitchen status: it only changes who gets it
+// and how (plated or packed).
 router.patch('/orders/:id/items/:itemId', validate({ params: orderItemParams, body: orderItemUpdate }), allowDishChanges, async (req, res) => {
     const { id, itemId } = req.valid.params
+    const { seat, toGo } = req.valid.body
     const order = await requireOpenOrder(id)
-    checkSeat(order, req.valid.body.seat, 'seat')
-    const { count } = await prisma.orderItem.updateMany({ where: { id: itemId, orderId: id }, data: { seat: req.valid.body.seat } })
+    if (seat !== undefined) checkSeat(order, seat, 'seat')
+    if (toGo && order.type === 'TAKEOUT') throw new HttpError(400, 'Validation failed', { fields: { toGo: 'A take-out is to go already' } })
+    const { count } = await prisma.orderItem.updateMany({ where: { id: itemId, orderId: id }, data: { seat, toGo } })
     if (count === 0) throw new HttpError(404, 'Dish not found on this order')
     res.json(await getOrder(id))
 })

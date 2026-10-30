@@ -24,16 +24,17 @@ export function useOrder(orderId) {
 
     /**
      * Add a dish for one or more seats, `quantity` each, in one request;
-     * a seat is the guest's seat number, or null for shared / take-out
+     * a seat is the guest's seat number, or null for shared / take-out.
+     * toGo: the guests take it home (a table's bill only)
      */
-    const addDish = useCallback(async (menuItemId, seats = [null], quantity = 1) => {
-        const items = (seats.length > 0 ? seats : [null]).map((seat) => ({ menuItemId, quantity, seat }))
+    const addDish = useCallback(async (menuItemId, seats = [null], quantity = 1, toGo = false) => {
+        const items = (seats.length > 0 ? seats : [null]).map((seat) => ({ menuItemId, quantity, seat, toGo }))
         setOrder(await api(`/orders/${orderId}/items`, { method: 'POST', body: { items } }))
     }, [orderId])
 
-    /** The dish is for another seat (or null = shared) */
-    const moveDish = useCallback(async (itemId, seat) => {
-        setOrder(await api(`/orders/${orderId}/items/${itemId}`, { method: 'PATCH', body: { seat } }))
+    /** Change a dish on the bill: { seat?, toGo? } (another seat, null = shared; to go or not) */
+    const updateDish = useCallback(async (itemId, changes) => {
+        setOrder(await api(`/orders/${orderId}/items/${itemId}`, { method: 'PATCH', body: changes }))
     }, [orderId])
 
     const removeDish = useCallback(async (itemId) => {
@@ -68,5 +69,5 @@ export function useOrder(orderId) {
         await api(`/orders/${orderId}`, { method: 'DELETE' })
     }, [orderId])
 
-    return { order, error, reload, addDish, moveDish, removeDish, send, hold, close, update, undo }
+    return { order, error, reload, addDish, updateDish, removeDish, send, hold, close, update, undo }
 }

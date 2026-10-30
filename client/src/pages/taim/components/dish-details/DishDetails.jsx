@@ -26,12 +26,13 @@ function forText(picked) {
  * @param {object} props.dish                          { name, price, description, hidden }
  * @param {{ value: string, label: string }[]} props.seats  Seat choices, Shared last ([] for a take-out).
  * @param {string} [props.seat]                         The pre-picked seat value ('1' … 'shared').
- * @param {({ seats: string[], quantity: number }) => Promise} props.onAdd  seats = ['1', '3'] or ['shared'] ([] on a take-out). Throws on failure.
+ * @param {({ seats: string[], quantity: number, toGo: boolean }) => Promise} props.onAdd  seats = ['1', '3'] or ['shared'] ([] on a take-out); toGo = the guests take it home. Throws on failure.
  * @param {() => void} props.onDone                     Called after adding, and on Close.
  */
 const DishDetails = ({ dish, seats, seat: initialSeat = seats[0]?.value ?? 'shared', onAdd, onDone }) => {
     const [picked, setPicked] = useState(seats.length > 0 ? [initialSeat] : [])
     const [quantity, setQuantity] = useState(1)
+    const [toGo, setToGo] = useState(false)
     const [error, setError] = useState('')
     const [adding, setAdding] = useState(false)
     const seatChoices = seats.filter((option) => option.value !== 'shared')
@@ -55,7 +56,7 @@ const DishDetails = ({ dish, seats, seat: initialSeat = seats[0]?.value ?? 'shar
         setAdding(true)
         setError('')
         try {
-            await onAdd({ seats: picked, quantity })
+            await onAdd({ seats: picked, quantity, toGo: atTable && toGo })
             onDone()
         } catch (err) {
             setError(err.message)
@@ -102,6 +103,15 @@ const DishDetails = ({ dish, seats, seat: initialSeat = seats[0]?.value ?? 'shar
                         </fieldset>
                     )}
 
+                    {atTable && (
+                        <Checkbox
+                            className="dish-details__to-go-choice"
+                            label="To go"
+                            checked={toGo}
+                            onChange={(e) => setToGo(e.target.checked)}
+                        />
+                    )}
+
                     <div className="d-flex align-items-center gap-1">
                         <span className="form__label" id="dish-quantity-label">{picked.length > 1 ? 'How many each' : 'How many'}</span>
                         <div className="dish-details__stepper d-flex align-items-center" role="group" aria-labelledby="dish-quantity-label">
@@ -119,7 +129,7 @@ const DishDetails = ({ dish, seats, seat: initialSeat = seats[0]?.value ?? 'shar
                     <Button onClick={add} disabled={adding || (atTable && picked.length === 0)}>
                         {adding
                             ? 'Adding…'
-                            : `Add ${count > 1 ? `${count} · ` : ''}${formatMoney(dish.price * count)}${atTable && picked.length > 0 ? ` for ${forText(picked)}` : ''}`}
+                            : `Add ${count > 1 ? `${count} · ` : ''}${formatMoney(dish.price * count)}${atTable && picked.length > 0 ? ` for ${forText(picked)}` : ''}${atTable && toGo ? ' · to go' : ''}`}
                     </Button>
                 )}
             </div>

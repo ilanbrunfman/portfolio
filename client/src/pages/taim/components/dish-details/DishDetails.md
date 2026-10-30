@@ -8,6 +8,8 @@ tell the guest about it before adding it:
   one dish each), **Shared** is a **radio** for the whole table: picking it
   clears the seats, and ticking a seat clears Shared. Prefilled with the
   seat picked above the menu; not shown for a take-out,
+- **To go** (tables only): the guests take it home. It's packed, not
+  plated, and stays on the same bill; the button ends with "· to go",
 - **How many** (− 1 +, up to 10), per seat ("How many each" with several),
 - **Add**, which says exactly what will happen: "Add 2 · $18.00 for Seats 1
   and 3", "Add $9.00 for the table". Nothing ticked: disabled.
@@ -24,7 +26,7 @@ button. Server errors (e.g. it was just marked sold out) show in the popup.
             dish={dish}
             seats={seatOptions(order)}
             seat={pickedSeat}
-            onAdd={({ seats, quantity }) => addDish(dish.id, seats.map(seatFromValue), quantity)}
+            onAdd={({ seats, quantity, toGo }) => addDish(dish.id, seats.map(seatFromValue), quantity, toGo)}
             onDone={close}
         />
     )}
@@ -38,5 +40,5 @@ button. Server errors (e.g. it was just marked sold out) show in the popup.
 | `dish`   | `object`                              | `{ name, price, description, hidden }`. |
 | `seats`  | `{ value, label }[]`                  | Seat choices; `[]` for a take-out. |
 | `seat`   | `string`                              | Pre-picked seat value (`'1'` … `'shared'`). |
-| `onAdd`  | `({ seats, quantity }) => Promise`    | `seats`: `['1', '3']`, `['shared']`, or `[]` on a take-out. Adds to the bill; throws on failure. |
+| `onAdd`  | `({ seats, quantity, toGo }) => Promise` | `seats`: `['1', '3']`, `['shared']`, or `[]` on a take-out; `toGo`: to take home. Adds to the bill; throws on failure. |
 | `onDone` | `() => void`                          | Called after adding, and on Close. |

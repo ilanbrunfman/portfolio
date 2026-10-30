@@ -125,6 +125,12 @@
         font-weight: 700;
     }
 
+    // "To go: 2 in kitchen" – wait before bringing the bill (teal)
+    &__to-go {
+        color: #0d9488;
+        font-weight: 700;
+    }
+
     // The Chef fired the held dishes: violet, like on hold
     &__fired-by {
         color: #8b5cf6;

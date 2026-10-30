@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { prisma } from '../../../shared/db.js'
 import { validate } from '../../../shared/middleware/validate.js'
 import { HttpError } from '../../../shared/lib/httpError.js'
+import { z } from 'zod'
 import { idParams } from '../../../shared/schemas/common.js'
 import { allow } from '../middleware/staff.js'
 import { TITLE_SELECT, titleOf } from '../services/orders.js'
@@ -20,6 +21,12 @@ export const FIRE_AFTER_MINUTES = Number.parseInt(process.env.TAIM_KITCHEN_FIRE_
 
 const ORDER_SELECT = { id: true, ...TITLE_SELECT }
 
+// /orders/:id/rounds/:round/start
+const roundParams = z.object({
+    id: z.coerce.number({ error: 'Invalid id' }).int('Invalid id').positive('Invalid id'),
+    round: z.coerce.number({ error: 'Invalid round' }).int('Invalid round').positive('Invalid round'),
+})
+
 // GET /api/taim/kitchen – the cooks' list:
 //   tickets: one per send of an order (table round or take-out), oldest
 //            first, with the dishes still to cook (by seat, shared last)
@@ -34,17 +41,17 @@ router.get('/kitchen', async (req, res) => {
     const [cooking, held, served, heldOrders] = await Promise.all([
         prisma.orderItem.findMany({
             where: { status: 'PREPARING', order: { status: 'OPEN' } },
-            select: { id: true, seat: true, round: true, firedAt: true, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT } },
+            select: { id: true, seat: true, toGo: true, round: true, firedAt: true, startedAt: true, startedBy: { select: { name: true } }, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT } },
             orderBy: [{ firedAt: 'asc' }, { id: 'asc' }],
         }),
         prisma.orderItem.findMany({
             where: { held: true, order: { status: 'OPEN' } },
-            select: { id: true, seat: true, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT } },
+            select: { id: true, seat: true, toGo: true, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT } },
             orderBy: [{ orderId: 'asc' }, { id: 'asc' }],
         }),
         prisma.orderItem.findMany({
             where: { status: 'SENT_OUT', order: { status: 'OPEN' }, sentOutAt: { gte: new Date(Date.now() - UNDO_MINUTES * 60_000) } },
-            select: { id: true, seat: true, sentOutAt: true, menuItem: { select: { name: true } }, order: { select: ORDER_SELECT } },
+            select: { id: true, seat: true, toGo: true, sentOutAt: true, menuItem: { select: { name: true } }, order: { select: ORDER_SELECT } },
             orderBy: { sentOutAt: 'desc' },
         }),
         // For each order with held dishes: is anything still cooking, and when was the last dish served
@@ -67,10 +74,19 @@ router.get('/kitchen', async (req, res) => {
                 type: item.order.type,
                 title: titleOf(item.order),
                 firedAt: item.firedAt,
+                // Start: when the kitchen began this ticket and who (null = waiting)
+                startedAt: null,
+                startedBy: null,
                 dishes: [],
             })
         }
-        tickets.get(key).dishes.push({ id: item.id, name: item.menuItem.name, seat: item.seat, prepMinutes: item.menuItem.prepMinutes })
+        const ticket = tickets.get(key)
+        if (item.startedAt && (!ticket.startedAt || item.startedAt < ticket.startedAt)) {
+            ticket.startedAt = item.startedAt
+            ticket.startedBy = item.startedBy?.name ?? null
+        }
+        // toGo: pack it, the guest takes it home; startedAt: its prep time counts from then
+        ticket.dishes.push({ id: item.id, name: item.menuItem.name, seat: item.seat, toGo: item.toGo, startedAt: item.startedAt, prepMinutes: item.menuItem.prepMinutes })
     }
     const bySeat = (a, b) => (a.seat ?? Infinity) - (b.seat ?? Infinity) || a.id - b.id
     for (const ticket of tickets.values()) ticket.dishes.sort(bySeat)
@@ -88,7 +104,7 @@ router.get('/kitchen', async (req, res) => {
                 dishes: [],
             })
         }
-        onHold.get(item.orderId).dishes.push({ id: item.id, name: item.menuItem.name, seat: item.seat, prepMinutes: item.menuItem.prepMinutes })
+        onHold.get(item.orderId).dishes.push({ id: item.id, name: item.menuItem.name, seat: item.seat, toGo: item.toGo, prepMinutes: item.menuItem.prepMinutes })
     }
     for (const order of onHold.values()) order.dishes.sort(bySeat)
 
@@ -96,7 +112,7 @@ router.get('/kitchen', async (req, res) => {
         tickets: [...tickets.values()],
         onHold: [...onHold.values()],
         fireAfterMinutes: FIRE_AFTER_MINUTES,
-        recentlyServed: served.map((item) => ({ id: item.id, name: item.menuItem.name, seat: item.seat, title: titleOf(item.order), sentOutAt: item.sentOutAt })),
+        recentlyServed: served.map((item) => ({ id: item.id, name: item.menuItem.name, seat: item.seat, toGo: item.toGo, title: titleOf(item.order), sentOutAt: item.sentOutAt })),
     })
 })
 
@@ -105,13 +121,10 @@ router.get('/kitchen', async (req, res) => {
  * order is open. One UPDATE … WHERE status = from, so two cooks tapping
  * the same dish can't both succeed. 404 unknown, 409 wrong state.
  */
-async function moveDish(id, from, to, wrongState) {
-    const { count } = await prisma.orderItem.updateMany({
-        where: { id, status: from, order: { status: 'OPEN' } },
-        data: { status: to, sentOutAt: to === 'SENT_OUT' ? new Date() : null },
-    })
+async function moveDish(db, id, from, data, wrongState) {
+    const { count } = await db.orderItem.updateMany({ where: { id, status: from, order: { status: 'OPEN' } }, data })
     if (count === 0) {
-        const item = await prisma.orderItem.findUnique({ where: { id }, select: { id: true } })
+        const item = await db.orderItem.findUnique({ where: { id }, select: { id: true } })
         if (!item) throw new HttpError(404, 'Dish not found')
         throw new HttpError(409, wrongState)
     }
@@ -154,15 +167,39 @@ router.post('/orders/:id/kitchen-fire', allow('fireHeld'), validate({ params: id
     res.status(204).end()
 })
 
-// POST /api/taim/order-items/:id/serve – the dish is out of the kitchen
-router.post('/order-items/:id/serve', allow('advanceDish'), validate({ params: idParams }), async (req, res) => {
-    await moveDish(req.valid.params.id, 'PREPARING', 'SENT_OUT', 'Only a dish in the kitchen can be marked served')
+// POST /api/taim/orders/:id/rounds/:round/start – the kitchen starts a
+// ticket: its dishes still waiting get startedAt and who started them, and
+// their prep times count from now. Already started: 409.
+router.post('/orders/:id/rounds/:round/start', allow('advanceDish'), validate({ params: roundParams }), async (req, res) => {
+    const { id, round } = req.valid.params
+    const { count } = await prisma.orderItem.updateMany({
+        where: { orderId: id, round, status: 'PREPARING', startedAt: null, order: { status: 'OPEN' } },
+        data: { startedAt: new Date(), startedById: req.staff.id },
+    })
+    if (count === 0) {
+        const cooking = await prisma.orderItem.count({ where: { orderId: id, round, status: 'PREPARING' } })
+        throw cooking > 0 ? new HttpError(409, 'This ticket was already started') : new HttpError(404, 'No ticket in the kitchen for this round')
+    }
     res.status(204).end()
 })
 
-// POST /api/taim/order-items/:id/unserve – served by mistake: back to the kitchen
+// POST /api/taim/order-items/:id/serve – the dish is out of the kitchen,
+// served by whoever tapped it. Never started (a drink, something quick)?
+// Then it started now too.
+router.post('/order-items/:id/serve', allow('advanceDish'), validate({ params: idParams }), async (req, res) => {
+    const { id } = req.valid.params
+    const now = new Date()
+    await prisma.$transaction(async (tx) => {
+        await moveDish(tx, id, 'PREPARING', { status: 'SENT_OUT', sentOutAt: now, servedById: req.staff.id }, 'Only a dish in the kitchen can be marked served')
+        await tx.orderItem.updateMany({ where: { id, startedAt: null }, data: { startedAt: now, startedById: req.staff.id } })
+    })
+    res.status(204).end()
+})
+
+// POST /api/taim/order-items/:id/unserve – served by mistake: back to the
+// kitchen (still started; no longer served)
 router.post('/order-items/:id/unserve', allow('advanceDish'), validate({ params: idParams }), async (req, res) => {
-    await moveDish(req.valid.params.id, 'SENT_OUT', 'PREPARING', 'Only a served dish can go back to the kitchen')
+    await moveDish(prisma, req.valid.params.id, 'SENT_OUT', { status: 'PREPARING', sentOutAt: null, servedById: null }, 'Only a served dish can go back to the kitchen')
     res.status(204).end()
 })
 

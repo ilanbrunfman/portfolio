@@ -14,6 +14,9 @@ Where a dish is:
 - **Served**: the kitchen sent it out.
 - **Came back**: crossed out, not on the bill (it counts as money lost).
 
+A dish the guests take home has a teal **To go** tag (same bill, packed by
+the kitchen).
+
 The dishes are grouped the way they were ordered: **Round 1 · sent 20:05**
 (e.g. the starters), **Round 2 · sent 20:25** (the mains added later), …
 then **On hold**, and **Not sent yet** last. A round the Chef fired from the

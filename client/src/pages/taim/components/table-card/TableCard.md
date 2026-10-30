@@ -18,6 +18,8 @@ ask the kitchen about "table 5, seat 3":
   the starters are eaten), waiting for the waiter to fire them.
 - **Fired by kitchen (Avi)** (violet): the Chef fired the held dishes from
   the kitchen; shown while they cook, so the waiter knows the mains are coming.
+- **To go: 2 in kitchen** (teal): dishes the guests take home are still
+  cooking, so wait before bringing the bill.
 - **In kitchen: 3 · 14 min** (amber): dishes being prepared, and how long
   the oldest has waited; **Waiting: seat 1, seat 3, shared** under it.
 - **All served** (blue): nothing left to come (nothing on hold either).
