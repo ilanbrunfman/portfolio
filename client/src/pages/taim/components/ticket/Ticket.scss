@@ -152,4 +152,16 @@
         font-weight: 700;
         font-variant-numeric: tabular-nums;
     }
+
+    // "Pay · $40.00": green, the go-ahead colour (overrides the accent button)
+    .ticket__pay.btn {
+        border-color: #22a06b;
+        background: #22a06b;
+        color: #fff;
+
+        &:hover:not(:disabled) {
+            border-color: #1b8a5b;
+            background: #1b8a5b;
+        }
+    }
 }
