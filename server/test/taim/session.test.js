@@ -61,8 +61,8 @@ describe('GET /api/taim/session', () => {
     it('gives the manager every screen and every right', async () => {
         const manager = await as('MANAGER')
         const res = await manager.get('/api/taim/session').expect(200)
-        expect(res.body.screens).toEqual(['floor', 'order', 'kitchen', 'menu', 'losses'])
-        expect(res.body.rights).toHaveLength(11)
+        expect(res.body.screens).toEqual(['floor', 'order', 'kitchen', 'menu', 'bills', 'losses'])
+        expect(res.body.rights).toHaveLength(13)
     })
 })
 

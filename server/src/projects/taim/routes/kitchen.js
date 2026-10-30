@@ -4,6 +4,7 @@ import { validate } from '../../../shared/middleware/validate.js'
 import { HttpError } from '../../../shared/lib/httpError.js'
 import { idParams } from '../../../shared/schemas/common.js'
 import { allow } from '../middleware/staff.js'
+import { TITLE_SELECT, titleOf } from '../services/orders.js'
 
 // The kitchen: what's waiting to be cooked, and marking dishes served.
 // Reading is open to everyone picked; serving needs advanceDish (Manager,
@@ -13,16 +14,7 @@ const router = Router()
 // How long a served dish stays in "recently served", where it can be undone
 const UNDO_MINUTES = 10
 
-const ORDER_SELECT = {
-    id: true,
-    type: true,
-    customerName: true,
-    table: { select: { label: true, joined: { select: { label: true }, orderBy: { position: 'asc' } } } },
-}
-
-/** "T5", "T1 + T4 + T7" or "Take-out · Maya" */
-const titleOf = (order) =>
-    order.type === 'TABLE' ? [order.table, ...order.table.joined].map((t) => t.label).join(' + ') : `Take-out · ${order.customerName}`
+const ORDER_SELECT = { id: true, ...TITLE_SELECT }
 
 // GET /api/taim/kitchen – the cooks' list:
 //   tickets: one per send of an order (table round or take-out), oldest

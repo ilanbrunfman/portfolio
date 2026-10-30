@@ -12,6 +12,17 @@ export const ORDER_INCLUDE = {
     },
 }
 
+// What an order's title needs: "T5", "T1 + T4 + T7" or "Take-out · Maya"
+export const TITLE_SELECT = {
+    type: true,
+    customerName: true,
+    table: { select: { label: true, joined: { select: { label: true }, orderBy: { position: 'asc' } } } },
+}
+
+/** "T5", "T1 + T4 + T7" (combined tables) or "Take-out · Maya" */
+export const titleOf = (order) =>
+    order.type === 'TABLE' ? [order.table, ...order.table.joined].map((t) => t.label).join(' + ') : `Take-out · ${order.customerName}`
+
 /**
  * The bill: every dish except the ones that came back (those count as a
  * loss instead, step 6). Calculated, never stored, like the bank's balances.
