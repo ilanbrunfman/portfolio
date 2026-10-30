@@ -89,6 +89,21 @@ export const orderItemUpdate = z
     })
     .refine((data) => data.seat !== undefined || data.toGo !== undefined, 'Nothing to update')
 
+// POST /api/taim/orders/:id/items/:itemId/came-back – why, and whether to
+// make it again (a free remake, sent straight to the kitchen)
+export const RETURN_REASONS = ['COLD', 'WRONG_DISH', 'TASTE', 'UNDERCOOKED', 'ALLERGY', 'TOO_SLOW', 'OTHER']
+export const cameBack = z.object({
+    reason: z.enum(RETURN_REASONS, { error: 'Pick a reason' }),
+    note: z
+        .string({ error: 'Note must be text' })
+        .trim()
+        .max(200, 'Max 200 characters')
+        .transform((note) => note || null)
+        .nullable()
+        .default(null),
+    remake: z.boolean({ error: 'Remake must be true or false' }).default(false),
+})
+
 // POST /api/taim/orders/:id/send { itemIds? } – which dishes not sent yet go
 // now; the others are put on hold. No itemIds = every dish not sent yet.
 // Also POST /orders/:id/hold { itemIds? }: which to hold (none = all waiting).

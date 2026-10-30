@@ -16,6 +16,9 @@ const router = Router()
 // How long a served dish stays in "recently served", where it can be undone
 const UNDO_MINUTES = 10
 
+// How long a dish that came back stays in the kitchen's "Came back" list
+const CAME_BACK_MINUTES = 30
+
 // The kitchen may fire a table's held dishes this long after its last dish
 // was served (so the guests had time to eat). TAIM_KITCHEN_FIRE_AFTER in .env.
 export const FIRE_AFTER_MINUTES = Number.parseInt(process.env.TAIM_KITCHEN_FIRE_AFTER ?? '', 10) >= 0 ? Number.parseInt(process.env.TAIM_KITCHEN_FIRE_AFTER, 10) : 10
@@ -38,11 +41,15 @@ const roundParams = z.object({
 //   fireAfterMinutes: how long after the last served dish (setting)
 //   recentlyServed: dishes served in the last 10 minutes, newest first, so
 //            a tap by mistake can be undone
+//   cameBack: dishes guests gave back in the last 30 minutes, newest first,
+//            with the reason, note, who and whether a remake was made
+// Remakes (free, for a dish that came back) carry `remake: { reason }`, and
+// their tickets come first: the guest is waiting.
 router.get('/kitchen', async (req, res) => {
-    const [cooking, held, served, heldOrders] = await Promise.all([
+    const [cooking, held, served, heldOrders, returned] = await Promise.all([
         prisma.orderItem.findMany({
             where: { status: 'PREPARING', order: { status: 'OPEN' } },
-            select: { id: true, seat: true, toGo: true, round: true, firedAt: true, startedAt: true, startedBy: { select: { name: true } }, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT } },
+            select: { id: true, seat: true, toGo: true, round: true, firedAt: true, startedAt: true, startedBy: { select: { name: true } }, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT }, remakeOf: { select: { return: { select: { reason: true } } } } },
             orderBy: [{ firedAt: 'asc' }, { id: 'asc' }],
         }),
         prisma.orderItem.findMany({
@@ -62,6 +69,17 @@ router.get('/kitchen', async (req, res) => {
             _count: { _all: true },
             _max: { sentOutAt: true },
         }),
+        prisma.itemReturn.findMany({
+            where: { createdAt: { gte: new Date(Date.now() - CAME_BACK_MINUTES * 60_000) } },
+            select: {
+                reason: true,
+                note: true,
+                createdAt: true,
+                staff: { select: { name: true } },
+                orderItem: { select: { id: true, seat: true, menuItem: { select: { name: true } }, order: { select: ORDER_SELECT }, remake: { select: { id: true } } } },
+            },
+            orderBy: { createdAt: 'desc' },
+        }),
     ])
 
     // Group dishes into tickets, keeping the oldest-first order of the query
@@ -78,16 +96,18 @@ router.get('/kitchen', async (req, res) => {
                 // Start: when the kitchen began this ticket and who (null = waiting)
                 startedAt: null,
                 startedBy: null,
+                remake: false, // a remake ticket: do it first
                 dishes: [],
             })
         }
         const ticket = tickets.get(key)
+        if (item.remakeOf) ticket.remake = true
         if (item.startedAt && (!ticket.startedAt || item.startedAt < ticket.startedAt)) {
             ticket.startedAt = item.startedAt
             ticket.startedBy = item.startedBy?.name ?? null
         }
         // toGo: pack it, the guest takes it home; startedAt: its prep time counts from then
-        ticket.dishes.push({ id: item.id, name: item.menuItem.name, seat: item.seat, toGo: item.toGo, startedAt: item.startedAt, prepMinutes: item.menuItem.prepMinutes })
+        ticket.dishes.push({ id: item.id, name: item.menuItem.name, seat: item.seat, toGo: item.toGo, startedAt: item.startedAt, prepMinutes: item.menuItem.prepMinutes, remake: item.remakeOf ? { reason: item.remakeOf.return?.reason ?? null } : null })
     }
     const bySeat = (a, b) => (a.seat ?? Infinity) - (b.seat ?? Infinity) || a.id - b.id
     for (const ticket of tickets.values()) ticket.dishes.sort(bySeat)
@@ -110,10 +130,22 @@ router.get('/kitchen', async (req, res) => {
     for (const order of onHold.values()) order.dishes.sort(bySeat)
 
     res.json({
-        tickets: [...tickets.values()],
+        // remakes first (the guest is waiting), then oldest first
+        tickets: [...tickets.values()].sort((a, b) => Number(b.remake) - Number(a.remake)),
         onHold: [...onHold.values()],
         fireAfterMinutes: FIRE_AFTER_MINUTES,
         recentlyServed: served.map((item) => ({ id: item.id, name: item.menuItem.name, seat: item.seat, toGo: item.toGo, title: titleOf(item.order), sentOutAt: item.sentOutAt })),
+        cameBack: returned.map((row) => ({
+            id: row.orderItem.id,
+            name: row.orderItem.menuItem.name,
+            title: titleOf(row.orderItem.order),
+            seat: row.orderItem.seat,
+            reason: row.reason,
+            note: row.note,
+            by: row.staff.name,
+            at: row.createdAt,
+            remade: Boolean(row.orderItem.remake),
+        })),
     })
 })
 

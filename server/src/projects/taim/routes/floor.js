@@ -4,7 +4,7 @@ import { validate } from '../../../shared/middleware/validate.js'
 import { HttpError } from '../../../shared/lib/httpError.js'
 import { idParams } from '../../../shared/schemas/common.js'
 import { allow, allowDishChanges } from '../middleware/staff.js'
-import { tableCreate, tableUpdate, tablesCombine, orderCreate, orderUpdate, orderItemsAdd, orderItemUpdate, orderSend, orderListQuery, orderItemParams } from '../schemas/floor.js'
+import { tableCreate, tableUpdate, tablesCombine, orderCreate, orderUpdate, orderItemsAdd, orderItemUpdate, orderSend, orderListQuery, orderItemParams, cameBack } from '../schemas/floor.js'
 import { ORDER_INCLUDE, billTotal, getOrder, requireOpenOrder, toOrderJson } from '../services/orders.js'
 
 // The floor (tables) and orders. Everyone picked can read them; changing
@@ -107,7 +107,7 @@ router.get('/tables', async (req, res) => {
             joined: { select: { id: true, label: true, seats: true }, orderBy: { position: 'asc' } },
             orders: {
                 where: { status: 'OPEN' },
-                select: { id: true, guests: true, openedAt: true, items: { select: { price: true, status: true, held: true, toGo: true, kitchenFired: true, firedBy: { select: { name: true } }, seat: true, firedAt: true } } },
+                select: { id: true, guests: true, openedAt: true, items: { select: { price: true, status: true, remakeOfId: true, held: true, toGo: true, kitchenFired: true, firedBy: { select: { name: true } }, seat: true, firedAt: true } } },
             },
         },
     })
@@ -407,6 +407,71 @@ router.post('/orders/:id/hold', validate({ params: idParams, body: orderSend }),
             throw new HttpError(409, 'A dish was already sent, held or removed: refresh the order and try again')
         }
         await tx.orderItem.updateMany({ where: { id: { in: toHold }, status: 'NEW' }, data: { held: true } })
+    })
+    res.json(await getOrder(id))
+})
+
+// POST /api/taim/orders/:id/items/:itemId/came-back { reason, note?, remake? }
+// (markCameBack: Manager, Chef, Waiter) – the guest gave a served dish
+// back. It leaves the bill and counts as a loss, with the reason, note and
+// who recorded it. remake: the same dish (same seat, to go or not) is made
+// again on the house – free on the bill, its price a loss too – and goes
+// straight to the kitchen as the next round, so the guest doesn't wait for
+// a Send. Only a served dish on an open bill; a sold-out dish can't be
+// remade (choose something else from the menu).
+router.post('/orders/:id/items/:itemId/came-back', allow('markCameBack'), validate({ params: orderItemParams, body: cameBack }), async (req, res) => {
+    const { id, itemId } = req.valid.params
+    const { reason, note, remake } = req.valid.body
+    await prisma.$transaction(async (tx) => {
+        await requireOpenOrder(id, tx)
+        const item = await tx.orderItem.findFirst({ where: { id: itemId, orderId: id }, include: { menuItem: { select: { name: true, hidden: true } } } })
+        if (!item) throw new HttpError(404, 'Dish not found on this order')
+        if (remake && item.menuItem.hidden) throw new HttpError(409, `${item.menuItem.name} is sold out: choose something else from the menu`)
+
+        // Only from SENT_OUT, in one UPDATE: two taps can't both succeed
+        const { count } = await tx.orderItem.updateMany({ where: { id: itemId, status: 'SENT_OUT' }, data: { status: 'CAME_BACK' } })
+        if (count === 0) throw new HttpError(409, 'Only a served dish can come back')
+        await tx.itemReturn.create({ data: { orderItemId: itemId, reason, note, staffId: req.staff.id } })
+
+        if (remake) {
+            const { _max } = await tx.orderItem.aggregate({ where: { orderId: id }, _max: { round: true } })
+            await tx.orderItem.create({
+                data: {
+                    orderId: id,
+                    menuItemId: item.menuItemId,
+                    price: item.price,
+                    seat: item.seat,
+                    toGo: item.toGo,
+                    status: 'PREPARING',
+                    firedAt: new Date(),
+                    firedById: req.staff.id,
+                    round: (_max.round ?? 0) + 1,
+                    remakeOfId: itemId,
+                },
+            })
+        }
+    })
+    res.status(201).json(await getOrder(id))
+})
+
+// DELETE /api/taim/orders/:id/items/:itemId/came-back (markCameBack) – marked
+// by mistake: the dish is back on the bill as served. Its remake goes too if
+// the kitchen hasn't served it yet; once served, it stays (409).
+router.delete('/orders/:id/items/:itemId/came-back', allow('markCameBack'), validate({ params: orderItemParams }), async (req, res) => {
+    const { id, itemId } = req.valid.params
+    await prisma.$transaction(async (tx) => {
+        await requireOpenOrder(id, tx)
+        const item = await tx.orderItem.findFirst({ where: { id: itemId, orderId: id }, include: { remake: { select: { id: true, status: true } } } })
+        if (!item) throw new HttpError(404, 'Dish not found on this order')
+        if (item.status !== 'CAME_BACK') throw new HttpError(409, "This dish didn't come back")
+        if (item.remake) {
+            if (item.remake.status !== 'NEW' && item.remake.status !== 'PREPARING') {
+                throw new HttpError(409, 'Its remake was already served, so the return stays')
+            }
+            await tx.orderItem.delete({ where: { id: item.remake.id } })
+        }
+        await tx.itemReturn.delete({ where: { orderItemId: itemId } })
+        await tx.orderItem.update({ where: { id: itemId }, data: { status: 'SENT_OUT' } })
     })
     res.json(await getOrder(id))
 })

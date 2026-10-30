@@ -201,7 +201,7 @@ model BusinessDay {
   guests        Int // guests at tables
   sales         Int // cents: the bills' totals (dishes that came back not counted)
   cameBack      Int // dishes that came back
-  cameBackValue Int // cents: what they would have cost
+  cameBackValue Int // cents: the dishes that came back plus their free remakes
 
   @@index([closedAt])
   @@map("business_days")

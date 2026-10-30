@@ -7,7 +7,7 @@ export const ORDER_INCLUDE = {
     table: { select: { id: true, label: true, joined: { select: { label: true }, orderBy: { position: 'asc' } } } },
     openedBy: { select: { id: true, name: true } },
     items: {
-        select: { id: true, menuItemId: true, price: true, seat: true, status: true, createdAt: true, firedAt: true, round: true, held: true, toGo: true, kitchenFired: true, firedBy: { select: { name: true } }, startedAt: true, startedBy: { select: { name: true } }, sentOutAt: true, servedBy: { select: { name: true } }, menuItem: { select: { name: true, category: { select: { name: true } } } } },
+        select: { id: true, menuItemId: true, price: true, seat: true, status: true, createdAt: true, firedAt: true, round: true, held: true, toGo: true, kitchenFired: true, firedBy: { select: { name: true } }, startedAt: true, startedBy: { select: { name: true } }, sentOutAt: true, servedBy: { select: { name: true } }, remakeOfId: true, return: { select: { reason: true, note: true, createdAt: true, staff: { select: { name: true } } } }, menuItem: { select: { name: true, category: { select: { name: true } } } } },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     },
 }
@@ -23,11 +23,18 @@ export const TITLE_SELECT = {
 export const titleOf = (order) =>
     order.type === 'TABLE' ? [order.table, ...order.table.joined].map((t) => t.label).join(' + ') : `Take-out · ${order.customerName}`
 
+/** A dish the guest doesn't pay for: it came back, or it's a free remake of one that did */
+const onTheHouse = (item) => item.status === 'CAME_BACK' || item.remakeOfId != null
+
 /**
- * The bill: every dish except the ones that came back (those count as a
- * loss instead, step 6). Calculated, never stored, like the bank's balances.
+ * The bill: every dish except the ones that came back and their free
+ * remakes (those count as a loss instead, step 6). Items need status,
+ * price and remakeOfId. Calculated, never stored, like the bank's balances.
  */
-export const billTotal = (items) => items.filter((item) => item.status !== 'CAME_BACK').reduce((sum, item) => sum + item.price, 0)
+export const billTotal = (items) => items.filter((item) => !onTheHouse(item)).reduce((sum, item) => sum + item.price, 0)
+
+/** Money lost: the dishes that came back plus their free remakes (each counted once) */
+export const lossTotal = (items) => items.filter(onTheHouse).reduce((sum, item) => sum + item.price, 0)
 
 /** Database row (with ORDER_INCLUDE) → the JSON the client gets */
 export function toOrderJson(order) {
@@ -46,8 +53,10 @@ export function toOrderJson(order) {
         // `category` lets the waiter hold a whole course ("Hold Mains")
         // `firedBy` = who sent it ("Avi"); kitchenFired = the kitchen fired it from on hold
         // startedBy / servedBy: who in the kitchen started and served it
-        items: order.items.map(({ menuItem, firedBy, startedBy, servedBy, ...item }) => ({
+        // returned: why it came back ({ reason, note, by, at }), or null; remakeOfId: a free remake
+        items: order.items.map(({ menuItem, firedBy, startedBy, servedBy, return: returned, ...item }) => ({
             ...item,
+            returned: returned ? { reason: returned.reason, note: returned.note, by: returned.staff.name, at: returned.createdAt } : null,
             firedBy: firedBy?.name ?? null,
             startedBy: startedBy?.name ?? null,
             servedBy: servedBy?.name ?? null,

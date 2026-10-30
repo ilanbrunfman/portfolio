@@ -28,7 +28,7 @@ const BILL_SELECT = {
     closedAt: true,
     businessDayId: true,
     openedBy: { select: { id: true, name: true } },
-    items: { select: { price: true, status: true } },
+    items: { select: { price: true, status: true, remakeOfId: true } },
 }
 
 /** A bill row for the list */
