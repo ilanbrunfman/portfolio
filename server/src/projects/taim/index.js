@@ -6,6 +6,7 @@ import menuRouter from './routes/menu.js'
 import floorRouter from './routes/floor.js'
 import kitchenRouter from './routes/kitchen.js'
 import billsRouter from './routes/bills.js'
+import lossesRouter from './routes/losses.js'
 
 // Every Ta'im route, as one router. app.js mounts it at /api/taim.
 //
@@ -29,5 +30,7 @@ taim.use(floorRouter)
 taim.use(kitchenRouter)
 // /bills, /days/close
 taim.use(billsRouter)
+// /losses
+taim.use(lossesRouter)
 
 export default taim
