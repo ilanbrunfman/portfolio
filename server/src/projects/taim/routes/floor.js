@@ -107,7 +107,7 @@ router.get('/tables', async (req, res) => {
             joined: { select: { id: true, label: true, seats: true }, orderBy: { position: 'asc' } },
             orders: {
                 where: { status: 'OPEN' },
-                select: { id: true, guests: true, openedAt: true, items: { select: { price: true, status: true, held: true, seat: true, firedAt: true } } },
+                select: { id: true, guests: true, openedAt: true, items: { select: { price: true, status: true, held: true, kitchenFired: true, firedBy: { select: { name: true } }, seat: true, firedAt: true } } },
             },
         },
     })
@@ -135,6 +135,8 @@ router.get('/tables', async (req, res) => {
                           // seats still waiting for food, in order; null = shared, last
                           waitingSeats: [...new Set(cooking.map((item) => item.seat))].sort((a, b) => (a ?? Infinity) - (b ?? Infinity)),
                           cameBack: open.items.filter((item) => item.status === 'CAME_BACK').length,
+                          // the kitchen fired held dishes that are cooking now: who did ("Avi"), or null
+                          kitchenFiredBy: cooking.find((item) => item.kitchenFired)?.firedBy?.name ?? null,
                           total: billTotal(open.items),
                       }
                     : null,
@@ -372,7 +374,7 @@ router.post('/orders/:id/send', validate({ params: idParams, body: orderSend }),
         const { _max } = await tx.orderItem.aggregate({ where: { orderId: id }, _max: { round: true } })
         await tx.orderItem.updateMany({
             where: { id: { in: toSend }, status: 'NEW' },
-            data: { status: 'PREPARING', firedAt: new Date(), round: (_max.round ?? 0) + 1, held: false },
+            data: { status: 'PREPARING', firedAt: new Date(), round: (_max.round ?? 0) + 1, held: false, firedById: req.staff.id },
         })
         // Whatever wasn't sent waits for "Fire"
         await tx.orderItem.updateMany({ where: { orderId: id, status: 'NEW' }, data: { held: true } })
