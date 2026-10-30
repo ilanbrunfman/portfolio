@@ -42,6 +42,12 @@
         font-weight: 600;
     }
 
+    // "Hold 2": nothing is sent, so a violet outline rather than the main colour
+    &__hold-button.btn {
+        border-color: #8b5cf6;
+        color: #8b5cf6;
+    }
+
     // Violet, like "On hold" on the bill and the floor
     &__hold {
         margin-left: 0.5rem;

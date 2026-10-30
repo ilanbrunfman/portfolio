@@ -23,11 +23,10 @@ import './Order.scss'
  * describe it) with "For" (seat), "How many" and Add. At a table the seat
  * picked above the menu is the default; Shared is for the whole table.
  * Added dishes wait on the bill as "Not sent" until "Send to kitchen";
- * more rounds can follow (desserts). When the dishes waiting span more
- * than one course, "Send to kitchen" asks which go now: the rest are put
- * on hold (starters now, mains later) until "Fire held". "Hold" beside
- * Send keeps everything waiting back (the starter went earlier, the mains
- * added now should wait). A tap on a dish on the bill opens its
+ * more rounds can follow (desserts). "Send to kitchen" opens a popup that
+ * asks which go now: the rest are put on hold (starters now, mains later)
+ * until "Fire held" on the bill. Unticking everything holds them all
+ * (the starter went earlier, the mains added now should wait). A tap on a dish on the bill opens its
  * editor: another seat (any time), or remove (until the kitchen sends it
  * out). Closing the bill is a separate, smaller button at the end.
  */
@@ -82,14 +81,8 @@ const OrderPage = () => {
     const sentMessage = (count, held) =>
         `Sent ${count} ${count === 1 ? 'dish' : 'dishes'} to the kitchen${held > 0 ? ` · ${held} on hold` : ''}`
 
-    // One course waiting: send it straight away (anything on hold stays on
-    // hold). Several courses: ask which go now.
-    const handleSend = async () => {
-        if (new Set(fresh.map((item) => item.category)).size > 1) return setChoosing(true)
-        const held = waiting.length - fresh.length
-        await send(held > 0 ? fresh.map((item) => item.id) : undefined)
-        setMessage(sentMessage(fresh.length, held))
-    }
+    // Always ask: which go now, which wait on hold
+    const handleSend = () => setChoosing(true)
 
     const handlePick = async (itemIds) => {
         await send(itemIds)
@@ -170,7 +163,6 @@ const OrderPage = () => {
                     className="order-page__ticket"
                     onEditItem={canEdit ? setEditing : undefined}
                     onSend={canEdit ? handleSend : undefined}
-                    onHold={canEdit ? handleHold : undefined}
                     onFire={canEdit ? handleFire : undefined}
                     onClose={can('closeBill') ? async () => { await close(); navigate('/taim/floor') } : undefined}
                 />
@@ -190,7 +182,7 @@ const OrderPage = () => {
 
             <Modal isOpen={choosing} onClose={() => setChoosing(false)} title="Send to kitchen" size="sm">
                 {choosing && (
-                    <SendDialog items={waiting} atTable={atTable} onSend={handlePick} onDone={() => setChoosing(false)} />
+                    <SendDialog items={waiting} atTable={atTable} onSend={handlePick} onHold={handleHold} onDone={() => setChoosing(false)} />
                 )}
             </Modal>
 

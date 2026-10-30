@@ -24,9 +24,7 @@ whoever brings the food knows who gets what. Rounds come from
 Buttons, when the matching prop is given:
 
 - `onSend`: **Send to kitchen (3)**, the main button while dishes are
-  waiting to be sent (the Order screen may open the SendDialog to hold some).
-- `onHold`: **Hold (2)** beside Send: puts the dishes not sent yet on hold
-  without sending anything (the starter went earlier, the mains wait).
+  waiting to be sent (the Order screen opens the SendDialog: send or hold).
 - `onFire`: **Fire held (2)** sends the dishes on hold (and any added since).
 - `onClose`: **Close bill**, then a green **Pay · $40.00** to take the
   payment and close the bill (or "Not yet"). While dishes haven't been sent or are on hold it's replaced by a hint: fire, send
@@ -55,7 +53,6 @@ from `orderTitle(order)` in `utils/orders.js`.
 | `order`     | `object`                     | An order from the API (`items`, `total`, `openedBy`, …). |
 | `onEditItem` | `(item) => void`            | Optional. Makes each dish line tappable. |
 | `onSend`    | `() => Promise \| void`      | Optional. Send the dishes not sent yet (or open the dialog to hold some). |
-| `onHold`    | `() => Promise`              | Optional. Put the dishes not sent yet on hold. |
 | `onFire`    | `() => Promise`              | Optional. Send the dishes on hold. |
 | `onClose`   | `() => Promise`              | Optional. Close the bill. |
 | `className` | `string`                     | Extra classes on the section. |
