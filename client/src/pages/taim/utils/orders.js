@@ -26,6 +26,10 @@ export function seatsText(seats) {
 export function kitchenProgress(items) {
     const cooking = items.filter((item) => item.status === 'PREPARING')
     return {
+        // dishes the guests get: not the ones that came back or were wasted
+        dishCount: items.filter((item) => item.status !== 'CAME_BACK' && item.status !== 'WASTED').length,
+        cameBack: items.filter((item) => item.status === 'CAME_BACK').length,
+        toGoInKitchen: cooking.filter((item) => item.toGo).length,
         notSent: items.filter((item) => item.status === 'NEW' && !item.held).length,
         onHold: items.filter((item) => item.held).length,
         kitchenFiredBy: cooking.find((item) => item.kitchenFired)?.firedBy ?? null,
