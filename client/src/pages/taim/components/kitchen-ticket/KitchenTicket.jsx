@@ -67,6 +67,7 @@ const KitchenTicket = ({ ticket, now, onServe, onStart, onRedo }) => {
                 <span className="d-flex flex-column">
                     <strong className="kitchen-ticket__title">
                         {ticket.title}
+                        {ticket.fix && <span className="kitchen-ticket__fix">Fix</span>}
                         {ticket.remake && (
                             <span className="kitchen-ticket__remake">
                                 {ticket.dishes.every((dish) => !dish.remake || dish.remake.replaced) ? 'Replacement' : 'Remake'}
@@ -109,6 +110,11 @@ const KitchenTicket = ({ ticket, now, onServe, onStart, onRedo }) => {
                                 {ticket.type === 'TABLE' && <span className="kitchen-ticket__seat">{seatLabel(dish.seat)}</span>}
                                 {dish.toGo && !allToGo && <span className="kitchen-ticket__to-go">To go</span>}
                             </span>
+                            {dish.fix && (
+                                <span className="kitchen-ticket__fix-line">
+                                    Fix · {reasonLabel(dish.fix.reason)}{dish.fix.note ? `: "${dish.fix.note}"` : ''}
+                                </span>
+                            )}
                             {dish.remake && (
                                 <span className="kitchen-ticket__came-back">
                                     {dish.remake.replaced ? `Instead of ${dish.remake.replaced}` : 'Remake'} · came back: {reasonLabel(dish.remake.reason)}

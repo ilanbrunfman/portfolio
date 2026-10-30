@@ -103,6 +103,10 @@ const Ticket = ({ order, onEditItem, onSend, onFire, onClose, className = '' }) 
                                                 {item.name}
                                                 {order.type === 'TABLE' && <span className="ticket__seat-tag">{seatLabel(item.seat)}</span>}
                                                 {item.toGo && <span className="ticket__to-go">To go</span>}
+                                                {/* Sent back to be fixed: "Fixing" while in the kitchen, then "Fixed" */}
+                                                {item.fixes?.length > 0 && (
+                                                    <span className="ticket__fix">{item.status === 'PREPARING' ? 'Fixing' : 'Fixed'}</span>
+                                                )}
                                                 {/* Free for a dish that came back: "Remake" (the same dish) or "On us" (another one) */}
                                                 {item.remakeOfId && (
                                                     <span className="ticket__remake">

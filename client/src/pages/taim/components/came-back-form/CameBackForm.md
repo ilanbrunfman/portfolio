@@ -7,6 +7,9 @@ bill item editor, after tapping **Came back**):
   Allergy / something in it, Too slow, Other (required).
 - **Note** (optional, up to 200 characters): "lukewarm in the middle".
 - **What now?**
+  - **Fix it (same plate):** undercooked steak, not enough spices – the same
+    plate goes back to the kitchen (marked FIX, first in line) and stays on
+    the bill. No loss, but the fix is recorded.
   - **Make it again (free):** the same dish, same seat, on the house.
   - **Another dish instead (free):** pick it from a small menu (sold-out
     dishes greyed): the right dish when the wrong one was served, something
@@ -33,5 +36,5 @@ bill item editor, after tapping **Came back**):
 |------------|------------------------------------------|-------------|
 | `item`     | `object`                                 | The served dish: `{ name, price }`. |
 | `menu`     | `object[]`                               | Menu categories with dishes, for "another dish". |
-| `onSubmit` | `({ reason, note, remake, replaceWithId, sendNow }) => Promise` | Records it; throws on failure. |
+| `onSubmit` | `({ reason, note, fix, remake, replaceWithId, sendNow }) => Promise` | Records it; throws on failure. |
 | `onCancel` | `() => void`                             | Back to the editor. |

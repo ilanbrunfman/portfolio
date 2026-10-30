@@ -9,14 +9,18 @@ import { RETURN_REASONS } from '@/pages/taim/utils/orders'
 import './CameBackForm.scss'
 
 const NEXT = [
+    { value: 'fix', label: 'Fix it (same plate)' },
     { value: 'remake', label: 'Make it again (free)' },
     { value: 'another', label: 'Another dish instead (free)' },
     { value: 'none', label: 'Nothing more' },
 ]
 
 /**
- * A guest gave a served dish back: why (one tap, plus an optional note) and
- * what they get instead, on the house:
+ * A guest sent a served dish back: why (one tap, plus an optional note) and
+ * what now:
+ *   Fix it                 the same plate back to the kitchen (cook it more,
+ *                          more spice); still on the bill, no loss
+ * or they give it back and get, on the house:
  *   Make it again          the same dish
  *   Another dish instead   the right dish, something else, or a dessert on us
  *                          (picked from the menu below)
@@ -54,6 +58,7 @@ const CameBackForm = ({ item, menu, onSubmit, onCancel }) => {
             await onSubmit({
                 reason,
                 note: note.trim() || null,
+                fix: next === 'fix',
                 remake: next === 'remake',
                 replaceWithId: next === 'another' ? another.id : null,
                 sendNow,
@@ -67,7 +72,7 @@ const CameBackForm = ({ item, menu, onSubmit, onCancel }) => {
     return (
         <form className="came-back-form d-flex flex-column gap-1" onSubmit={submit} noValidate>
             <RadioGroup label="Why did it come back?" options={RETURN_REASONS} value={reason} onChange={setReason} direction="row" className="came-back-form__reasons" />
-            <Input label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder="e.g. lukewarm in the middle" />
+            <Input label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder="e.g. medium, not rare · more salt · lukewarm" />
             <RadioGroup label="What now?" options={NEXT} value={next} onChange={(value) => { setNext(value); setSendNow(true) }} direction="row" />
 
             {next === 'another' && (
@@ -105,7 +110,12 @@ const CameBackForm = ({ item, menu, onSubmit, onCancel }) => {
                 />
             )}
 
-            {next && (next !== 'another' || another) && (
+            {next === 'fix' && (
+                <p className="form__hint">
+                    {item.name} goes back to the kitchen to be fixed{note.trim() ? ` ("${note.trim()}")` : ''} and stays on the bill. No loss.
+                </p>
+            )}
+            {next && next !== 'fix' && (next !== 'another' || another) && (
                 <p className="form__hint">
                     {item.name} comes off the bill
                     {given ? `; ${given.name} on the house ${sendNow ? 'goes to the kitchen now' : 'waits on the bill for the next send'}` : '. Something else to pay for? Add it from the menu'}.
@@ -116,7 +126,7 @@ const CameBackForm = ({ item, menu, onSubmit, onCancel }) => {
             <div className="d-flex flex-wrap justify-end gap-0-5">
                 <Button variant="ghost" onClick={onCancel} disabled={busy}>Back</Button>
                 <Button type="submit" disabled={busy || !ready}>
-                    {busy ? 'Saving…' : given ? `Came back · ${given.name} free` : 'Came back'}
+                    {busy ? 'Saving…' : next === 'fix' ? 'Send back to fix' : given ? `Came back · ${given.name} free` : 'Came back'}
                 </Button>
             </div>
         </form>

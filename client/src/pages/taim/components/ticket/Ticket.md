@@ -14,6 +14,8 @@ Where a dish is:
 - **Served**: the kitchen sent it out.
 - **Came back · Cold**: crossed out with its reason, not on the bill (it
   counts as money lost).
+- **Fixing / Fixed** (blue): sent back to the kitchen to be fixed (cook it
+  more, more spice) – the same plate, still on the bill.
 - A **Remake** tag and "Free" instead of the price: made again on the house
   for a dish that came back (its price counts as a loss too).
 

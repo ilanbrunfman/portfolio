@@ -101,6 +101,12 @@ const BillItemEditor = ({ item, seats, menu = [], onSave, onRemove, onCameBack, 
                     {item.returned.note && ` · "${item.returned.note}"`} · {item.returned.by}, {clockTime(item.returned.at)}. Not on the bill.
                 </p>
             )}
+            {item.fixes?.map((fix) => (
+                <p key={fix.at} className="bill-item-editor__fix">
+                    Sent back to fix: {reasonLabel(fix.reason)}
+                    {fix.note && ` · "${fix.note}"`} · {fix.by}, {clockTime(fix.at)}
+                </p>
+            ))}
             {error && <p className="form__error" role="alert">{error}</p>}
 
             {!returned && seats.length > 0 && <RadioGroup label="For" options={seats} value={seat} onChange={setSeat} direction="row" />}

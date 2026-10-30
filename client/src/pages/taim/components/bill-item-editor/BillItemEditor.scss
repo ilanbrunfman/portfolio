@@ -15,4 +15,14 @@
             color: #b7791f;
         }
     }
+
+    // "Sent back to fix: Undercooked · …" (blue: no money lost)
+    &__fix {
+        margin: 0;
+        padding: 0.5rem 0.75rem;
+        border-radius: 10px;
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+        font-weight: 600;
+    }
 }

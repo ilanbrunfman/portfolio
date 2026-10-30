@@ -100,7 +100,7 @@ const CameBack = ({ dishes }) => (
                     {dish.note && <span className="kitchen__came-back-note">"{dish.note}"</span>}
                     <span className="form__hint">
                         {dish.title}{dish.title.startsWith('Take-out') ? '' : ` · ${seatLabel(dish.seat)}`} · {dish.by}, {clockTime(dish.at)}
-                        {dish.remade ? ' · remake on its way' : ''}
+                        {dish.fix ? ' · being fixed' : dish.remade ? ' · remake on its way' : ''}
                     </span>
                 </li>
             ))}

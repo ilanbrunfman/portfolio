@@ -18,6 +18,8 @@ take-out), so the cooks see it the way it was ordered.
 - **Remake** (red, on the title): a dish made again for free because it
   came back; the dish says "Remake · came back: Cold". These tickets come
   first.
+- **Fix** (blue, on the title): the same plate sent back to be fixed; the
+  dish says "Fix · Undercooked: \"medium, not rare\"". These come first too.
 - **Replacement / Instead of Shakshuka**: a different dish given free for one
   that came back ("Remake" when it's the same dish).
 - **Redo** (with `onRedo`, once started): made wrong (burnt, wrong plate).

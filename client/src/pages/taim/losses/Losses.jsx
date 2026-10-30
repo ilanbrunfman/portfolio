@@ -11,6 +11,7 @@ const KINDS = [
     { value: 'ALL', label: 'All' },
     { value: 'RETURN', label: 'Returns' },
     { value: 'WASTE', label: 'Waste' },
+    { value: 'FIX', label: 'Fixes' },
 ]
 
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -21,8 +22,9 @@ const dayName = (date) => new Date(date).toLocaleDateString(undefined, { weekday
 /**
  * /taim/losses (Manager, Chef) – what lost dishes cost: returns (a guest
  * gave it back; the loss is the dish plus the free dish given instead) and
- * waste (cancelled after cooking started, dropped, made wrong). All /
- * Returns / Waste filters everything below. A year chart of money lost per
+ * waste (cancelled after cooking started, dropped, made wrong) – plus fixes
+ * (sent back to be fixed: no money lost, so the chart counts them). All /
+ * Returns / Waste / Fixes filters everything below. A year chart of money lost per
  * month; tap a month (this month to start) for its total, top reasons, top
  * dishes and every loss: dish, table, seat, reason, note, who, when. Tap the
  * month again for the whole year.
@@ -37,11 +39,13 @@ const Losses = () => {
 
     const all = losses.data?.returns
     const returns = useMemo(() => (all ?? []).filter((row) => kind === 'ALL' || row.kind === kind), [all, kind])
+    // Fixes cost nothing: count them instead
+    const counting = kind === 'FIX'
     const perMonth = useMemo(() => {
         const values = Array(12).fill(0)
-        for (const row of returns) values[new Date(row.at).getMonth()] += row.value
+        for (const row of returns) values[new Date(row.at).getMonth()] += counting ? 1 : row.value
         return values
-    }, [returns])
+    }, [returns, counting])
     const shown = useMemo(
         () => returns.filter((row) => month === null || new Date(row.at).getMonth() === month),
         [returns, month]
@@ -84,12 +88,21 @@ const Losses = () => {
                     <RadioGroup label="Show" options={KINDS} value={kind} onChange={setKind} direction="row" className="losses__kinds" />
                     <section className="losses__chart surface d-flex flex-column gap-1" aria-labelledby="chart-title">
                         <div className="d-flex flex-wrap justify-between align-items-baseline gap-0-5">
-                            <h3 id="chart-title" className="losses__section-title">Money lost per month</h3>
+                            <h3 id="chart-title" className="losses__section-title">{counting ? 'Fixes per month' : 'Money lost per month'}</h3>
                             <span className="form__hint">
-                                {formatMoney(perMonth.reduce((sum, value) => sum + value, 0))} in {year} · returns {formatMoney(losses.data.returnsTotal)} · waste {formatMoney(losses.data.wasteTotal)} · tap a month
+                                {counting
+                                    ? `${losses.data.fixes} ${losses.data.fixes === 1 ? 'fix' : 'fixes'} in ${year} (no money lost)`
+                                    : `${formatMoney(perMonth.reduce((sum, value) => sum + value, 0))} in ${year} · returns ${formatMoney(losses.data.returnsTotal)} · waste ${formatMoney(losses.data.wasteTotal)} · ${losses.data.fixes} ${losses.data.fixes === 1 ? 'fix' : 'fixes'}`}
+                                {' '}· tap a month
                             </span>
                         </div>
-                        <MonthBars values={perMonth} selected={month} onSelect={setMonth} lastMonth={isThisYear ? now.getMonth() : 11} />
+                        <MonthBars
+                            values={perMonth}
+                            selected={month}
+                            onSelect={setMonth}
+                            lastMonth={isThisYear ? now.getMonth() : 11}
+                            format={counting ? (value) => String(value) : undefined}
+                        />
                     </section>
 
                     <dl className="losses__totals">
@@ -98,7 +111,7 @@ const Losses = () => {
                             <dd className="losses__lost">{formatMoney(summary.total)}</dd>
                         </div>
                         <div className="surface">
-                            <dt>{{ ALL: 'Dishes lost', RETURN: 'Came back', WASTE: 'Wasted' }[kind]}</dt>
+                            <dt>{{ ALL: 'Sent back or lost', RETURN: 'Came back', WASTE: 'Wasted', FIX: 'Fixed' }[kind]}</dt>
                             <dd>{summary.count}</dd>
                         </div>
                         <div className="surface">
@@ -108,7 +121,7 @@ const Losses = () => {
                     </dl>
 
                     {summary.count === 0 ? (
-                        <p className="form__hint">Nothing {kind === 'WASTE' ? 'wasted' : kind === 'RETURN' ? 'came back' : 'lost'} in {period}.</p>
+                        <p className="form__hint">Nothing {{ WASTE: 'wasted', RETURN: 'came back', FIX: 'sent back to fix', ALL: 'lost' }[kind]} in {period}.</p>
                     ) : (
                         <>
                             <div className="losses__groups">
@@ -124,7 +137,7 @@ const Losses = () => {
                                             <span className="d-flex flex-column">
                                                 <strong>
                                                     {row.name} · {reasonLabel(row.reason)}
-                                                    <span className={`losses__kind ${row.kind === 'WASTE' ? 'is-waste' : ''}`}>{row.kind === 'WASTE' ? 'Waste' : 'Return'}</span>
+                                                    <span className={`losses__kind is-${row.kind.toLowerCase()}`}>{{ RETURN: 'Return', WASTE: 'Waste', FIX: 'Fix' }[row.kind]}</span>
                                                 </strong>
                                                 {row.note && <span className="losses__note">"{row.note}"</span>}
                                                 <span className="form__hint">
