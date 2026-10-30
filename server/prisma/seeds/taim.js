@@ -60,7 +60,7 @@ const NEEDS_CLEANING = ['T3']
 /** @param {import('../../src/generated/prisma/client.ts').PrismaClient} prisma */
 export async function seedTaim(prisma) {
     // Start clean: empty the tables and restart ids at 1
-    await prisma.$executeRaw`TRUNCATE TABLE taim.order_items, taim.orders, taim.dining_tables, taim.menu_items, taim.categories, taim.staff RESTART IDENTITY CASCADE`
+    await prisma.$executeRaw`TRUNCATE TABLE taim.order_items, taim.orders, taim.business_days, taim.dining_tables, taim.menu_items, taim.categories, taim.staff RESTART IDENTITY CASCADE`
 
     await prisma.staff.createMany({ data: STAFF })
 

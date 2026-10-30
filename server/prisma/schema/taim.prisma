@@ -18,11 +18,12 @@ enum StaffRole {
 // The people on the "Who are you?" screen. There are no passwords: picking
 // a person is the login, and the server checks their role on every request.
 model Staff {
-  id        Int       @id @default(autoincrement())
-  name      String
-  role      StaffRole
-  createdAt DateTime  @default(now())
-  orders    Order[]
+  id         Int           @id @default(autoincrement())
+  name       String
+  role       StaffRole
+  createdAt  DateTime      @default(now())
+  orders     Order[]
+  daysClosed BusinessDay[]
 
   @@map("staff")
   @@schema("taim")
@@ -133,9 +134,39 @@ model Order {
   openedAt      DateTime     @default(now())
   closedAt      DateTime?
   items         OrderItem[]
+  // Set when the Manager or Chef closes the day: the bill then belongs to
+  // that day's report and can't change any more. null = today's bills.
+  businessDayId Int?
+  businessDay   BusinessDay? @relation(fields: [businessDayId], references: [id], onDelete: Restrict)
 
   @@index([status])
+  @@index([businessDayId])
   @@map("orders")
+  @@schema("taim")
+}
+
+// A closed business day: the end-of-day report. A day runs from the last
+// close to this one (so a night past midnight is still one day). Closing it
+// takes every closed bill not in a day yet; it's refused while bills are
+// open. The totals are saved as they were at closing (like a printed
+// end-of-day report), and the day's bills are locked from then on.
+model BusinessDay {
+  id            Int      @id @default(autoincrement())
+  openedAt      DateTime // the previous close, or the first bill's opening
+  closedAt      DateTime @default(now())
+  closedById    Int
+  closedBy      Staff    @relation(fields: [closedById], references: [id], onDelete: Restrict)
+  orders        Order[]
+  billCount     Int // bills closed that day
+  tableBills    Int
+  takeoutBills  Int
+  guests        Int // guests at tables
+  sales         Int // cents: the bills' totals (dishes that came back not counted)
+  cameBack      Int // dishes that came back
+  cameBackValue Int // cents: what they would have cost
+
+  @@index([closedAt])
+  @@map("business_days")
   @@schema("taim")
 }
 
