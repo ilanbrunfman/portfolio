@@ -7,6 +7,7 @@ export const SCREENS = [
     { id: 'order', label: 'Order', icon: 'IconListBullets', step: 4, about: 'The menu by category: tap dishes to add them to a table\'s order.' },
     { id: 'kitchen', label: 'Kitchen', icon: 'IconStack', step: 5, about: 'Every dish waiting, oldest first: tap when it goes out.' },
     { id: 'menu', label: 'Menu', icon: 'IconList', step: 3, about: 'Categories and dishes: add, change prices, hide what\'s sold out.' },
+    { id: 'bills', label: 'Bills', icon: 'IconCurrencyDollar', step: 5.1, about: 'Every bill of the day, week, month or year, with totals; close the day.' },
     { id: 'losses', label: 'Losses', icon: 'IconTable', step: 6, about: 'Money lost to dishes that came back, month by month.' },
 ]
 

@@ -6,9 +6,10 @@ import Floor from '@/pages/taim/floor/Floor'
 import OrderList from '@/pages/taim/order/OrderList'
 import OrderPage from '@/pages/taim/order/OrderPage'
 import Kitchen from '@/pages/taim/kitchen/Kitchen'
+import Bills from '@/pages/taim/bills/Bills'
 
 // Screens that are built so far; the rest show what they will do
-const BUILT = { floor: Floor, order: OrderList, kitchen: Kitchen, menu: MenuEditor }
+const BUILT = { floor: Floor, order: OrderList, kitchen: Kitchen, menu: MenuEditor, bills: Bills }
 // Screens with a detail page (/taim/order/:orderId)
 const DETAIL = { order: OrderPage }
 

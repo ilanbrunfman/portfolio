@@ -1,0 +1,152 @@
+// Bills – visuals only (layout is utility classes in the markup)
+.bills {
+    width: 100%;
+
+    p {
+        margin: 0;
+    }
+
+    &__section-title {
+        margin: 0;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text);
+    }
+
+    // Sales · Bills · Average · Guests: four cards, two per row on a phone
+    &__totals {
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.75rem;
+
+        @media (max-width: 640px) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        > div {
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        dt {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        dd {
+            margin: 0;
+            color: var(--text-h);
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    &__close {
+        box-sizing: border-box;
+        border-left: 4px solid var(--accent);
+    }
+
+    &__close-title {
+        color: var(--text-h);
+    }
+
+    &__close-done {
+        color: #22a06b;
+        font-weight: 700;
+    }
+
+    &__filter {
+        margin: 0;
+    }
+
+    &__list {
+        box-sizing: border-box;
+        list-style: none;
+        margin: 0;
+        padding: 0 1rem;
+
+        li + li {
+            border-top: 1px solid var(--border);
+        }
+    }
+
+    &__row {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 0.75rem 0;
+        border: 0;
+        background: none;
+        color: var(--text);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+
+        &:hover .bills__title {
+            color: var(--accent);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+            border-radius: 6px;
+        }
+    }
+
+    &__title {
+        color: var(--text-h);
+    }
+
+    // "Open" / "Closed" pill
+    &__status {
+        padding: 0.05rem 0.5rem;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+
+        &.is-open {
+            background: var(--accent-bg);
+            color: var(--accent);
+        }
+
+        &.is-closed {
+            background: rgba(34, 160, 107, 0.15);
+            color: #22a06b;
+        }
+    }
+
+    &__total {
+        color: var(--text-h);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__days {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.75rem;
+
+        > li {
+            box-sizing: border-box;
+        }
+    }
+
+    // The bill in the dialog has no card of its own
+    &__ticket.surface {
+        padding: 0;
+        border: 0;
+        box-shadow: none;
+        background: none;
+    }
+}
