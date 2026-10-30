@@ -106,7 +106,7 @@ const Floor = () => {
                 <div className="d-flex flex-column">
                     <h2 className="taim__heading d-flex align-items-center gap-0-5">
                         Floor
-                        {viewOnly && <span className="floor__view-only">View only</span>}
+                        {viewOnly && <span className="taim__view-only">View only</span>}
                     </h2>
                     <span className="form__hint">
                         {taken} of {shown.length} tables dining

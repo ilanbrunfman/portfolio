@@ -72,11 +72,13 @@ describe('GET /api/taim/session', () => {
         await chef.post('/api/taim/tables').send({ label: 'T2', seats: 2 }).expect(403)
     })
 
-    it('gives the manager every screen and every right', async () => {
+    it('gives the manager every screen and every right except the kitchen ones (view only there)', async () => {
         const manager = await as('MANAGER')
         const res = await manager.get('/api/taim/session').expect(200)
         expect(res.body.screens).toEqual(['floor', 'order', 'kitchen', 'menu', 'bills', 'losses'])
-        expect(res.body.rights).toHaveLength(14)
+        expect(res.body.rights).toHaveLength(12)
+        expect(res.body.rights).not.toContain('advanceDish')
+        expect(res.body.rights).not.toContain('fireHeld')
     })
 })
 

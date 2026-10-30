@@ -60,7 +60,11 @@ describe('the rights grid', () => {
         }
     })
 
-    it('gives the manager every right', () => {
-        for (const roles of Object.values(RIGHTS)) expect(roles).toContain('MANAGER')
+    it('gives the manager every right except the kitchen ones (the Manager only looks at the kitchen)', () => {
+        const kitchen = ['advanceDish', 'fireHeld']
+        for (const [right, roles] of Object.entries(RIGHTS)) {
+            if (kitchen.includes(right)) expect(roles).not.toContain('MANAGER')
+            else expect(roles).toContain('MANAGER')
+        }
     })
 })

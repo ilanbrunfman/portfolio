@@ -34,6 +34,19 @@
         font-size: 1.4rem;
     }
 
+    // "View only" next to a screen's heading: the Chef on the Floor, the
+    // Manager in the Kitchen
+    &__view-only {
+        padding: 0.1rem 0.55rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--text);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
     // Fills the screen next to / above the nav and centers its card
     &__center {
         flex: 1 1 auto;
