@@ -4,6 +4,7 @@ import IconCards from './icons/IconCards'
 import IconCaretRight from './icons/IconCaretRight'
 import IconCaretUp from './icons/IconCaretUp'
 import IconChevronRight from './icons/IconChevronRight'
+import IconCurrencyDollar from './icons/IconCurrencyDollar'
 import IconDotsSixVertical from './icons/IconDotsSixVertical'
 import IconGithub from './icons/IconGithub'
 import IconHome from './icons/IconHome'
@@ -35,6 +36,7 @@ const icons = {
     IconCaretRight: IconCaretRight,
     IconCaretUp: IconCaretUp,
     IconChevronRight: IconChevronRight,
+    IconCurrencyDollar: IconCurrencyDollar,
     IconDotsSixVertical: IconDotsSixVertical,
     IconGithub: IconGithub,
     IconHome: IconHome,
