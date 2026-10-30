@@ -30,8 +30,8 @@ describe('GET /api/taim/menu', () => {
 
         expect(res.body.map((c) => c.name)).toEqual(['Starters', 'Mains'])
         expect(res.body[1].items).toEqual([
-            { id: expect.any(Number), categoryId: mains.id, name: 'Shakshuka', description: null, price: 1400, hidden: false, position: 1 },
-            { id: expect.any(Number), categoryId: mains.id, name: 'Schnitzel', description: null, price: 1800, hidden: true, position: 2 },
+            { id: expect.any(Number), categoryId: mains.id, name: 'Shakshuka', description: null, price: 1400, prepMinutes: null, hidden: false, position: 1 },
+            { id: expect.any(Number), categoryId: mains.id, name: 'Schnitzel', description: null, price: 1800, prepMinutes: null, hidden: true, position: 2 },
         ])
     })
 })
@@ -58,7 +58,7 @@ describe('who may change the menu', () => {
 describe('POST /api/taim/menu-items', () => {
     it('creates a dish, trimming text and saving an empty description as none', async () => {
         const res = await chef.post('/api/taim/menu-items').send(newDish({ name: '  Sabich ', description: '  ' })).expect(201)
-        expect(res.body).toEqual({ id: expect.any(Number), categoryId: mains.id, name: 'Sabich', description: null, price: 1200, hidden: false, position: 1 })
+        expect(res.body).toEqual({ id: expect.any(Number), categoryId: mains.id, name: 'Sabich', description: null, price: 1200, prepMinutes: null, hidden: false, position: 1 })
     })
 
     it('rejects a missing name, a zero price and cents with decimals', async () => {
@@ -184,3 +184,19 @@ describe('dish order', () => {
         expect(menu.find((c) => c.id === desserts.id).items.map((d) => d.name)).toEqual(['Shakshuka', 'Malabi'])
     })
 })
+
+describe('prep time', () => {
+    it('the Chef sets how long a dish should take, or clears it', async () => {
+        const created = await chef.post('/api/taim/menu-items').send(newDish({ prepMinutes: 8 })).expect(201)
+        expect(created.body.prepMinutes).toBe(8)
+        const cleared = await chef.patch(`/api/taim/menu-items/${created.body.id}`).send({ prepMinutes: null }).expect(200)
+        expect(cleared.body.prepMinutes).toBeNull()
+    })
+
+    it('must be 1 to 180 whole minutes, also in the database', async () => {
+        for (const prepMinutes of [0, 181, 2.5]) await chef.post('/api/taim/menu-items').send(newDish({ prepMinutes })).expect(400)
+        const dish = await prisma.menuItem.findFirstOrThrow()
+        await expect(prisma.menuItem.update({ where: { id: dish.id }, data: { prepMinutes: 0 } })).rejects.toThrow(/menu_items_prep_minutes_range/)
+    })
+})
+

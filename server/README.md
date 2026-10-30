@@ -295,7 +295,7 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | POST | `/api/taim/categories` | `{ name }` | 201, added at the end of the menu (409 if the name exists) |
 | PATCH | `/api/taim/categories/:id` | `{ name }` | The renamed category |
 | DELETE | `/api/taim/categories/:id` | | 204, only when it has no dishes (409 otherwise) |
-| POST | `/api/taim/menu-items` | `{ categoryId, name, price, description?, hidden? }` | 201 + the dish, at the top of its category (409 if the name exists) |
+| POST | `/api/taim/menu-items` | `{ categoryId, name, price, description?, prepMinutes?, hidden? }` | 201 + the dish, at the top of its category (409 if the name exists) |
 | PATCH | `/api/taim/menu-items/:id` | any of those fields | The updated dish; `{ hidden: true }` = sold out; a new `categoryId` puts it at the top there |
 | PUT | `/api/taim/categories/:id/dish-order` | `{ dishIds }`, top first | The category's dishes in their new order (400 unless the list is exactly that category's dishes) |
 | GET | `/api/taim/tables` | | Tables in floor order; `order` = the open order's summary (`guests`, `openedAt`, `dishCount`, `notSent`, `cameBack`, `total`) or `null` when free; `needsCleaning` after guests leave |
@@ -321,7 +321,8 @@ client can show only the screens that person may use.
 
 Everything except `/staff` and `/session` needs a picked person (401).
 Changing the menu needs `editMenu` (403 for Cook, Host, Waiter). Dishes are
-never deleted, only hidden, because orders will point to them; a price
+never deleted, only hidden, because orders will point to them; each dish can have a `prepMinutes` (how long the kitchen should take, 1–180,
+set by the Chef; the Kitchen screen shows dishes against it); a price
 must be above 0, which the database itself also enforces (a `CHECK` rule
 added by hand to the migration).
 

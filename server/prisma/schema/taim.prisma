@@ -52,6 +52,7 @@ model MenuItem {
   name        String       @unique
   description String?
   price       Int // cents: 1400 = 14.00
+  prepMinutes Int? // how long the kitchen should take, set by the Chef; null = not set
   position    Int // 1, 2, 3… within the category
   hidden      Boolean      @default(false)
   createdAt   DateTime     @default(now())
