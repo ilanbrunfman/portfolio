@@ -199,6 +199,9 @@ model OrderItem {
   firedById    Int?
   firedBy      Staff?     @relation(fields: [firedById], references: [id], onDelete: Restrict)
   kitchenFired Boolean    @default(false)
+  // Step 5.2: a table's guest takes this dish home – packed, not plated, on
+  // the same bill (take-out orders are to go as a whole and leave it false)
+  toGo         Boolean    @default(false)
   sentOutAt    DateTime?
 
   @@index([orderId])
