@@ -7,7 +7,7 @@ export const ORDER_INCLUDE = {
     table: { select: { id: true, label: true, joined: { select: { label: true }, orderBy: { position: 'asc' } } } },
     openedBy: { select: { id: true, name: true } },
     items: {
-        select: { id: true, menuItemId: true, price: true, seat: true, status: true, createdAt: true, firedAt: true, round: true, held: true, toGo: true, kitchenFired: true, firedBy: { select: { name: true } }, sentOutAt: true, menuItem: { select: { name: true, category: { select: { name: true } } } } },
+        select: { id: true, menuItemId: true, price: true, seat: true, status: true, createdAt: true, firedAt: true, round: true, held: true, toGo: true, kitchenFired: true, firedBy: { select: { name: true } }, startedAt: true, startedBy: { select: { name: true } }, sentOutAt: true, servedBy: { select: { name: true } }, menuItem: { select: { name: true, category: { select: { name: true } } } } },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     },
 }
@@ -45,7 +45,15 @@ export function toOrderJson(order) {
         closedAt: order.closedAt,
         // `category` lets the waiter hold a whole course ("Hold Mains")
         // `firedBy` = who sent it ("Avi"); kitchenFired = the kitchen fired it from on hold
-        items: order.items.map(({ menuItem, firedBy, ...item }) => ({ ...item, firedBy: firedBy?.name ?? null, name: menuItem.name, category: menuItem.category.name })),
+        // startedBy / servedBy: who in the kitchen started and served it
+        items: order.items.map(({ menuItem, firedBy, startedBy, servedBy, ...item }) => ({
+            ...item,
+            firedBy: firedBy?.name ?? null,
+            startedBy: startedBy?.name ?? null,
+            servedBy: servedBy?.name ?? null,
+            name: menuItem.name,
+            category: menuItem.category.name,
+        })),
         total: billTotal(order.items),
     }
 }
