@@ -3,20 +3,24 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '@/pages/taim/api/client'
 import { useStaff } from '@/pages/taim/context/StaffContext'
 import { ROLE_LABELS } from '@/pages/taim/data/screens'
+import Modal from '@/components/ui/modal/Modal'
+import PinPad from '@/pages/taim/components/pin-pad/PinPad'
 import './WhoAreYou.scss'
 
 const initials = (name) => name.slice(0, 2).toUpperCase()
 
 /**
- * "Who are you?" – pick a staff member. No password: the server remembers
- * the choice in a cookie and checks that person's role on every request.
+ * "Who are you?" – tap your name, type your 4-digit PIN (step 8.1). The
+ * server starts a session (a cookie) and checks that person's role on
+ * every request. The demo people's PINs are shown, so visitors can try
+ * every role.
  */
 const WhoAreYou = () => {
     const { pick } = useStaff()
     const navigate = useNavigate()
     const [staff, setStaff] = useState(null)
     const [error, setError] = useState('')
-    const [pickingId, setPickingId] = useState(null)
+    const [person, setPerson] = useState(null) // whose PIN pad is open
 
     useEffect(() => {
         let cancelled = false
@@ -26,19 +30,13 @@ const WhoAreYou = () => {
         return () => { cancelled = true }
     }, [])
 
-    const handlePick = async (id) => {
-        setPickingId(id)
-        setError('')
-        try {
-            await pick(id)
-            // StaffProvider now has the session → the app shows instead of this
-            // screen. Start on the person's own first screen, not wherever the
-            // previous person was.
-            navigate('/taim', { replace: true })
-        } catch (err) {
-            setError(err.message)
-            setPickingId(null)
-        }
+    // The PIN pad shows why a PIN was refused (it throws)
+    const handlePin = async (pin) => {
+        await pick(person.id, pin)
+        // StaffProvider now has the session → the app shows instead of this
+        // screen. Start on the person's own first screen, not wherever the
+        // previous person was.
+        navigate('/taim', { replace: true })
     }
 
     return (
@@ -46,7 +44,7 @@ const WhoAreYou = () => {
             <div className="d-flex flex-column gap-0-5">
                 <span className="taim__eyebrow">Ta'im</span>
                 <h1 id="who-title" className="taim__heading">Who are you?</h1>
-                <p className="form__hint">Pick a person to use Ta'im as them. Each role sees different screens.</p>
+                <p className="form__hint">Tap your name and type your PIN. Each role sees different screens.</p>
             </div>
 
             {error && <p className="form__error" role="alert">{error}</p>}
@@ -59,18 +57,22 @@ const WhoAreYou = () => {
                             <button
                                 type="button"
                                 className="who__person d-flex flex-column align-items-center gap-0-5"
-                                onClick={() => handlePick(person.id)}
-                                disabled={pickingId !== null}
-                                aria-busy={pickingId === person.id}
+                                onClick={() => setPerson(person)}
+                                aria-label={`${person.name}, ${ROLE_LABELS[person.role]}${person.demoPin ? `, demo PIN ${person.demoPin}` : ''}`}
                             >
                                 <span className="who__avatar" aria-hidden="true">{initials(person.name)}</span>
                                 <span className="who__name">{person.name}</span>
                                 <span className="who__role">{ROLE_LABELS[person.role]}</span>
+                                {person.demoPin && <span className="who__pin" aria-hidden="true">PIN {person.demoPin}</span>}
                             </button>
                         </li>
                     ))}
                 </ul>
             )}
+
+            <Modal isOpen={Boolean(person)} onClose={() => setPerson(null)} title={person ? `Hi, ${person.name}` : ''} size="sm">
+                {person && <PinPad name={person.name} demoPin={person.demoPin} onSubmit={handlePin} onCancel={() => setPerson(null)} />}
+            </Modal>
         </section>
     )
 }
