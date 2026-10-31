@@ -16,8 +16,10 @@ import { DAY_SELECT, autoCloseStatus, closeDay, totalsOf } from '../services/day
 // 6's "came back" will only accept bills not in a closed day).
 const router = Router()
 
-// The most bills one list returns; the totals always cover all of them
-const LIST_LIMIT = 300
+// The most bills one list returns (a year of a busy restaurant fits; the
+// Bills screen groups them by day, week or month); the totals always cover
+// all of them
+const LIST_LIMIT = 3000
 
 const BILL_SELECT = {
     id: true,
@@ -43,7 +45,7 @@ const toBillJson = ({ items, table, customerName, ...bill }) => ({
 //   since:  where the period starts (today: the last close, or null if the
 //           day was never closed)
 //   totals: bills, open, closed, tables / take-outs, guests, sales, average bill
-//   bills:  newest first, at most 300 (`more` = how many weren't listed)
+//   bills:  newest first, at most 3000 (`more` = how many weren't listed)
 //   days:   the days closed in the period, newest first (their saved reports)
 //   autoClose (today only): { at: "04:00", due, waiting } – due = the set
 //           time passed and the day isn't closed; waiting = open bills
