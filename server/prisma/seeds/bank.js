@@ -5,7 +5,7 @@
 // produces the same data (only the dates move with "today").
 
 import { randomUUID } from 'node:crypto'
-import { hashPassword } from '../../src/projects/bank/lib/password.js'
+import { hashPassword } from '../../src/shared/lib/password.js'
 
 const DEMO_USER = { email: 'demo@bank.test', password: 'demo1234' }
 
