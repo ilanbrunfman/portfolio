@@ -76,7 +76,7 @@ describe('GET /api/taim/session', () => {
         const manager = await as('MANAGER')
         const res = await manager.get('/api/taim/session').expect(200)
         expect(res.body.screens).toEqual(['floor', 'order', 'kitchen', 'menu', 'bills', 'losses'])
-        expect(res.body.rights).toHaveLength(12)
+        expect(res.body.rights).toHaveLength(13)
         expect(res.body.rights).not.toContain('advanceDish')
         expect(res.body.rights).not.toContain('fireHeld')
     })

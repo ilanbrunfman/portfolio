@@ -84,11 +84,11 @@ describe('starting a draft (editMenu: Manager, Chef)', () => {
     })
 })
 
-describe('publishing (publishMenu: the Chef)', () => {
-    it('the Manager cannot publish (403); the Chef publishes now and the old menu is archived', async () => {
+describe('publishing (publishMenu: Manager, Chef)', () => {
+    it('Cook, Host and Waiter cannot publish (403); the Chef publishes now and the old menu is archived', async () => {
         const draft = (await startDraft().expect(201)).body
         await chef.patch(`/api/taim/menu-items/${(await draftDish(draft.id, 'Shakshuka')).id}`).send({ price: 1500 }).expect(200)
-        await publish(draft.id, {}, manager).expect(403)
+        for (const role of ['COOK', 'HOST', 'WAITER']) await publish(draft.id, {}, await as(role)).expect(403)
 
         const res = await publish(draft.id).expect(200)
         expect(res.body).toMatchObject({ status: 'ACTIVE', activeFrom: expect.any(String), publishedBy: { name: expect.any(String) } })
@@ -98,6 +98,12 @@ describe('publishing (publishMenu: the Chef)', () => {
 
         const menu = (await (await as('WAITER')).get('/api/taim/menu').expect(200)).body
         expect(menu[0].items.map((d) => [d.name, d.price])).toEqual([['Shakshuka', 1500], ['Schnitzel', 1800]])
+    })
+
+    it('the Manager can publish too', async () => {
+        const draft = (await startDraft(undefined, manager).expect(201)).body
+        const res = await publish(draft.id, {}, manager).expect(200)
+        expect(res.body).toMatchObject({ status: 'ACTIVE', publishedBy: { name: 'Noa' } })
     })
 
     it('a bill keeps the dish of the menu it was ordered from', async () => {
@@ -161,11 +167,11 @@ describe('publishing on a date', () => {
         expect(next).toMatchObject({ status: 'ACTIVE', activeFrom: startsAt })
     })
 
-    it('unschedule: back to a draft that can change again (the Chef)', async () => {
+    it('unschedule: back to a draft that can change again (Manager or Chef)', async () => {
         const draft = (await startDraft().expect(201)).body
         await publish(draft.id, { startsAt: tomorrow() }).expect(200)
-        await manager.post(`/api/taim/menu/versions/${draft.id}/unschedule`).expect(403)
-        await chef.post(`/api/taim/menu/versions/${draft.id}/unschedule`).expect(204)
+        await (await as('WAITER')).post(`/api/taim/menu/versions/${draft.id}/unschedule`).expect(403)
+        await manager.post(`/api/taim/menu/versions/${draft.id}/unschedule`).expect(204)
 
         const back = await prisma.menuVersion.findUniqueOrThrow({ where: { id: draft.id } })
         expect(back).toMatchObject({ status: 'DRAFT', activeFrom: null, publishedAt: null })
@@ -177,6 +183,43 @@ describe('publishing on a date', () => {
         const draft = (await startDraft().expect(201)).body
         const res = await publish(draft.id, { startsAt: new Date(Date.now() - 60_000) }).expect(200)
         expect(res.body.status).toBe('ACTIVE')
+    })
+})
+
+describe('using an older menu again (publishMenu: Manager, Chef)', () => {
+    /** Version 1 archived, version 2 (Shakshuka at $15, Schnitzel removed) in use */
+    async function twoMenus() {
+        const draft = (await startDraft().expect(201)).body
+        await chef.patch(`/api/taim/menu-items/${(await draftDish(draft.id, 'Shakshuka')).id}`).send({ price: 1500 }).expect(200)
+        await chef.delete(`/api/taim/menu-items/${(await draftDish(draft.id, 'Schnitzel')).id}`).expect(204)
+        await publish(draft.id).expect(200)
+        return draft
+    }
+
+    it('brings it back as a new version, in use from now; the one in use is archived', async () => {
+        const second = await twoMenus()
+        const res = await manager.post('/api/taim/menu/versions/1/use').expect(200)
+        expect(res.body).toMatchObject({ number: 3, name: 'Test menu', note: 'Back from #1', status: 'ACTIVE', basedOnId: 1, publishedBy: { name: 'Noa' } })
+
+        expect((await prisma.menuVersion.findUniqueOrThrow({ where: { id: second.id } })).status).toBe('ARCHIVED')
+        expect((await prisma.menuVersion.findUniqueOrThrow({ where: { id: 1 } })).status).toBe('ARCHIVED')
+        const menu = (await (await as('WAITER')).get('/api/taim/menu').expect(200)).body
+        // Its dishes and prices, every dish on the menu again (sold out starts fresh)
+        expect(menu[0].items.map((d) => [d.name, d.price, d.hidden])).toEqual([['Shakshuka', 1400, false], ['Schnitzel', 1800, false]])
+        const copy = await prisma.menuItem.findFirstOrThrow({ where: { versionId: res.body.id, name: 'Shakshuka' } })
+        expect(copy.dishKey).toBe(shakshuka.dishKey)
+    })
+
+    it('only an older menu (409), only Manager and Chef (403); a draft stays as it is', async () => {
+        const second = await twoMenus()
+        const draft = (await startDraft({ name: 'Winter' }).expect(201)).body
+        for (const role of ['COOK', 'HOST', 'WAITER']) await (await as(role)).post('/api/taim/menu/versions/1/use').expect(403)
+        expect((await chef.post(`/api/taim/menu/versions/${second.id}/use`).expect(409)).body.error).toBe('Only an older menu can be used again')
+        await chef.post(`/api/taim/menu/versions/${draft.id}/use`).expect(409)
+        await chef.post('/api/taim/menu/versions/999/use').expect(404)
+
+        await chef.post('/api/taim/menu/versions/1/use').expect(200)
+        expect((await prisma.menuVersion.findUniqueOrThrow({ where: { id: draft.id } })).status).toBe('DRAFT')
     })
 })
 

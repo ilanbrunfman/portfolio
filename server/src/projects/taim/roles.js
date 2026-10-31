@@ -7,7 +7,7 @@ export const ROLES = ['MANAGER', 'CHEF', 'COOK', 'HOST', 'WAITER']
 /** Right → the roles that have it */
 export const RIGHTS = {
     editMenu: ['MANAGER', 'CHEF'], // the draft menu: dishes, prices, categories; sold out on the menu in use
-    publishMenu: ['CHEF'], // publish the draft as the menu in use (now or on a date)
+    publishMenu: ['MANAGER', 'CHEF'], // publish the draft (now or on a date), or pick an older menu to use again
     setUpTables: ['MANAGER'], // add, rename tables, set seats
     seatTable: ['MANAGER', 'HOST', 'WAITER'], // seat a table or start take-out; move or undo a seating
     cleanTable: ['MANAGER', 'HOST', 'WAITER'], // mark a table clean after guests leave
