@@ -191,16 +191,25 @@
         font-variant-numeric: tabular-nums;
     }
 
+    // Closed days inside a section: one report after another, a line between
     &__days {
         list-style: none;
         margin: 0;
-        padding: 0;
-        display: grid;
-        gap: 0.75rem;
+        padding: 0 1rem 0.75rem 1.25rem;
 
         > li {
             box-sizing: border-box;
+            padding-block: 0.75rem;
         }
+
+        > li + li {
+            border-top: 1px solid var(--border);
+        }
+    }
+
+    // Bills | Closed days, under the totals
+    &__view > .tabs__panel {
+        padding-top: 0.75rem;
     }
 
     // The bill in the dialog has no card of its own

@@ -1,7 +1,14 @@
-// Bills screen: bills grouped by day (Week tab), week (Month tab) or month
-// (Year tab), in this device's time zone, newest group first.
+// Bills screen: bills and closed days grouped by day (Week tab), week
+// (Month tab) or month (Year tab), in this device's time zone, newest
+// group first.
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+/** A closed day's `date` ("2026-10-30", its restaurant date) → that date, at midnight here */
+export function dateOfDay(day) {
+    const [year, month, date] = day.date.split('-').map(Number)
+    return new Date(year, month - 1, date)
+}
 
 const startOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate())
 const shortDate = (date) => date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
@@ -28,22 +35,35 @@ const GROUP_BY = {
 }
 
 /**
- * Bills (newest first) → groups, newest first, each with its bills and
- * numbers: how many, how many open, sales (what closed bills came to).
- * @param {object[]} bills
- * @param {'week'|'month'|'year'} period
- * @returns {{ key, label, bills: object[], count: number, open: number, sales: number }[]}
+ * Items (newest first) → groups, newest first: each { key, label, items }.
+ * @param {object[]} items
+ * @param {'week'|'month'|'year'} period  week → by day, month → by week, year → by month
+ * @param {(item: object) => string|Date} dateOf  When the item happened.
  */
-export function groupBills(bills, period) {
+export function groupByPeriod(items, period, dateOf) {
     const groups = new Map()
-    for (const bill of bills) {
-        const { key, label } = GROUP_BY[period](new Date(bill.openedAt))
-        if (!groups.has(key)) groups.set(key, { key, label, bills: [], count: 0, open: 0, sales: 0 })
-        const group = groups.get(key)
-        group.bills.push(bill)
-        group.count += 1
-        if (bill.status === 'OPEN') group.open += 1
-        else group.sales += bill.total
+    for (const item of items) {
+        const { key, label } = GROUP_BY[period](new Date(dateOf(item)))
+        if (!groups.has(key)) groups.set(key, { key, label, items: [] })
+        groups.get(key).items.push(item)
     }
     return [...groups.values()]
 }
+
+/** Bills → groups, each with how many, how many open, sales (what closed bills came to) */
+export const groupBills = (bills, period) =>
+    groupByPeriod(bills, period, (bill) => bill.openedAt).map((group) => ({
+        ...group,
+        count: group.items.length,
+        open: group.items.filter((bill) => bill.status === 'OPEN').length,
+        sales: group.items.filter((bill) => bill.status !== 'OPEN').reduce((sum, bill) => sum + bill.total, 0),
+    }))
+
+/** Closed days → groups (by the date each belongs to), each with its sales and bills */
+export const groupDays = (days, period) =>
+    groupByPeriod(days, period, dateOfDay).map((group) => ({
+        ...group,
+        count: group.items.length,
+        sales: group.items.reduce((sum, day) => sum + day.sales, 0),
+        bills: group.items.reduce((sum, day) => sum + day.billCount, 0),
+    }))

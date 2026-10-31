@@ -12,7 +12,7 @@ import Modal from '@/components/ui/modal/Modal'
 import Button from '@/components/ui/button/Button'
 import { formatMoney } from '@/pages/taim/utils/money'
 import { clockTime } from '@/pages/taim/utils/orders'
-import { groupBills } from '@/pages/taim/utils/billGroups'
+import { groupBills, groupDays, dateOfDay } from '@/pages/taim/utils/billGroups'
 import './Bills.scss'
 
 const PERIODS = [
@@ -45,8 +45,9 @@ function periodText(period, since) {
  * take-out) opens it on the Order screen; any other bill shows read-only. On "Day" the Manager and Chef
  * close the day: refused while bills are open; it saves the end-of-day
  * report and locks the day's bills. If nobody does, the server closes it at
- * the set time (04:00); a warning shows while open bills hold that back. Week, month and year also list the
- * days closed in them, with their reports.
+ * the set time (04:00); a warning shows while open bills hold that back.
+ * Week, month and year have two tabs, Bills and Closed days (their saved
+ * reports), both grouped by day, week or month.
  */
 const Bills = () => {
     const { can, canEditDishes } = useStaff()
@@ -57,7 +58,11 @@ const Bills = () => {
     const [period, setPeriod] = useState('today')
     const [status, setStatus] = useState('ALL')
     const bills = useBills(period, status)
+    // Closed days of this period by their own date (a Saturday closed after
+    // midnight on Sunday still belongs to last week)
+    const days = bills.data && period !== 'today' ? bills.data.days.filter((day) => dateOfDay(day) >= periodStart(period)) : []
     const [viewing, setViewing] = useState(null) // bill id shown in the dialog
+    const [view, setView] = useState('bills') // Week / Month / Year: 'bills' or 'days'
 
     return (
         <div className="bills d-flex flex-column gap-2">
@@ -91,42 +96,54 @@ const Bills = () => {
                                 <CloseDay open={bills.data.totals.open} count={bills.data.totals.bills} autoAt={bills.data.autoClose?.at} onClose={bills.closeDay} />
                             )}
 
-                            <section className="d-flex flex-column gap-1" aria-labelledby="bills-list-title">
-                                <div className="d-flex flex-wrap align-items-center justify-between gap-1">
-                                    <h3 id="bills-list-title" className="bills__section-title">Bills</h3>
-                                    <RadioGroup label="Show" options={STATUSES} value={status} onChange={setStatus} direction="row" className="bills__filter" />
-                                </div>
-                                {bills.data.bills.length === 0 ? (
-                                    <p className="form__hint">No {status === 'ALL' ? '' : `${status.toLowerCase()} `}bills in this period.</p>
-                                ) : period === 'today' ? (
-                                    <ul className="bills__list surface">
-                                        {bills.data.bills.map((bill) => (
-                                            <li key={bill.id}>
-                                                <BillRow bill={bill} toOrder={editable(bill)} onOpen={() => openBill(bill)} />
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    <BillGroups key={`${period}-${status}`} bills={bills.data.bills} period={period} editable={editable} onOpen={openBill} />
-                                )}
-                                {bills.data.more > 0 && <p className="form__hint">…and {bills.data.more} older bills (in the totals).</p>}
-                            </section>
-
-                            {period !== 'today' && (
-                                <section className="d-flex flex-column gap-1" aria-labelledby="days-title">
-                                    <h3 id="days-title" className="bills__section-title">Closed days</h3>
-                                    {bills.data.days.length === 0 ? (
-                                        <p className="form__hint">No day was closed in this period.</p>
+                            {period === 'today' ? (
+                                <section className="d-flex flex-column gap-1" aria-labelledby="bills-list-title">
+                                    <div className="d-flex flex-wrap align-items-center justify-between gap-1">
+                                        <h3 id="bills-list-title" className="bills__section-title">Bills</h3>
+                                        <RadioGroup label="Show" options={STATUSES} value={status} onChange={setStatus} direction="row" className="bills__filter" />
+                                    </div>
+                                    {bills.data.bills.length === 0 ? (
+                                        <p className="form__hint">No {status === 'ALL' ? '' : `${status.toLowerCase()} `}bills since the last close.</p>
                                     ) : (
-                                        <ul className="bills__days">
-                                            {bills.data.days.map((day) => (
-                                                <li key={day.id} className="surface">
-                                                    <DayReport day={day} />
+                                        <ul className="bills__list surface">
+                                            {bills.data.bills.map((bill) => (
+                                                <li key={bill.id}>
+                                                    <BillRow bill={bill} toOrder={editable(bill)} onOpen={() => openBill(bill)} />
                                                 </li>
                                             ))}
                                         </ul>
                                     )}
+                                    {bills.data.more > 0 && <p className="form__hint">…and {bills.data.more} older bills (in the totals).</p>}
                                 </section>
+                            ) : (
+                                <Tabs
+                                    label="Bills or closed days"
+                                    items={[
+                                        { id: 'bills', label: 'Bills' },
+                                        { id: 'days', label: `Closed days (${days.length})` },
+                                    ]}
+                                    value={view}
+                                    onChange={setView}
+                                    className="bills__view"
+                                >
+                                    {(id) =>
+                                        id === 'bills' ? (
+                                            <div className="d-flex flex-column gap-1">
+                                                <RadioGroup label="Show" options={STATUSES} value={status} onChange={setStatus} direction="row" className="bills__filter" />
+                                                {bills.data.bills.length === 0 ? (
+                                                    <p className="form__hint">No {status === 'ALL' ? '' : `${status.toLowerCase()} `}bills in this period.</p>
+                                                ) : (
+                                                    <BillGroups key={`${period}-${status}`} bills={bills.data.bills} period={period} editable={editable} onOpen={openBill} />
+                                                )}
+                                                {bills.data.more > 0 && <p className="form__hint">…and {bills.data.more} older bills (in the totals).</p>}
+                                            </div>
+                                        ) : days.length === 0 ? (
+                                            <p className="form__hint">No day was closed in this period.</p>
+                                        ) : (
+                                            <DayGroups key={period} days={days} period={period} />
+                                        )
+                                    }
+                                </Tabs>
                             )}
                         </div>
                     )
@@ -167,15 +184,18 @@ const Totals = ({ totals }) => (
 )
 
 /**
- * The bills in accordion sections: a section per day (Week), week (Month)
- * or month (Year), newest first, with its bills, sales and open bills in
- * the header. The newest section starts open; a section's rows are drawn
- * once it's opened (a year has hundreds of bills).
+ * Accordion sections, newest first (a day, week or month each): the newest
+ * starts open, and a section's content is drawn only once it's opened (a
+ * year has hundreds of bills).
+ *
+ * @param {object} props
+ * @param {{ key, label }[]} props.groups
+ * @param {(group) => React.ReactNode} props.summary  Beside the label in the header.
+ * @param {(group) => React.ReactNode} props.children The section's content.
  */
-const BillGroups = ({ bills, period, editable, onOpen }) => {
-    const groups = groupBills(bills, period)
+const PeriodGroups = ({ groups, summary, children }) => {
     const [openKeys, setOpenKeys] = useState(() => new Set(groups.length ? [groups[0].key] : []))
-    const [seen, setSeen] = useState(openKeys) // opened at least once: rows drawn
+    const [seen, setSeen] = useState(openKeys) // opened at least once: content drawn
     const toggle = (key, next) => {
         setOpenKeys((keys) => {
             const copy = new Set(keys)
@@ -196,27 +216,64 @@ const BillGroups = ({ bills, period, editable, onOpen }) => {
                     title={
                         <span className="bills__group-title d-flex flex-wrap align-items-baseline gap-0-5">
                             <span className="bills__group-name">{group.label}</span>
-                            <span className="bills__group-count">
-                                {group.count} {group.count === 1 ? 'bill' : 'bills'} · {formatMoney(group.sales)}
-                            </span>
-                            {group.open > 0 && <span className="bills__status is-open">{group.open} open</span>}
+                            {summary(group)}
                         </span>
                     }
                 >
-                    {seen.has(group.key) && (
-                        <ul className="bills__list">
-                            {group.bills.map((bill) => (
-                                <li key={bill.id}>
-                                    <BillRow bill={bill} withDate={period !== 'week'} toOrder={editable(bill)} onOpen={() => onOpen(bill)} />
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                    {seen.has(group.key) && children(group)}
                 </Accordion.Item>
             ))}
         </Accordion>
     )
 }
+
+/** Bills by day (Week), week (Month) or month (Year): count, sales and open bills in each header */
+const BillGroups = ({ bills, period, editable, onOpen }) => (
+    <PeriodGroups
+        groups={groupBills(bills, period)}
+        summary={(group) => (
+            <>
+                <span className="bills__group-count">
+                    {group.count} {group.count === 1 ? 'bill' : 'bills'} · {formatMoney(group.sales)}
+                </span>
+                {group.open > 0 && <span className="bills__status is-open">{group.open} open</span>}
+            </>
+        )}
+    >
+        {(group) => (
+            <ul className="bills__list">
+                {group.items.map((bill) => (
+                    <li key={bill.id}>
+                        <BillRow bill={bill} withDate={period !== 'week'} toOrder={editable(bill)} onOpen={() => onOpen(bill)} />
+                    </li>
+                ))}
+            </ul>
+        )}
+    </PeriodGroups>
+)
+
+/** Closed days by day (Week), week (Month) or month (Year), each with its saved report */
+const DayGroups = ({ days, period }) => (
+    <PeriodGroups
+        groups={groupDays(days, period)}
+        summary={(group) => (
+            <span className="bills__group-count">
+                {period === 'week' ? '' : `${group.count} ${group.count === 1 ? 'day' : 'days'} · `}
+                {group.bills} {group.bills === 1 ? 'bill' : 'bills'} · {formatMoney(group.sales)}
+            </span>
+        )}
+    >
+        {(group) => (
+            <ul className="bills__days">
+                {group.items.map((day) => (
+                    <li key={day.id}>
+                        <DayReport day={day} />
+                    </li>
+                ))}
+            </ul>
+        )}
+    </PeriodGroups>
+)
 
 /**
  * One bill in the list: title, status, times, who opened it, dishes, total.
