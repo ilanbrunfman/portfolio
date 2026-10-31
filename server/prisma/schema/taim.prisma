@@ -27,6 +27,8 @@ model Staff {
   dishesFired    OrderItem[]   @relation("DishFiredBy")
   dishesStarted  OrderItem[]   @relation("DishStartedBy")
   dishesServed   OrderItem[]   @relation("DishServedBy")
+  allergiesSeen  OrderItem[]   @relation("DishAllergySeenBy")
+  allergiesNoted SeatAllergy[]
   menusCreated   MenuVersion[] @relation("VersionCreatedBy")
   menusPublished MenuVersion[] @relation("VersionPublishedBy")
   returns        ItemReturn[]
@@ -114,6 +116,8 @@ model MenuItem {
   prepMinutes Int? // how long the kitchen should take, set by the Chef; null = not set
   position    Int // 1, 2, 3… within the category
   hidden      Boolean      @default(false)
+  // Step 5.4: what's in it that guests can be allergic to (set by the Chef)
+  allergens   Allergen[]   @default([])
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   orderItems  OrderItem[]
@@ -122,6 +126,21 @@ model MenuItem {
   @@index([categoryId, position])
   @@index([dishKey])
   @@map("menu_items")
+  @@schema("taim")
+}
+
+// Step 5.4: the allergens a dish can contain and a guest can be allergic to
+enum Allergen {
+  GLUTEN
+  DAIRY
+  EGG
+  PEANUTS
+  TREE_NUTS
+  SESAME
+  FISH
+  SHELLFISH
+  SOY
+
   @@schema("taim")
 }
 
@@ -184,23 +203,24 @@ enum DishStatus {
 // guest count; TAKEOUT orders have a customer name and phone (to call when
 // it's ready) and no table (CHECK rules in the migrations enforce this).
 model Order {
-  id            Int          @id @default(autoincrement())
+  id            Int           @id @default(autoincrement())
   type          OrderType
   tableId       Int?
-  table         DiningTable? @relation(fields: [tableId], references: [id], onDelete: Restrict)
+  table         DiningTable?  @relation(fields: [tableId], references: [id], onDelete: Restrict)
   guests        Int?
   customerName  String?
   customerPhone String? // take-out only, optional
-  status        OrderStatus  @default(OPEN)
+  status        OrderStatus   @default(OPEN)
   openedById    Int
-  openedBy      Staff        @relation(fields: [openedById], references: [id], onDelete: Restrict)
-  openedAt      DateTime     @default(now())
+  openedBy      Staff         @relation(fields: [openedById], references: [id], onDelete: Restrict)
+  openedAt      DateTime      @default(now())
   closedAt      DateTime?
   items         OrderItem[]
+  allergies     SeatAllergy[]
   // Set when the Manager or Chef closes the day: the bill then belongs to
   // that day's report and can't change any more. null = today's bills.
   businessDayId Int?
-  businessDay   BusinessDay? @relation(fields: [businessDayId], references: [id], onDelete: Restrict)
+  businessDay   BusinessDay?  @relation(fields: [businessDayId], references: [id], onDelete: Restrict)
 
   @@index([status])
   @@index([businessDayId])
@@ -294,47 +314,76 @@ model BusinessDay {
 // now, mains later) and this one waits for "Fire". Only a dish not sent
 // yet (NEW) can be held (CHECK in the migration).
 model OrderItem {
-  id           Int          @id @default(autoincrement())
-  orderId      Int
-  order        Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menuItemId   Int
-  menuItem     MenuItem     @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
-  price        Int // cents, copied when ordered
-  seat         Int? // guest's seat number at the table; null = shared or take-out
-  status       DishStatus // no default: every insert says NEW (or, in the seed, later)
-  createdAt    DateTime     @default(now())
-  firedAt      DateTime? // when the waiter sent it to the kitchen
-  round        Int? // which "Send to kitchen" of this order: 1 = first (e.g. starters), 2 = next…
-  held         Boolean      @default(false) // waiting for "Fire" (mains after the starters)
+  id               Int          @id @default(autoincrement())
+  orderId          Int
+  order            Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId       Int
+  menuItem         MenuItem     @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+  price            Int // cents, copied when ordered
+  seat             Int? // guest's seat number at the table; null = shared or take-out
+  status           DishStatus // no default: every insert says NEW (or, in the seed, later)
+  createdAt        DateTime     @default(now())
+  firedAt          DateTime? // when the waiter sent it to the kitchen
+  round            Int? // which "Send to kitchen" of this order: 1 = first (e.g. starters), 2 = next…
+  held             Boolean      @default(false) // waiting for "Fire" (mains after the starters)
   // Who sent it to the kitchen (null on dishes from before this was kept),
   // and whether the kitchen fired it from "on hold" (Chef or Manager, once
   // the table's earlier dishes were served a while ago)
-  firedById    Int?
-  firedBy      Staff?       @relation("DishFiredBy", fields: [firedById], references: [id], onDelete: Restrict)
-  kitchenFired Boolean      @default(false)
+  firedById        Int?
+  firedBy          Staff?       @relation("DishFiredBy", fields: [firedById], references: [id], onDelete: Restrict)
+  kitchenFired     Boolean      @default(false)
   // Step 5.2: a table's guest takes this dish home – packed, not plated, on
   // the same bill (take-out orders are to go as a whole and leave it false)
-  toGo         Boolean      @default(false)
+  toGo             Boolean      @default(false)
   // Step 5.3: when the kitchen started it (Start on the ticket, or Served
   // straight away) and who; who served it. With firedAt and sentOutAt that
   // is the dish's whole timeline: sent → started → served.
-  startedAt    DateTime?
-  startedById  Int?
-  startedBy    Staff?       @relation("DishStartedBy", fields: [startedById], references: [id], onDelete: Restrict)
-  sentOutAt    DateTime?
-  servedById   Int?
-  servedBy     Staff?       @relation("DishServedBy", fields: [servedById], references: [id], onDelete: Restrict)
+  startedAt        DateTime?
+  startedById      Int?
+  startedBy        Staff?       @relation("DishStartedBy", fields: [startedById], references: [id], onDelete: Restrict)
+  sentOutAt        DateTime?
+  servedById       Int?
+  servedBy         Staff?       @relation("DishServedBy", fields: [servedById], references: [id], onDelete: Restrict)
   // Step 6: why it came back or was wasted, and the free remake or
   // replacement made for a dish that came back. remakeOfId set = this dish
   // is on the house (the same dish again, or another one instead): not on
   // the bill, and its price counts as a loss with the dish it replaces.
-  returns      ItemReturn[] // why it came back, was wasted or sent back to be fixed
-  remakeOfId   Int?         @unique
-  remakeOf     OrderItem?   @relation("Remake", fields: [remakeOfId], references: [id], onDelete: Restrict)
-  remake       OrderItem?   @relation("Remake")
+  returns          ItemReturn[] // why it came back, was wasted or sent back to be fixed
+  remakeOfId       Int?         @unique
+  remakeOf         OrderItem?   @relation("Remake", fields: [remakeOfId], references: [id], onDelete: Restrict)
+  remake           OrderItem?   @relation("Remake")
+  // Step 5.4: the waiter added it although it clashes with the guest's
+  // allergy (warned, and confirmed: "the kitchen will adapt it")
+  allergyConfirmed Boolean      @default(false)
+  // The kitchen saw the allergies on its ticket (a tap before Start); a
+  // change to the bill's allergies clears it, so it's seen again
+  allergySeenAt    DateTime?
+  allergySeenById  Int?
+  allergySeenBy    Staff?       @relation("DishAllergySeenBy", fields: [allergySeenById], references: [id], onDelete: Restrict)
 
   @@index([orderId])
   @@index([status])
   @@map("order_items")
+  @@schema("taim")
+}
+
+// Step 5.4: a guest's allergy on a bill – for one seat, or (seat null) the
+// whole table or the whole take-out. Kept with the bill (never linked to a
+// person). One row per seat per bill (unique, NULLS NOT DISTINCT in the
+// migration so there's one "whole" row too).
+model SeatAllergy {
+  id        Int        @id @default(autoincrement())
+  orderId   Int
+  order     Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  seat      Int? // 1…guests; null = the whole table / the take-out
+  allergens Allergen[]
+  note      String? // "severe", "no traces at all"
+  notedById Int
+  notedBy   Staff      @relation(fields: [notedById], references: [id], onDelete: Restrict)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([orderId, seat])
+  @@map("seat_allergies")
   @@schema("taim")
 }

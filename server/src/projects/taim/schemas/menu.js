@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { cents } from '../../../shared/schemas/common.js'
+import { ALLERGENS } from '../services/allergies.js'
 
 const nothingToUpdate = (data) => Object.keys(data).length > 0
 
@@ -14,6 +15,11 @@ export const categoryCreate = z.object({
 export const categoryUpdate = categoryCreate.partial().refine(nothingToUpdate, 'Nothing to update')
 
 // ---------- dishes ----------
+
+// A list of allergens: known ones, each once, in the usual order (step 5.4)
+export const allergenList = z
+    .array(z.enum(ALLERGENS, { error: 'Unknown allergen' }), { error: 'Allergens must be a list' })
+    .transform((list) => ALLERGENS.filter((allergen) => list.includes(allergen)))
 
 const dishFields = {
     categoryId: z.number({ error: 'Pick a category' }).int('Pick a category').positive('Pick a category'),
@@ -34,6 +40,8 @@ const dishFields = {
         .max(180, 'Max 180 minutes')
         .nullable(),
     hidden: z.boolean({ error: 'Must be true or false' }),
+    // What's in it that guests can be allergic to (each once, in a fixed order)
+    allergens: allergenList,
 }
 
 // POST /api/taim/menu-items – category, name and price required
@@ -44,6 +52,7 @@ export const menuItemCreate = z.object({
     price: dishFields.price,
     prepMinutes: dishFields.prepMinutes.default(null),
     hidden: dishFields.hidden.default(false),
+    allergens: dishFields.allergens.default([]),
 })
 
 // PATCH /api/taim/menu-items/:id – any subset (hidden: true = sold out)

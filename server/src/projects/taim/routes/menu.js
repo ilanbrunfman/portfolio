@@ -26,7 +26,7 @@ async function requireDraftCategory(categoryId, field = null) {
     return { draft, category }
 }
 
-const DISH_FIELDS = { id: true, categoryId: true, name: true, description: true, price: true, prepMinutes: true, hidden: true, position: true }
+const DISH_FIELDS = { id: true, categoryId: true, name: true, description: true, price: true, prepMinutes: true, hidden: true, allergens: true, position: true }
 const DISH_ORDER = [{ position: 'asc' }, { id: 'asc' }]
 
 /** Prisma's "unique value already used" error → 409 with a message under the Name input */
@@ -100,16 +100,17 @@ router.post('/menu-items', allow('editMenu'), validate({ body: menuItemCreate })
 
 // PATCH /api/taim/menu-items/:id – a draft dish: any of the fields (moving
 // it to another category puts it at the top there). A dish of the menu in
-// use: only { hidden } – sold out, or back on.
+// use: only { hidden } – sold out, or back on – and { allergens }: safety
+// information is fixed at once, not in the next version.
 router.patch('/menu-items/:id', allow('editMenu'), validate({ params: idParams, body: menuItemUpdate }), async (req, res) => {
     const { id } = req.valid.params
     const data = req.valid.body
     const current = await prisma.menuItem.findUnique({ where: { id }, select: { categoryId: true, version: { select: { status: true } } } })
     if (!current) throw new HttpError(404, 'Dish not found')
 
-    const soldOutOnly = Object.keys(data).every((key) => key === 'hidden')
-    if (current.version.status === 'ACTIVE' && !soldOutOnly) {
-        throw new HttpError(409, 'Change the draft: on the menu in use only sold out can change')
+    const liveChange = Object.keys(data).every((key) => key === 'hidden' || key === 'allergens')
+    if (current.version.status === 'ACTIVE' && !liveChange) {
+        throw new HttpError(409, 'Change the draft: on the menu in use only sold out and allergens can change')
     }
     if (current.version.status !== 'ACTIVE' && current.version.status !== 'DRAFT') throw new HttpError(409, 'This menu version can no longer change')
 

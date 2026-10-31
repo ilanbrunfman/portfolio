@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { allergenList } from './menu.js'
 
 const positiveInt = (message) => z.number({ error: message }).int(message).positive(message)
 
@@ -65,6 +66,9 @@ export const orderItemsAdd = z.object({
                 seat: positiveInt('Seat must be a whole number above 0').nullable().default(null),
                 // The guest takes it home: packed, on the same bill (tables only)
                 toGo: z.boolean({ error: 'To go must be true or false' }).default(false),
+                // Step 5.4: added although it clashes with the seat's allergy
+                // (the waiter was warned and confirmed)
+                allergyConfirmed: z.boolean({ error: 'Must be true or false' }).default(false),
             }),
             { error: 'Pick at least one dish' }
         )
@@ -86,6 +90,8 @@ export const orderItemUpdate = z
     .object({
         seat: positiveInt('Seat must be a whole number above 0').nullable().optional(),
         toGo: z.boolean({ error: 'To go must be true or false' }).optional(),
+        // Moving it to a seat whose allergy it clashes with needs this
+        allergyConfirmed: z.boolean({ error: 'Must be true or false' }).default(false),
     })
     .refine((data) => data.seat !== undefined || data.toGo !== undefined, 'Nothing to update')
 
@@ -149,4 +155,13 @@ export const orderListQuery = z.object({
 export const orderItemParams = z.object({
     id: z.coerce.number({ error: 'Invalid id' }).int('Invalid id').positive('Invalid id'),
     itemId: z.coerce.number({ error: 'Invalid id' }).int('Invalid id').positive('Invalid id'),
+})
+
+// PUT /api/taim/orders/:id/allergies – a guest's allergy on the bill
+// (step 5.4): for a seat, or (seat null) the whole table / the take-out.
+// No allergens and no note = remove it.
+export const seatAllergy = z.object({
+    seat: z.number({ error: 'Seat must be a number' }).int('Seat must be a whole number').positive('Seat must be a whole number above 0').nullable().default(null),
+    allergens: allergenList.default([]),
+    note: z.string({ error: 'Note must be text' }).trim().max(200, 'Max 200 characters').transform((text) => text || null).nullable().default(null),
 })

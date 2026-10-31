@@ -41,8 +41,8 @@ describe('GET /api/taim/menu', () => {
 
         expect(res.body.map((c) => c.name)).toEqual(['Starters', 'Mains'])
         expect(res.body[1].items).toEqual([
-            { id: expect.any(Number), categoryId: live.id, name: 'Shakshuka', description: null, price: 1400, prepMinutes: null, hidden: false, position: 1 },
-            { id: expect.any(Number), categoryId: live.id, name: 'Schnitzel', description: null, price: 1800, prepMinutes: null, hidden: true, position: 2 },
+            { id: expect.any(Number), categoryId: live.id, name: 'Shakshuka', description: null, price: 1400, prepMinutes: null, hidden: false, allergens: [], position: 1 },
+            { id: expect.any(Number), categoryId: live.id, name: 'Schnitzel', description: null, price: 1800, prepMinutes: null, hidden: true, allergens: [], position: 2 },
         ])
     })
 
@@ -57,7 +57,7 @@ describe('the menu in use changes only through a draft', () => {
     it('refuses dish, price and category changes on it with 409, but sold out works', async () => {
         const dish = await prisma.menuItem.findFirstOrThrow({ where: { name: 'Shakshuka' } })
         const price = await chef.patch(`/api/taim/menu-items/${dish.id}`).send({ price: 1500 }).expect(409)
-        expect(price.body.error).toBe('Change the draft: on the menu in use only sold out can change')
+        expect(price.body.error).toBe('Change the draft: on the menu in use only sold out and allergens can change')
         await chef.patch(`/api/taim/menu-items/${dish.id}`).send({ hidden: true, name: 'Other' }).expect(409)
         const add = await chef.post('/api/taim/menu-items').send({ categoryId: live.id, name: 'Sabich', price: 1200 }).expect(409)
         expect(add.body.error).toBe('Change the draft: the menu in use changes only when a draft is published')
@@ -105,7 +105,7 @@ describe('who may change the menu', () => {
 describe('POST /api/taim/menu-items', () => {
     it('creates a dish, trimming text and saving an empty description as none', async () => {
         const res = await chef.post('/api/taim/menu-items').send(newDish({ name: '  Sabich ', description: '  ' })).expect(201)
-        expect(res.body).toEqual({ id: expect.any(Number), categoryId: mains.id, name: 'Sabich', description: null, price: 1200, prepMinutes: null, hidden: false, position: 1 })
+        expect(res.body).toEqual({ id: expect.any(Number), categoryId: mains.id, name: 'Sabich', description: null, price: 1200, prepMinutes: null, hidden: false, allergens: [], position: 1 })
     })
 
     it('rejects a missing name, a zero price and cents with decimals', async () => {
@@ -228,6 +228,30 @@ describe('dish order', () => {
 
         const menu = await draftMenu()
         expect(menu.find((c) => c.id === desserts.id).items.map((d) => d.name)).toEqual(['Shakshuka', 'Malabi'])
+    })
+})
+
+describe('allergens (step 5.4)', () => {
+    it('the Chef tags a dish; they come back known, once each, in a fixed order', async () => {
+        const res = await chef.post('/api/taim/menu-items').send(newDish({ allergens: ['SESAME', 'GLUTEN', 'SESAME'] })).expect(201)
+        expect(res.body.allergens).toEqual(['GLUTEN', 'SESAME'])
+        const bad = await chef.post('/api/taim/menu-items').send(newDish({ name: 'Kebab', allergens: ['NUTS'] })).expect(400)
+        expect(bad.body.fields['allergens.0']).toBe('Unknown allergen')
+    })
+
+    it('can be fixed on the menu in use at once (safety), unlike prices', async () => {
+        const dish = await prisma.menuItem.findFirstOrThrow({ where: { versionId: 1, name: 'Shakshuka' } })
+        const res = await chef.patch(`/api/taim/menu-items/${dish.id}`).send({ allergens: ['EGG'] }).expect(200)
+        expect(res.body.allergens).toEqual(['EGG'])
+        await chef.patch(`/api/taim/menu-items/${dish.id}`).send({ allergens: ['EGG'], price: 1 }).expect(409)
+    })
+
+    it('a new draft copies them', async () => {
+        const dish = await prisma.menuItem.findFirstOrThrow({ where: { versionId: 1, name: 'Shakshuka' } })
+        await chef.patch(`/api/taim/menu-items/${dish.id}`).send({ allergens: ['EGG', 'GLUTEN'] }).expect(200)
+        await chef.delete(`/api/taim/menu/versions/${draft.id}`).expect(204)
+        const next = (await chef.post('/api/taim/menu/versions').send({ name: 'Again' }).expect(201)).body
+        expect((await prisma.menuItem.findFirstOrThrow({ where: { versionId: next.id, name: 'Shakshuka' } })).allergens).toEqual(['GLUTEN', 'EGG'])
     })
 })
 

@@ -4,9 +4,10 @@ import { validate } from '../../../shared/middleware/validate.js'
 import { HttpError } from '../../../shared/lib/httpError.js'
 import { idParams } from '../../../shared/schemas/common.js'
 import { allow, allowDishChanges } from '../middleware/staff.js'
-import { tableCreate, tableUpdate, tablesCombine, orderCreate, orderUpdate, orderItemsAdd, orderItemUpdate, orderSend, orderListQuery, orderItemParams, cameBack, waste } from '../schemas/floor.js'
+import { tableCreate, tableUpdate, tablesCombine, orderCreate, orderUpdate, orderItemsAdd, orderItemUpdate, orderSend, orderListQuery, orderItemParams, cameBack, waste, seatAllergy } from '../schemas/floor.js'
 import { ORDER_INCLUDE, billTotal, getOrder, requireOpenOrder, toOrderJson } from '../services/orders.js'
 import { activeVersion } from '../services/menuVersions.js'
+import { allergenLabel, clashOf } from '../services/allergies.js'
 
 // The floor (tables) and orders. Everyone picked can read them; changing
 // them needs a right: setUpTables, seatTable, cleanTable, combineTables,
@@ -96,6 +97,21 @@ function checkSeat(order, seat, field) {
     }
 }
 
+/**
+ * Step 5.4: a dish that clashes with an allergy at its seat is added (or
+ * moved there) only when the waiter confirmed it. 409 otherwise:
+ * "Shakshuka contains egg: Seat 2 is allergic. Confirm to add it anyway."
+ * @returns {boolean} whether it clashes (saved as allergyConfirmed)
+ */
+function checkClash({ name, allergens }, allergies, seat, confirmed) {
+    const clash = clashOf(allergens, allergies, seat)
+    if (clash.length > 0 && !confirmed) {
+        const who = seat === null ? (allergies.some((row) => row.seat !== null) ? 'someone at the table is' : 'the guest is') : `Seat ${seat} is`
+        throw new HttpError(409, `${name} contains ${clash.map(allergenLabel).join(', ')}: ${who} allergic. Confirm to add it anyway.`)
+    }
+    return clash.length > 0
+}
+
 // GET /api/taim/tables – every table in floor order; `order` is its open
 // order (a short summary) or null; `needsCleaning` = guests left, not cleaned yet.
 // The summary says how the food is coming along: dishes not sent yet,
@@ -108,7 +124,7 @@ router.get('/tables', async (req, res) => {
             joined: { select: { id: true, label: true, seats: true }, orderBy: { position: 'asc' } },
             orders: {
                 where: { status: 'OPEN' },
-                select: { id: true, guests: true, openedAt: true, items: { select: { price: true, status: true, remakeOfId: true, held: true, toGo: true, kitchenFired: true, firedBy: { select: { name: true } }, seat: true, firedAt: true } } },
+                select: { id: true, guests: true, openedAt: true, _count: { select: { allergies: true } }, items: { select: { price: true, status: true, remakeOfId: true, held: true, toGo: true, kitchenFired: true, firedBy: { select: { name: true } }, seat: true, firedAt: true } } },
             },
         },
     })
@@ -140,6 +156,8 @@ router.get('/tables', async (req, res) => {
                           toGoInKitchen: cooking.filter((item) => item.toGo).length,
                           // the kitchen fired held dishes that are cooking now: who did ("Avi"), or null
                           kitchenFiredBy: cooking.find((item) => item.kitchenFired)?.firedBy?.name ?? null,
+                          // step 5.4: how many allergies are noted on the bill
+                          allergies: open._count.allergies,
                           total: billTotal(open.items),
                       }
                     : null,
@@ -292,6 +310,9 @@ router.patch('/orders/:id', allow('seatTable'), validate({ params: idParams, bod
         if (_max.seat && _max.seat > data.guests) {
             throw new HttpError(409, `Seat ${_max.seat} has dishes: remove them or keep ${_max.seat} guests`)
         }
+        // …or an allergy noted for nobody
+        const allergy = await prisma.seatAllergy.findFirst({ where: { orderId: id, seat: { gt: data.guests } }, orderBy: { seat: 'desc' }, select: { seat: true } })
+        if (allergy) throw new HttpError(409, `Seat ${allergy.seat} has an allergy noted: remove it or keep ${allergy.seat} guests`)
     }
     if (data.tableId !== undefined && data.tableId !== order.tableId) await requireReadyTable(data.tableId)
     // The guests (new or current count) must fit the table (new or current)
@@ -338,12 +359,15 @@ router.post('/orders/:id/items', validate({ params: idParams, body: orderItemsAd
         if (old) throw new HttpError(409, `${old.name} is from another menu: reload the menu`)
         const soldOut = dishes.find((dish) => dish.hidden)
         if (soldOut) throw new HttpError(409, `${soldOut.name} is sold out`)
+        // Step 5.4: a dish that clashes with the seat's allergy needs the waiter's confirmation
+        const allergies = await tx.seatAllergy.findMany({ where: { orderId: id }, select: { seat: true, allergens: true } })
+        const clashes = items.map((item) => checkClash(byId.get(item.menuItemId), allergies, item.seat, item.allergyConfirmed))
 
         // One row per dish; the price is copied now, so a later price change
         // never rewrites this bill. NEW = on the bill, not sent to the kitchen yet.
         await tx.orderItem.createMany({
-            data: items.flatMap(({ menuItemId, quantity, seat, toGo }) =>
-                Array.from({ length: quantity }, () => ({ orderId: id, menuItemId, seat, toGo, price: byId.get(menuItemId).price, status: 'NEW' }))
+            data: items.flatMap(({ menuItemId, quantity, seat, toGo }, i) =>
+                Array.from({ length: quantity }, () => ({ orderId: id, menuItemId, seat, toGo, price: byId.get(menuItemId).price, status: 'NEW', allergyConfirmed: clashes[i] }))
             ),
         })
         return getOrder(id, tx)
@@ -357,12 +381,44 @@ router.post('/orders/:id/items', validate({ params: idParams, body: orderItemsAd
 // and how (plated or packed).
 router.patch('/orders/:id/items/:itemId', validate({ params: orderItemParams, body: orderItemUpdate }), allowDishChanges, async (req, res) => {
     const { id, itemId } = req.valid.params
-    const { seat, toGo } = req.valid.body
+    const { seat, toGo, allergyConfirmed } = req.valid.body
     const order = await requireOpenOrder(id)
     if (seat !== undefined) checkSeat(order, seat, 'seat')
     if (toGo && order.type === 'TAKEOUT') throw new HttpError(400, 'Validation failed', { fields: { toGo: 'A take-out is to go already' } })
-    const { count } = await prisma.orderItem.updateMany({ where: { id: itemId, orderId: id }, data: { seat, toGo } })
-    if (count === 0) throw new HttpError(404, 'Dish not found on this order')
+    const item = await prisma.orderItem.findFirst({ where: { id: itemId, orderId: id }, select: { seat: true, allergyConfirmed: true, menuItem: { select: { name: true, allergens: true } } } })
+    if (!item) throw new HttpError(404, 'Dish not found on this order')
+    // Moving it to another seat: does it clash with that seat's allergy? (step 5.4)
+    let confirmed = item.allergyConfirmed
+    if (seat !== undefined && seat !== item.seat) {
+        const allergies = await prisma.seatAllergy.findMany({ where: { orderId: id }, select: { seat: true, allergens: true } })
+        confirmed = checkClash(item.menuItem, allergies, seat, allergyConfirmed)
+    }
+    await prisma.orderItem.update({ where: { id: itemId }, data: { seat, toGo, allergyConfirmed: confirmed } })
+    res.json(await getOrder(id))
+})
+
+// PUT /api/taim/orders/:id/allergies { seat, allergens, note } – a guest's
+// allergy on the bill (step 5.4): a seat (1…guests), or seat null = the
+// whole table / the take-out. Nothing left (no allergens, no note) removes
+// it. Dishes still in the kitchen must be "seen" again. Same right as
+// adding dishes. Answers the order.
+router.put('/orders/:id/allergies', validate({ params: idParams, body: seatAllergy }), allowDishChanges, async (req, res) => {
+    const { id } = req.valid.params
+    const { seat, allergens, note } = req.valid.body
+    await prisma.$transaction(async (tx) => {
+        const order = await requireOpenOrder(id, tx)
+        checkSeat(order, seat, 'seat')
+        const current = await tx.seatAllergy.findFirst({ where: { orderId: id, seat }, select: { id: true } })
+        if (allergens.length === 0 && !note) {
+            if (current) await tx.seatAllergy.delete({ where: { id: current.id } })
+        } else if (current) {
+            await tx.seatAllergy.update({ where: { id: current.id }, data: { allergens, note, notedById: req.staff.id } })
+        } else {
+            await tx.seatAllergy.create({ data: { orderId: id, seat, allergens, note, notedById: req.staff.id } })
+        }
+        // The kitchen sees the change: dishes still cooking need "Seen" again
+        await tx.orderItem.updateMany({ where: { orderId: id, status: 'PREPARING' }, data: { allergySeenAt: null, allergySeenById: null } })
+    })
     res.json(await getOrder(id))
 })
 
@@ -455,6 +511,8 @@ async function nextRound(tx, orderId) {
 router.post('/orders/:id/items/:itemId/came-back', allow('markCameBack'), validate({ params: orderItemParams, body: cameBack }), async (req, res) => {
     const { id, itemId } = req.valid.params
     const { reason, note, fix, remake, replaceWithId, sendNow } = req.valid.body
+    // An allergy is serious: say what happened (step 5.4)
+    if (reason === 'ALLERGY' && !note) throw new HttpError(400, 'Validation failed', { fields: { note: 'Say what happened (the allergy, how the guest is)' } })
     await prisma.$transaction(async (tx) => {
         await requireOpenOrder(id, tx)
         const item = await tx.orderItem.findFirst({ where: { id: itemId, orderId: id }, include: { menuItem: { select: { name: true, hidden: true } } } })
@@ -464,7 +522,7 @@ router.post('/orders/:id/items/:itemId/came-back', allow('markCameBack'), valida
             // Back in the kitchen as a new round: sent now, not started, not served
             const { count } = await tx.orderItem.updateMany({
                 where: { id: itemId, status: 'SENT_OUT' },
-                data: { status: 'PREPARING', round: await nextRound(tx, id), firedAt: new Date(), firedById: req.staff.id, startedAt: null, startedById: null, sentOutAt: null, servedById: null },
+                data: { status: 'PREPARING', round: await nextRound(tx, id), firedAt: new Date(), firedById: req.staff.id, startedAt: null, startedById: null, sentOutAt: null, servedById: null, allergySeenAt: null, allergySeenById: null },
             })
             if (count === 0) throw new HttpError(409, 'Only a served dish can come back')
             await tx.itemReturn.create({ data: { orderItemId: itemId, kind: 'FIX', reason, note, staffId: req.staff.id } })

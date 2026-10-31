@@ -1,13 +1,16 @@
 import { prisma } from '../../../shared/db.js'
 import { HttpError } from '../../../shared/lib/httpError.js'
+import { ALLERGY_SELECT, clashOf } from './allergies.js'
 
 // What every order response includes from the database
 export const ORDER_INCLUDE = {
     // For combined tables, the others of the group too (for the label)
     table: { select: { id: true, label: true, joined: { select: { label: true }, orderBy: { position: 'asc' } } } },
     openedBy: { select: { id: true, name: true } },
+    // Step 5.4: guests' allergies on this bill, by seat (null = whole table / take-out)
+    allergies: { select: ALLERGY_SELECT, orderBy: { seat: 'asc' } },
     items: {
-        select: { id: true, menuItemId: true, price: true, seat: true, status: true, createdAt: true, firedAt: true, round: true, held: true, toGo: true, kitchenFired: true, firedBy: { select: { name: true } }, startedAt: true, startedBy: { select: { name: true } }, sentOutAt: true, servedBy: { select: { name: true } }, remakeOfId: true, returns: { select: { kind: true, reason: true, note: true, createdAt: true, staff: { select: { name: true } } }, orderBy: { createdAt: 'asc' } }, menuItem: { select: { name: true, category: { select: { name: true } } } } },
+        select: { id: true, menuItemId: true, allergyConfirmed: true, allergySeenAt: true, allergySeenBy: { select: { name: true } }, price: true, seat: true, status: true, createdAt: true, firedAt: true, round: true, held: true, toGo: true, kitchenFired: true, firedBy: { select: { name: true } }, startedAt: true, startedBy: { select: { name: true } }, sentOutAt: true, servedBy: { select: { name: true } }, remakeOfId: true, returns: { select: { kind: true, reason: true, note: true, createdAt: true, staff: { select: { name: true } } }, orderBy: { createdAt: 'asc' } }, menuItem: { select: { name: true, allergens: true, category: { select: { name: true } } } } },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     },
 }
@@ -53,11 +56,13 @@ export function toOrderJson(order) {
         openedBy: order.openedBy,
         openedAt: order.openedAt,
         closedAt: order.closedAt,
+        // allergies: [{ seat (null = whole table / take-out), allergens, note, notedBy }]
+        allergies: order.allergies.map(({ notedBy, ...row }) => ({ ...row, notedBy: notedBy.name })),
         // `category` lets the waiter hold a whole course ("Hold Mains")
         // `firedBy` = who sent it ("Avi"); kitchenFired = the kitchen fired it from on hold
         // startedBy / servedBy: who in the kitchen started and served it
         // returned: why it came back ({ reason, note, by, at }), or null; remakeOfId: a free remake
-        items: order.items.map(({ menuItem, firedBy, startedBy, servedBy, returns, ...item }) => ({
+        items: order.items.map(({ menuItem, firedBy, startedBy, servedBy, returns, allergySeenBy, ...item }) => ({
             ...item,
             // returned: why it came back or was wasted ({ kind: RETURN | WASTE, reason, note, by, at }), or null
             returned: lossRecord(returns.find((row) => row.kind !== 'FIX')),
@@ -68,6 +73,11 @@ export function toOrderJson(order) {
             servedBy: servedBy?.name ?? null,
             name: menuItem.name,
             category: menuItem.category.name,
+            // Step 5.4: what's in it, and what of that someone at its seat is
+            // allergic to (clash; allergyConfirmed = the waiter added it anyway)
+            allergens: menuItem.allergens,
+            clash: clashOf(menuItem.allergens, order.allergies, item.seat),
+            allergySeenBy: allergySeenBy?.name ?? null,
         })),
         total: billTotal(order.items),
     }
