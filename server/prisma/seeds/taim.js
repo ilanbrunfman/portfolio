@@ -1,13 +1,13 @@
 // Ta'im demo data: one staff member per role (the people on the
 // "Who are you?" screen), a small menu and 8 tables; a busy evening right
 // now (tables dining, tickets in the kitchen – waiting, started, held, to
-// go, a remake, a fix – and a take-out); and eight weeks of history (closed
+// go, a remake, a fix – and a take-out); and 13 weeks of history (closed
 // bills, dishes that came back, waste and fixes, each night closed as a
 // business day) so Bills and Losses have something to show. Prices are
 // cents. The history is random but the same on every run (fixed seed).
-// Step 3.1: three menu versions – Summer (archived), Autumn (the menu in
-// use, MENU below) and a Winter draft – and each day of history is ordered
-// from the menu that was in use that day.
+// Step 3.1: four menu versions – Spring and Summer (archived), Autumn (the
+// menu in use, MENU below) and a Winter draft – and each day of history is
+// ordered from the menu that was in use that day.
 //
 // ⚠ Wipes all Ta'im rows first.
 
@@ -62,6 +62,17 @@ const SUMMER = MENU.map(([category, items]) => [
             })),
     ],
 ])
+// Spring (before Summer): a fava bean salad instead of the watermelon one,
+// and shakshuka and sabich a little cheaper
+const SPRING = SUMMER.map(([category, items]) => [
+    category,
+    [
+        ...(category === 'Starters' ? [{ name: 'Fava bean salad', price: 950, prepMinutes: 5, description: 'Fava beans, lemon, dill' }] : []),
+        ...items
+            .filter((item) => item.name !== 'Watermelon salad')
+            .map((item) => ({ ...item, price: { Shakshuka: 1250, Sabich: 1100 }[item.name] ?? item.price })),
+    ],
+])
 // Winter (the Chef's draft): lentil soup, and mint tea goes up
 const WINTER = MENU.map(([category, items]) => [
     category,
@@ -70,6 +81,7 @@ const WINTER = MENU.map(([category, items]) => [
         ...items.map((item) => ({ ...item, price: item.name === 'Mint tea' ? 450 : item.price })),
     ],
 ])
+const SUMMER_DAYS_AGO = 56 // Summer started 8 weeks ago (Spring ran before it)
 const AUTUMN_DAYS_AGO = 21 // Autumn has been the menu in use for three weeks
 
 // label, seats – in floor order
@@ -154,7 +166,7 @@ function random(seed) {
     }
 }
 
-const HISTORY_DAYS = 56
+const HISTORY_DAYS = 91 // 13 weeks: Spring's 5 weeks, Summer's 5, Autumn's 3
 const TAKEOUT_NAMES = ['Maya', 'Omer', 'Tzlil', 'Ben', 'Chen', 'Yael', 'Itay', 'Noga', 'Amit', 'Shira']
 const RETURN_REASONS = ['COLD', 'COLD', 'TASTE', 'TASTE', 'UNDERCOOKED', 'WRONG_DISH', 'TOO_SLOW', 'OTHER']
 const RETURN_NOTES = { COLD: 'lukewarm', TASTE: 'too salty', UNDERCOOKED: 'pink inside', WRONG_DISH: 'ordered the sabich', TOO_SLOW: null, OTHER: null }
@@ -172,21 +184,27 @@ export async function seedTaim(prisma) {
     const { zonedTime, restaurantToday } = await import('../../src/projects/taim/services/days.js')
     const today = restaurantToday()
     const daysAgo = (days, hour = 11) => zonedTime(today.year, today.month, today.day - days, hour, 0)
-    const summerFrom = daysAgo(HISTORY_DAYS)
+    const springFrom = daysAgo(HISTORY_DAYS)
+    const summerFrom = daysAgo(SUMMER_DAYS_AGO)
     const autumnFrom = daysAgo(AUTUMN_DAYS_AGO)
     const keys = new Map() // dish name → dishKey, shared by every version
+    const spring = await createVersion(prisma, keys, SPRING, {
+        number: 1, name: 'Spring menu', season: 'Spring', note: 'Fresh greens and fava beans',
+        status: 'ARCHIVED', createdById: staffId.Noa, createdAt: daysAgo(HISTORY_DAYS + 5), publishedById: staffId.Avi, publishedAt: daysAgo(HISTORY_DAYS + 2),
+        activeFrom: springFrom, activeTo: summerFrom,
+    })
     const summer = await createVersion(prisma, keys, SUMMER, {
-        number: 1, name: 'Summer menu', season: 'Summer', note: 'Light dishes for the hot months',
-        status: 'ARCHIVED', createdById: staffId.Avi, createdAt: daysAgo(HISTORY_DAYS + 3), publishedById: staffId.Avi, publishedAt: daysAgo(HISTORY_DAYS + 1),
+        number: 2, name: 'Summer menu', season: 'Summer', note: 'Light dishes for the hot months',
+        status: 'ARCHIVED', basedOnId: spring.id, createdById: staffId.Avi, createdAt: daysAgo(SUMMER_DAYS_AGO + 3), publishedById: staffId.Avi, publishedAt: daysAgo(SUMMER_DAYS_AGO + 1),
         activeFrom: summerFrom, activeTo: autumnFrom,
     })
     const autumn = await createVersion(prisma, keys, MENU, {
-        number: 2, name: 'Autumn menu', season: 'Autumn', note: 'Knafeh and kebab are back',
+        number: 3, name: 'Autumn menu', season: 'Autumn', note: 'Knafeh and kebab are back',
         status: 'ACTIVE', basedOnId: summer.id, createdById: staffId.Avi, createdAt: daysAgo(AUTUMN_DAYS_AGO + 4), publishedById: staffId.Avi, publishedAt: daysAgo(AUTUMN_DAYS_AGO + 2),
         activeFrom: autumnFrom,
     })
     await createVersion(prisma, keys, WINTER, {
-        number: 3, name: 'Winter menu', season: 'Winter', note: 'Soup season', status: 'DRAFT', basedOnId: autumn.id, createdById: staffId.Avi, createdAt: daysAgo(2, 16),
+        number: 4, name: 'Winter menu', season: 'Winter', note: 'Soup season', status: 'DRAFT', basedOnId: autumn.id, createdById: staffId.Avi, createdAt: daysAgo(2, 16),
     })
     const dishCount = MENU.reduce((sum, [, items]) => sum + items.length, 0)
 
@@ -200,11 +218,11 @@ export async function seedTaim(prisma) {
     const dish = await dishesOf(autumn)
 
     // Each day of history from the menu in use that day
-    const history = await seedHistory(prisma, { staffId, tables, menuOn: { summer: await dishesOf(summer), autumn: dish } })
+    const history = await seedHistory(prisma, { staffId, tables, menuOn: { spring: await dishesOf(spring), summer: await dishesOf(summer), autumn: dish } })
     await seedNow(prisma, { staffId, tableId, dish })
 
     console.log(
-        `Ta'im: ${STAFF.length} staff (${STAFF.map((s) => s.name).join(', ')}), 3 menu versions (Summer, Autumn in use, a Winter draft), ${MENU.length} categories, ${dishCount} dishes, ${TABLES.length} tables, ` +
+        `Ta'im: ${STAFF.length} staff (${STAFF.map((s) => s.name).join(', ')}), 4 menu versions (Spring, Summer, Autumn in use, a Winter draft), ${MENU.length} categories, ${dishCount} dishes, ${TABLES.length} tables, ` +
             `${NOW.length} open orders, ${history.bills} past bills in ${history.days} closed days (${history.returns} returns, ${history.waste} waste, ${history.fixes} fixes)`
     )
 }
@@ -299,8 +317,8 @@ async function seedHistory(prisma, { staffId, tables, menuOn }) {
         const at = (hour, minute = 0, nextDay = 0) => zonedTime(today.year, today.month, today.day - daysAgo + nextDay, hour, minute)
         const weekday = (today.weekday - (daysAgo % 7) + 7) % 7
         const weekend = [4, 5, 6].includes(weekday) // Thu, Fri, Sat
-        // The menu that was in use: Summer until Autumn started
-        const dish = daysAgo > AUTUMN_DAYS_AGO ? menuOn.summer : menuOn.autumn
+        // The menu that was in use that day: Spring, then Summer, then Autumn
+        const dish = daysAgo > SUMMER_DAYS_AGO ? menuOn.spring : daysAgo > AUTUMN_DAYS_AGO ? menuOn.summer : menuOn.autumn
         const dishes = Object.values(dish).filter((d) => !d.hidden)
         const mains = dishes.filter((d) => d.prepMinutes >= 8)
         const bills = Math.round((weekend ? 12 : 7) + rand() * 6)

@@ -76,14 +76,15 @@ daily spending, and transfers (monthly savings, ATM withdrawals, credit card
 payments). It uses a fixed random seed, so every run gives the same data.
 
 **Ta'im** (`seeds/taim.js`): one staff member per role: Noa (Manager),
-Avi (Chef), Yossi (Cook), Dana (Host), Lior (Waiter); three menu
-versions: the Summer menu (in use from 8 weeks ago to 3 weeks ago), the
+Avi (Chef), Yossi (Cook), Dana (Host), Lior (Waiter); four menu
+versions: the Spring menu (13 to 8 weeks ago), the Summer menu (8 to 3
+weeks ago), the
 Autumn menu in use now (4 categories, 13 dishes with prep times; Schnitzel
 starts sold out) and a Winter draft by Avi (lentil soup, dearer mint tea); 8
 tables (T1–T8). A busy evening right now: 4 tables dining and a take-out,
 with kitchen tickets waiting, started, on hold, to go, a remake (a cold
 shakshuka) and a fix (a kebab "medium, not rare"); T3 needs cleaning.
-And 8 weeks of history: closed bills every day (more Thursday to
+And 13 weeks of history: closed bills every day (more Thursday to
 Saturday), some dishes coming back (remade or not), fixed, dropped or
 redone, and each night closed as a business day through the app's own
 close-the-day code (now and then automatically at 04:00). Fixed random

@@ -147,8 +147,8 @@ PostgreSQL schema next to the bank's.
 Same setup as the bank tracker above (Docker, `npm run db:migrate`,
 `npm run db:seed`), then open the app + `/taim`. The seed gives a busy
 evening (tables dining, tickets waiting, started, on hold, to go, a remake
-and a fix), eight weeks of history for Bills and Losses, and three menus
-(Summer, Autumn in use, a Winter draft). Pick **Lior**
+and a fix), 13 weeks of history for Bills and Losses, and four menus
+(Spring, Summer, Autumn in use, a Winter draft). Pick **Lior**
 (Waiter) for the floor and orders, **Yossi** (Cook) for the kitchen, or
 **Noa** (Manager) for everything.
 
