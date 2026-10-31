@@ -339,6 +339,8 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | GET | `/api/taim/kitchen` | | `tickets`: one per send (table round or take-out), oldest first, with the dishes still cooking (`name`, `seat`, `prepMinutes`); `recentlyServed`: dishes served in the last 10 minutes |
 | POST | `/api/taim/order-items/:id/serve` | | 204, the dish is out of the kitchen (`advanceDish`; 409 unless it's being prepared) |
 | POST | `/api/taim/order-items/:id/unserve` | | 204, served by mistake: back to the kitchen (409 unless it was served) |
+| PUT | `/api/taim/orders/:id/allergies` | `{ seat, allergens, note }` | The order; a guest's allergy on the bill: a seat, or `seat: null` = the whole table / take-out (one row each); no allergens and no note removes it. Dishes still cooking need Seen again. Same right as adding dishes |
+| POST | `/api/taim/orders/:id/rounds/:round/allergy-seen` | | 204, the kitchen saw the ticket's allergies (`advanceDish`); Start and Served refuse (409) until then |
 
 `rights` and `screens` are the role's entries from `roles.js`, so the
 client can show only the screens that person may use.
@@ -355,6 +357,20 @@ Each dish has a `position` in its category (1 = top). Adding a dish shifts
 the others down one and takes position 1, in one transaction; saving a new
 order after a drag rewrites every position of that category in one
 transaction, so a half-saved order can't happen.
+
+**Allergies (step 5.4).** Each dish lists its allergens (gluten, dairy,
+egg, peanuts, tree nuts, sesame, fish, shellfish, soy), set by the Chef;
+unlike prices they can be fixed on the menu in use. A guest's allergy is
+noted on the bill (`seat_allergies`: a seat, or the whole table /
+take-out; kept with that bill only, never linked to a person). Adding or
+moving a dish that clashes (its allergens ∩ its seat's and the whole
+table's allergies; a shared dish counts everyone's) answers 409 unless the
+waiter sends `allergyConfirmed` ("the kitchen will adapt it"). A kitchen
+ticket shows the allergies of its seats, and Start / Served refuse until a
+cook taps Seen; changing the allergies while it cooks asks again. A dish
+that came back for an allergy needs a note. The database keeps one row per
+seat per bill (a unique index with `NULLS NOT DISTINCT`, so there is one
+whole-table row too) and refuses an empty allergy (a `CHECK`).
 
 **Menu versions.** The menu guests order from is one `ACTIVE` version.
 Changes go into a `DRAFT`: a copy of it (`POST /menu/versions`), where

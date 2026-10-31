@@ -130,6 +130,10 @@ PostgreSQL schema next to the bank's.
   year (a week grouped by day, a month by week, a year by month). The manager or chef closes the day (refused while bills are open),
   which saves a report and locks its bills; if nobody does, the server
   closes it at 04:00 restaurant time.
+- **Allergies:** dishes list their allergens; the waiter notes a guest's
+  allergy on a seat; a dish that clashes is flagged and needs the waiter's
+  OK; the kitchen ticket shows a red ALLERGY box and can't start until a
+  cook taps *Seen*.
 - **Losses:** money lost per month, by reason and by dish – returns, waste,
   and fixes (which cost nothing but are counted).
 - **Menu versions:** the Chef or Manager changes a draft copy of the menu

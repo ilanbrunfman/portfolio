@@ -59,7 +59,7 @@ async function dishesByVersion(ids) {
     const dishes = await prisma.menuItem.findMany({
         where: { versionId: { in: ids } },
         orderBy: [{ position: 'asc' }, { id: 'asc' }],
-        select: { versionId: true, dishKey: true, name: true, price: true, prepMinutes: true, description: true, category: { select: { name: true } } },
+        select: { versionId: true, dishKey: true, name: true, price: true, prepMinutes: true, description: true, allergens: true, category: { select: { name: true } } },
     })
     const byVersion = new Map(ids.map((id) => [id, []]))
     for (const dish of dishes) byVersion.get(dish.versionId).push({ ...dish, category: dish.category.name })
@@ -113,7 +113,7 @@ router.get('/menu/versions/:id', allow('editMenu'), validate({ params: idParams 
                     position: true,
                     items: {
                         orderBy: [{ position: 'asc' }, { id: 'asc' }],
-                        select: { id: true, categoryId: true, name: true, description: true, price: true, prepMinutes: true, hidden: true, position: true },
+                        select: { id: true, categoryId: true, name: true, description: true, price: true, prepMinutes: true, hidden: true, allergens: true, position: true },
                     },
                 },
             },

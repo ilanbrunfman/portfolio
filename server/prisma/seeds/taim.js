@@ -20,23 +20,24 @@ export const STAFF = [
 ]
 
 // Category → its dishes, in menu order, with prep times in minutes.
-// Schnitzel starts sold out (hidden).
+// Schnitzel starts sold out (hidden). Allergens (step 5.4) as on a real menu:
+// the pita has gluten, tahini is sesame, malabi's pistachio is a tree nut.
 export const MENU = [
     ['Starters', [
-        { name: 'Hummus with pita', price: 900, prepMinutes: 5, description: 'Tahini, olive oil, warm pita' },
+        { name: 'Hummus with pita', price: 900, prepMinutes: 5, description: 'Tahini, olive oil, warm pita', allergens: ['GLUTEN', 'SESAME'] },
         { name: 'Israeli salad', price: 800, prepMinutes: 5, description: 'Cucumber, tomato, onion, lemon' },
-        { name: 'Baba ghanoush', price: 900, prepMinutes: 6, description: 'Smoked eggplant, tahini' },
+        { name: 'Baba ghanoush', price: 900, prepMinutes: 6, description: 'Smoked eggplant, tahini', allergens: ['SESAME'] },
     ]],
     ['Mains', [
-        { name: 'Shakshuka', price: 1400, prepMinutes: 12, description: 'Eggs in spiced tomato sauce, bread' },
-        { name: 'Sabich', price: 1200, prepMinutes: 8, description: 'Fried eggplant, egg, amba in pita' },
-        { name: 'Falafel plate', price: 1300, prepMinutes: 10, description: 'Falafel, hummus, salad, pita' },
+        { name: 'Shakshuka', price: 1400, prepMinutes: 12, description: 'Eggs in spiced tomato sauce, bread', allergens: ['GLUTEN', 'EGG'] },
+        { name: 'Sabich', price: 1200, prepMinutes: 8, description: 'Fried eggplant, egg, amba in pita', allergens: ['GLUTEN', 'EGG', 'SESAME'] },
+        { name: 'Falafel plate', price: 1300, prepMinutes: 10, description: 'Falafel, hummus, salad, pita', allergens: ['GLUTEN', 'SESAME'] },
         { name: 'Kebab', price: 1700, prepMinutes: 15, description: 'Grilled lamb and beef, rice' },
-        { name: 'Schnitzel', price: 1800, prepMinutes: 14, description: 'Chicken schnitzel, fries', hidden: true },
+        { name: 'Schnitzel', price: 1800, prepMinutes: 14, description: 'Chicken schnitzel, fries', hidden: true, allergens: ['GLUTEN', 'EGG'] },
     ]],
     ['Desserts', [
-        { name: 'Malabi', price: 700, prepMinutes: 3, description: 'Rose milk pudding, pistachio' },
-        { name: 'Knafeh', price: 900, prepMinutes: 8, description: 'Warm cheese pastry, syrup' },
+        { name: 'Malabi', price: 700, prepMinutes: 3, description: 'Rose milk pudding, pistachio', allergens: ['DAIRY', 'TREE_NUTS'] },
+        { name: 'Knafeh', price: 900, prepMinutes: 8, description: 'Warm cheese pastry, syrup', allergens: ['GLUTEN', 'DAIRY', 'TREE_NUTS'] },
     ]],
     ['Drinks', [
         { name: 'Lemonana', price: 500, prepMinutes: 2, description: 'Lemon and mint, frozen' },
@@ -52,7 +53,7 @@ export const MENU = [
 const SUMMER = MENU.map(([category, items]) => [
     category,
     [
-        ...(category === 'Starters' ? [{ name: 'Watermelon salad', price: 1000, prepMinutes: 4, description: 'Watermelon, feta, mint' }] : []),
+        ...(category === 'Starters' ? [{ name: 'Watermelon salad', price: 1000, prepMinutes: 4, description: 'Watermelon, feta, mint', allergens: ['DAIRY'] }] : []),
         ...items
             .filter((item) => item.name !== 'Knafeh' && item.name !== 'Kebab')
             .map((item) => ({
@@ -105,21 +106,25 @@ const minutesAgo = (minutes) => new Date(Date.now() - minutes * 60_000)
  */
 const NOW = [
     {
+        // Seat 1 is coeliac: the shakshuka comes without bread (confirmed); the kitchen saw it
         where: 'T2', guests: 3, by: 'Lior', opened: 34,
+        allergies: [{ seat: 1, allergens: ['GLUTEN'], note: 'coeliac' }],
         dishes: [
-            ['Hummus with pita', { seat: null, round: 1, status: 'SERVED', sent: 32 }],
+            ['Hummus with pita', { seat: null, round: 1, status: 'SERVED', sent: 32, allergyConfirmed: true }],
             ['Lemonana', { seat: 3, round: 1, status: 'SERVED', sent: 32 }],
-            ['Shakshuka', { seat: 1, round: 2, status: 'COOKING', sent: 14 }],
+            ['Shakshuka', { seat: 1, round: 2, status: 'COOKING', sent: 14, allergyConfirmed: true }],
             ['Sabich', { seat: 2, round: 2, status: 'SERVED', sent: 14 }],
             ['Kebab', { seat: 3, status: 'HELD' }],
         ],
     },
     {
+        // Seat 3 is allergic to sesame: falafel without tahini (confirmed); the kitchen hasn't tapped Seen yet
         where: 'T5', guests: 6, by: 'Lior', opened: 12,
+        allergies: [{ seat: 3, allergens: ['SESAME'], note: 'severe – no tahini at all' }],
         dishes: [
             ['Kebab', { seat: 1, round: 1, status: 'WAITING', sent: 6 }],
             ['Sabich', { seat: 2, round: 1, status: 'WAITING', sent: 6 }],
-            ['Falafel plate', { seat: 3, round: 1, status: 'WAITING', sent: 6 }],
+            ['Falafel plate', { seat: 3, round: 1, status: 'WAITING', sent: 6, allergyConfirmed: true }],
             ['Mint tea', { seat: 4, round: 1, status: 'WAITING', sent: 6 }],
             ['Mint tea', { seat: 5, round: 1, status: 'WAITING', sent: 6 }],
             ['Malabi', { seat: 6, status: 'NEW' }],
@@ -256,6 +261,7 @@ async function seedNow(prisma, { staffId, tableId, dish }) {
                 customerPhone: isTable ? null : order.phone ?? null,
                 openedById: staffId[order.by],
                 openedAt: minutesAgo(order.opened),
+                allergies: { create: (order.allergies ?? []).map((row) => ({ ...row, notedById: staffId[order.by] })) },
             },
         })
         for (const [name, d] of order.dishes) {
@@ -275,6 +281,11 @@ async function seedNow(prisma, { staffId, tableId, dish }) {
                     startedById: started ? staffId.Yossi : null,
                     sentOutAt: d.status === 'SERVED' ? new Date(sentAt.getTime() + (dish[name].prepMinutes ?? 5) * 60_000) : null,
                     servedById: d.status === 'SERVED' ? staffId.Yossi : null,
+                    // Step 5.4: added despite the allergy (confirmed); a started or served dish of a bill
+                    // with allergies was seen by the kitchen first
+                    allergyConfirmed: Boolean(d.allergyConfirmed),
+                    allergySeenAt: started && order.allergies ? new Date(sentAt.getTime() + 30_000) : null,
+                    allergySeenById: started && order.allergies ? staffId.Avi : null,
                 },
             })
             if (d.cameBack) {

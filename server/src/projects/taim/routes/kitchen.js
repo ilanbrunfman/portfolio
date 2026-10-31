@@ -7,6 +7,7 @@ import { idParams } from '../../../shared/schemas/common.js'
 import { allow } from '../middleware/staff.js'
 import { TITLE_SELECT, titleOf } from '../services/orders.js'
 import { redo } from '../schemas/floor.js'
+import { ALLERGY_SELECT, clashOf, requireAllergySeen, ticketAllergies } from '../services/allergies.js'
 
 // The kitchen: what's waiting to be cooked, and marking dishes served.
 // Reading is open to everyone picked (the Manager looks, view only);
@@ -59,7 +60,7 @@ router.get('/kitchen', async (req, res) => {
     const [cooking, held, served, heldOrders, returned] = await Promise.all([
         prisma.orderItem.findMany({
             where: { status: 'PREPARING', order: { status: 'OPEN' } },
-            select: { id: true, seat: true, toGo: true, round: true, firedAt: true, startedAt: true, startedBy: { select: { name: true } }, orderId: true, menuItem: { select: { name: true, prepMinutes: true } }, order: { select: ORDER_SELECT }, menuItemId: true, returns: { where: { kind: 'FIX' }, select: { reason: true, note: true }, orderBy: { createdAt: 'desc' }, take: 1 }, remakeOf: { select: { menuItemId: true, menuItem: { select: { name: true } }, returns: { where: { kind: 'RETURN' }, select: { reason: true } } } } },
+            select: { id: true, seat: true, toGo: true, round: true, firedAt: true, startedAt: true, startedBy: { select: { name: true } }, allergySeenAt: true, allergySeenBy: { select: { name: true } }, allergyConfirmed: true, orderId: true, menuItem: { select: { name: true, prepMinutes: true, allergens: true } }, order: { select: { ...ORDER_SELECT, allergies: { select: ALLERGY_SELECT, orderBy: { seat: 'asc' } } } }, menuItemId: true, returns: { where: { kind: 'FIX' }, select: { reason: true, note: true }, orderBy: { createdAt: 'desc' }, take: 1 }, remakeOf: { select: { menuItemId: true, menuItem: { select: { name: true } }, returns: { where: { kind: 'RETURN' }, select: { reason: true } } } } },
             orderBy: [{ firedAt: 'asc' }, { id: 'asc' }],
         }),
         prisma.orderItem.findMany({
@@ -109,10 +110,15 @@ router.get('/kitchen', async (req, res) => {
                 startedBy: null,
                 remake: false, // a remake ticket: do it first
                 fix: false, // a plate sent back to be fixed: do it first
+                // step 5.4: the bill's allergies (the ticket keeps the ones for its seats, below)
+                orderAllergies: item.order.allergies,
+                allergySeen: { at: null, by: null, all: true }, // every dish seen?
                 dishes: [],
             })
         }
         const ticket = tickets.get(key)
+        if (!item.allergySeenAt) ticket.allergySeen.all = false
+        else if (!ticket.allergySeen.at || item.allergySeenAt > ticket.allergySeen.at) ticket.allergySeen = { ...ticket.allergySeen, at: item.allergySeenAt, by: item.allergySeenBy?.name ?? null }
         if (item.remakeOf) ticket.remake = true
         if (item.returns.length > 0) ticket.fix = true
         if (item.startedAt && (!ticket.startedAt || item.startedAt < ticket.startedAt)) {
@@ -120,10 +126,19 @@ router.get('/kitchen', async (req, res) => {
             ticket.startedBy = item.startedBy?.name ?? null
         }
         // toGo: pack it, the guest takes it home; startedAt: its prep time counts from then
-        ticket.dishes.push({ id: item.id, name: item.menuItem.name, seat: item.seat, toGo: item.toGo, startedAt: item.startedAt, prepMinutes: item.menuItem.prepMinutes, remake: item.remakeOf ? remakeInfo(item) : null, fix: item.returns[0] ?? null })
+        // clash: what in it someone at its seat is allergic to (allergyConfirmed: the waiter added it anyway)
+        ticket.dishes.push({ id: item.id, name: item.menuItem.name, seat: item.seat, toGo: item.toGo, startedAt: item.startedAt, prepMinutes: item.menuItem.prepMinutes, remake: item.remakeOf ? remakeInfo(item) : null, fix: item.returns[0] ?? null, clash: clashOf(item.menuItem.allergens, item.order.allergies, item.seat) })
     }
     const bySeat = (a, b) => (a.seat ?? Infinity) - (b.seat ?? Infinity) || a.id - b.id
-    for (const ticket of tickets.values()) ticket.dishes.sort(bySeat)
+    for (const ticket of tickets.values()) {
+        ticket.dishes.sort(bySeat)
+        // Step 5.4: the allergies for this ticket's seats; allergySeen = who
+        // tapped Seen and when, or null while it still needs a tap
+        const { orderAllergies, allergySeen } = ticket
+        delete ticket.orderAllergies
+        ticket.allergies = ticketAllergies(orderAllergies, ticket.dishes).map(({ notedBy, ...row }) => row)
+        ticket.allergySeen = ticket.allergies.length > 0 && allergySeen.all ? { at: allergySeen.at, by: allergySeen.by } : null
+    }
 
     const onHold = new Map()
     for (const item of held) {
@@ -219,6 +234,8 @@ router.post('/orders/:id/kitchen-fire', allow('fireHeld'), validate({ params: id
 // their prep times count from now. Already started: 409.
 router.post('/orders/:id/rounds/:round/start', allow('advanceDish'), validate({ params: roundParams }), async (req, res) => {
     const { id, round } = req.valid.params
+    // An allergy on the ticket must be seen first (step 5.4)
+    await requireAllergySeen(prisma, id, round)
     const { count } = await prisma.orderItem.updateMany({
         where: { orderId: id, round, status: 'PREPARING', startedAt: null, order: { status: 'OPEN' } },
         data: { startedAt: new Date(), startedById: req.staff.id },
@@ -230,6 +247,19 @@ router.post('/orders/:id/rounds/:round/start', allow('advanceDish'), validate({ 
     res.status(204).end()
 })
 
+// POST /api/taim/orders/:id/rounds/:round/allergy-seen (advanceDish: Chef,
+// Cook) – the kitchen saw the allergies on this ticket: its dishes still in
+// the kitchen record when and who. Then it can start (step 5.4).
+router.post('/orders/:id/rounds/:round/allergy-seen', allow('advanceDish'), validate({ params: roundParams }), async (req, res) => {
+    const { id, round } = req.valid.params
+    const { count } = await prisma.orderItem.updateMany({
+        where: { orderId: id, round, status: 'PREPARING', order: { status: 'OPEN' } },
+        data: { allergySeenAt: new Date(), allergySeenById: req.staff.id },
+    })
+    if (count === 0) throw new HttpError(404, 'No ticket in the kitchen for this round')
+    res.status(204).end()
+})
+
 // POST /api/taim/order-items/:id/serve – the dish is out of the kitchen,
 // served by whoever tapped it. Never started (a drink, something quick)?
 // Then it started now too.
@@ -237,6 +267,9 @@ router.post('/order-items/:id/serve', allow('advanceDish'), validate({ params: i
     const { id } = req.valid.params
     const now = new Date()
     await prisma.$transaction(async (tx) => {
+        // An allergy on its ticket must be seen first (step 5.4)
+        const dish = await tx.orderItem.findUnique({ where: { id }, select: { orderId: true, round: true, status: true } })
+        if (dish?.status === 'PREPARING') await requireAllergySeen(tx, dish.orderId, dish.round)
         await moveDish(tx, id, 'PREPARING', { status: 'SENT_OUT', sentOutAt: now, servedById: req.staff.id }, 'Only a dish in the kitchen can be marked served')
         await tx.orderItem.updateMany({ where: { id, startedAt: null }, data: { startedAt: now, startedById: req.staff.id } })
     })

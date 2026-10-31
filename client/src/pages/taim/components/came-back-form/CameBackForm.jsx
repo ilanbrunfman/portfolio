@@ -48,7 +48,8 @@ const CameBackForm = ({ item, menu, onSubmit, onCancel }) => {
 
     const categories = menu.filter((category) => category.items.length > 0)
     const given = next === 'remake' ? item : next === 'another' ? another : null
-    const ready = reason && next && (next !== 'another' || another)
+    // An allergy needs a note saying what happened (step 5.4)
+    const ready = reason && next && (next !== 'another' || another) && (reason !== 'ALLERGY' || note.trim())
 
     const submit = async (e) => {
         e.preventDefault()
@@ -72,7 +73,14 @@ const CameBackForm = ({ item, menu, onSubmit, onCancel }) => {
     return (
         <form className="came-back-form d-flex flex-column gap-1" onSubmit={submit} noValidate>
             <RadioGroup label="Why did it come back?" options={RETURN_REASONS} value={reason} onChange={setReason} direction="row" className="came-back-form__reasons" />
-            <Input label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder="e.g. medium, not rare · more salt · lukewarm" />
+            <Input
+                label={reason === 'ALLERGY' ? 'What happened (required)' : 'Note (optional)'}
+                hint={reason === 'ALLERGY' ? 'The allergy, and how the guest is. The Manager sees it in Losses.' : undefined}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                maxLength={200}
+                placeholder={reason === 'ALLERGY' ? 'e.g. sesame in the dressing, guest is fine' : 'e.g. medium, not rare · more salt · lukewarm'}
+            />
             <RadioGroup label="What now?" options={NEXT} value={next} onChange={(value) => { setNext(value); setSendNow(true) }} direction="row" />
 
             {next === 'another' && (

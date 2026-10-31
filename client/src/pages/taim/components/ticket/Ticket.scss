@@ -94,6 +94,7 @@
         font-size: 0.72rem;
         font-weight: 600;
         vertical-align: 0.1em;
+        white-space: nowrap;
     }
 
     &__lines {
@@ -235,5 +236,35 @@
             border-color: #1b8a5b;
             background: #1b8a5b;
         }
+    }
+
+    // Step 5.4: the bill's allergies, red, under the title
+    &__allergies {
+        margin: 0;
+        padding: 0.5rem 0.75rem;
+        list-style: none;
+        border: 1px solid rgba(229, 72, 77, 0.6);
+        border-radius: 10px;
+        background: rgba(229, 72, 77, 0.1);
+        color: var(--text-h);
+        font-size: 0.9rem;
+
+        strong {
+            color: #e5484d;
+        }
+    }
+
+    // A dish that clashes with an allergy
+    &__allergy-tag {
+        margin-left: 0.4rem;
+        padding: 0.05rem 0.45rem;
+        border-radius: 999px;
+        background: rgba(229, 72, 77, 0.15);
+        color: #e5484d;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        white-space: nowrap;
     }
 }

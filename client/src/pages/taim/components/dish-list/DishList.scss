@@ -123,4 +123,10 @@
             transition: none !important;
         }
     }
+
+    // "Contains gluten, sesame" (step 5.4)
+    &__allergens {
+        color: var(--accent);
+        font-size: 0.8rem;
+    }
 }

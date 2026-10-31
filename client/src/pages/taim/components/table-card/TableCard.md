@@ -54,3 +54,7 @@ $40.00", "T3, needs cleaning", "T1, ready, 2 seats".
 | `onClick`  | `() => void` | What a tap does (seat, mark clean, open the order, show the bill). |
 | `disabled` | `boolean`    | e.g. a free table for someone who can't seat guests. |
 | `selected` | `boolean`    | While combining: picked or not (leave out otherwise). |
+
+## Allergy (step 5.4)
+
+A red **Allergy** tag when the open bill has allergies noted (`order.allergies` > 0).

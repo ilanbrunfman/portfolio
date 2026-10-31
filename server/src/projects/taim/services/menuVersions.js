@@ -106,6 +106,7 @@ async function copyMenu(tx, fromId, toId, { soldOut = true } = {}) {
                 description: item.description,
                 price: item.price,
                 prepMinutes: item.prepMinutes,
+                allergens: item.allergens,
                 position: item.position,
                 hidden: soldOut ? item.hidden : false,
             })),
@@ -206,6 +207,8 @@ export function changesBetween(before, after) {
         for (const field of ['name', 'price', 'prepMinutes', 'description', 'category']) {
             if ((was[field] ?? null) !== (dish[field] ?? null)) fields[field] = { from: was[field] ?? null, to: dish[field] ?? null }
         }
+        // Allergens: a list, compared as a whole (the API keeps them in a fixed order)
+        if (dish.allergens && (was.allergens ?? []).join() !== dish.allergens.join()) fields.allergens = { from: was.allergens ?? [], to: dish.allergens }
         if (Object.keys(fields).length > 0) changes.push({ type: 'changed', name: dish.name, fields })
     }
     for (const dish of before) {

@@ -25,4 +25,14 @@
         color: #3b82f6;
         font-weight: 600;
     }
+
+    // An allergy clash on this dish (step 5.4)
+    &__allergy {
+        margin: 0;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid rgba(229, 72, 77, 0.6);
+        border-radius: 10px;
+        background: rgba(229, 72, 77, 0.1);
+        color: var(--text-h);
+    }
 }
