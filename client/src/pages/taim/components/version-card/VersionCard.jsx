@@ -17,10 +17,11 @@ import './VersionCard.scss'
  * @param {object} props.version     From GET /menu/versions (with stats and changes).
  * @param {{ label: string, tone: string }[]} props.tags
  * @param {string} [props.basedOnName]  The version it was based on, for "Changes from …".
+ * @param {() => void} [props.onView]     Open this version's dishes (read only).
  * @param {() => void} [props.onCompare]  Open the compare view (with the menu in use).
  * @param {() => Promise} [props.onUseAgain]  Make this older menu the menu in use again (asks once first).
  */
-const VersionCard = ({ version, tags, basedOnName, onCompare, onUseAgain }) => {
+const VersionCard = ({ version, tags, basedOnName, onView, onCompare, onUseAgain }) => {
     const { stats, changes } = version
     const [confirming, setConfirming] = useState(false)
     const [busy, setBusy] = useState(false)
@@ -94,7 +95,7 @@ const VersionCard = ({ version, tags, basedOnName, onCompare, onUseAgain }) => {
                 </div>
             )}
 
-            {(changes || onCompare) && (
+            {(changes || onView || onCompare) && (
                 <div className="d-flex flex-wrap align-items-start justify-between gap-0-5">
                     {changes && (
                         <Accordion className="version-card__changes">
@@ -103,7 +104,10 @@ const VersionCard = ({ version, tags, basedOnName, onCompare, onUseAgain }) => {
                             </Accordion.Item>
                         </Accordion>
                     )}
-                    {onCompare && <Button size="sm" variant="secondary" onClick={onCompare}>Compare with current</Button>}
+                    <span className="d-flex flex-wrap gap-0-5 ml-auto">
+                        {onView && <Button size="sm" variant="secondary" onClick={onView}>View dishes</Button>}
+                        {onCompare && <Button size="sm" variant="secondary" onClick={onCompare}>Compare with current</Button>}
+                    </span>
                 </div>
             )}
         </article>

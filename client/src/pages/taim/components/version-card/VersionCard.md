@@ -12,6 +12,7 @@ One menu version on **Menu → Versions**:
   bills paid for its dishes (not dishes that came back or were wasted, nor
   free ones).
 - Folded: what changed from the version it was based on (`VersionChanges`).
+- **View dishes** (when `onView` is given): the version's dishes, read only.
 - **Compare with current** (when `onCompare` is given).
 - **Use this menu again** (when `onUseAgain` is given: older menus, for
   Manager and Chef). Asks once, then the menu comes back as a new version
@@ -35,5 +36,6 @@ One menu version on **Menu → Versions**:
 | `version`     | `object`     | From `GET /api/taim/menu/versions` (with `stats`, `changes`, `dishCount`). |
 | `tags`        | `{ label, tone }[]` | From `versionTags()` in `utils/versions.js`. |
 | `basedOnName` | `string`     | Optional. Names the version in "N changes from …". |
+| `onView`      | `() => void` | Optional. Shows **View dishes**. |
 | `onCompare`   | `() => void` | Optional. Shows **Compare with current**. |
 | `onUseAgain`  | `() => Promise` | Optional. Shows **Use this menu again** with a confirm step; throws on failure. |
