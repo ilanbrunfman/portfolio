@@ -75,8 +75,10 @@ empties only its own tables first.
 daily spending, and transfers (monthly savings, ATM withdrawals, credit card
 payments). It uses a fixed random seed, so every run gives the same data.
 
-**Ta'im** (`seeds/taim.js`): one staff member per role: Noa (Manager),
-Avi (Chef), Yossi (Cook), Dana (Host), Lior (Waiter); four menu
+**Ta'im** (`seeds/taim.js`): one staff member per role, each with a demo
+PIN, phone, hourly rate and start date: Noa (Manager, 1111), Avi (Chef,
+2222), Yossi (Cook, 3333), Dana (Host, 4444), Lior (Waiter, 5555), and
+Tamar, a waiter who left; four menu
 versions: the Spring menu (13 to 8 weeks ago), the Summer menu (8 to 3
 weeks ago), the
 Autumn menu in use now (4 categories, 13 dishes with prep times; Schnitzel
@@ -145,7 +147,7 @@ src/
     routes/       health
     middleware/   validate() (checks requests against a schema), 404 + error handler
     schemas/      Zod pieces used everywhere (ids, cents)
-    lib/          HttpError, date helpers
+    lib/          HttpError, date helpers, password (and PIN) hashing
   projects/
     bank/         the bank tracker
       index.js    all bank routes as one router
@@ -153,7 +155,6 @@ src/
       schemas/    Zod schemas: what each endpoint accepts
       services/   database logic shared by routes (e.g. the ledger query)
       middleware/ requireAuth
-      lib/        password hashing
     taim/         Ta'im, the restaurant app
       index.js    all Ta'im routes as one router
       roles.js    who may do what: rights and screens per role
@@ -180,7 +181,7 @@ from `shared/` and from itself, so projects never depend on each other.
 Everything except `/api/health` and `/api/bank/auth/*` needs a login.
 
 - **Sign up / log in** with email + password. Passwords are hashed with
-  Node's built-in `scrypt` (`src/projects/bank/lib/password.js`); only the hash is stored.
+  Node's built-in `scrypt` (`src/shared/lib/password.js`, shared with Ta'im's PINs); only the hash is stored.
 - A login creates a **session**: the browser gets a random token in the
   `bank_session` cookie (`httpOnly`, so page scripts can't read it; `Secure`
   in production), and the `sessions` table stores only its SHA-256 hash.
@@ -269,13 +270,19 @@ curl -b /tmp/bank.cookies -X POST localhost:4000/api/bank/accounts \
 
 ## Ta'im: staff and roles
 
-Ta'im has no passwords: on the "Who are you?" screen you pick a staff
-member, and the `taim_staff` cookie (`httpOnly`, path `/api/taim`)
-remembers who. What that person may do depends on their **role**, and the
+On the "Who are you?" screen you tap your name and type your 4-digit PIN
+(step 8.1). PINs are hashed with scrypt (like the bank's passwords) and
+unique among the people working here; five wrong in a row lock that person
+for a minute (counted in the database, so it holds across devices). The
+right PIN starts a session: a random token in the `taim_session` cookie
+(`httpOnly`, path `/api/taim`, 14 hours), and only its SHA-256 hash in
+`staff_sessions`. The seed's people have demo PINs (1111 … 5555) that the
+picker shows, so visitors can try every role; a PIN the Manager sets
+replaces it. What that person may do depends on their **role**, and the
 server checks it on every request:
 
-- `requireStaff` (who are you?) loads the picked person onto `req.staff`,
-  or answers **401** if nobody was picked.
+- `requireStaff` (who are you?) loads the logged-in person onto
+  `req.staff`, or answers **401** (no session, expired, or they left).
 - `allow(right)` (may your role do this?) answers **403** if the role
   doesn't have that right.
 
@@ -295,13 +302,18 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | `seeLosses`: the losses summary | ✓ | ✓ | | | |
 | `cleanTable`: mark a table clean | ✓ | | | ✓ | ✓ |
 | `combineTables`: combine or split tables | ✓ | | | ✓ | |
+| `manageStaff`: the roster (people, roles, rates, PINs) | ✓ | | | | |
 
 | Method | Path | Body | Returns |
 |--------|------|------|---------|
-| GET | `/api/taim/staff` | | Everyone to pick from, Manager first: `[{ id, name, role }]` |
-| POST | `/api/taim/session` | `{ staffId }` | `{ staff, rights, screens }` + cookie (404 if no such person) |
-| GET | `/api/taim/session` | | The picked person: `{ staff, rights, screens }` (401 if nobody) |
-| DELETE | `/api/taim/session` | | 204, cookie cleared (switch person) |
+| GET | `/api/taim/staff` | | The people working here, Manager first: `[{ id, name, role, demoPin }]` |
+| POST | `/api/taim/session` | `{ staffId, pin }` | `{ staff, rights, screens }` + session cookie. Wrong PIN 401 (tries left), 5 in a row 429 for a minute, left 403, no PIN yet 409, no such person 404 |
+| GET | `/api/taim/session` | | The logged-in person: `{ staff, rights, screens }` (401 if nobody) |
+| DELETE | `/api/taim/session` | | 204, this device's session ended (switch person) |
+| GET | `/api/taim/roster` | | Everyone, working here first: role, phone, `hourlyRate` (cents), `startDate`, `active`, `hasPin`, `demoPin` (still in use), `lockedUntil` (`manageStaff`: Manager) |
+| POST | `/api/taim/roster` | `{ name, role, phone?, hourlyRate?, startDate?, pin }` | 201 + the person (409 if someone working here has that PIN) |
+| PATCH | `/api/taim/roster/:id` | any of those (not `pin`) + `active` | The person. `active: false` = they left: logged out everywhere. Not yourself; always one active Manager (409). Coming back clears the PIN |
+| PUT | `/api/taim/roster/:id/pin` | `{ pin }` | 204; their other sessions end, the demo PIN is gone, a lock is lifted |
 | GET | `/api/taim/menu` | | The menu in use: categories in menu order, each with its `items` in `position` order (hidden ones marked `hidden: true`) |
 | POST | `/api/taim/categories` | `{ name }` | 201, added at the end of the draft's menu (409 if the name exists, or if there's no draft) |
 | PATCH | `/api/taim/categories/:id` | `{ name }` | The renamed category (a draft category; 409 otherwise) |
@@ -430,6 +442,6 @@ dishes.
 ```bash
 curl localhost:4000/api/taim/staff
 curl -c /tmp/taim.cookies -H 'Content-Type: application/json' \
-  -d '{"staffId":3}' localhost:4000/api/taim/session
+  -d '{"staffId":3,"pin":"3333"}' localhost:4000/api/taim/session
 curl -b /tmp/taim.cookies localhost:4000/api/taim/session
 ```
