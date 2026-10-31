@@ -148,6 +148,49 @@
         white-space: nowrap;
     }
 
+    // Week / Month / Year: a section per day, week or month (shared Accordion)
+    &__groups {
+        box-sizing: border-box;
+        padding-block: 0.25rem;
+
+        > .accordion__item:first-child {
+            border-top: 0;
+        }
+
+        > .accordion__item > .accordion__header {
+            padding: 0.85rem 1rem;
+            line-height: 1.3;
+
+            &:hover {
+                background: transparent;
+            }
+        }
+
+        .accordion__title {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        // The bill rows sit a little in from the section header
+        .bills__list {
+            padding-inline: 1.25rem 1rem;
+            padding-bottom: 0.5rem;
+        }
+    }
+
+    &__group-name {
+        color: var(--text-h);
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    &__group-count {
+        color: var(--text);
+        font-size: 0.85rem;
+        font-weight: 400;
+        font-variant-numeric: tabular-nums;
+    }
+
     &__days {
         list-style: none;
         margin: 0;

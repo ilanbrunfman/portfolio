@@ -6,11 +6,13 @@ import { useOrder } from '@/pages/taim/hooks/useOrder'
 import Ticket from '@/pages/taim/components/ticket/Ticket'
 import DayReport from '@/pages/taim/components/day-report/DayReport'
 import Tabs from '@/components/ui/tabs/Tabs'
+import Accordion from '@/components/ui/accordion/Accordion'
 import RadioGroup from '@/components/ui/form/radio/RadioGroup'
 import Modal from '@/components/ui/modal/Modal'
 import Button from '@/components/ui/button/Button'
 import { formatMoney } from '@/pages/taim/utils/money'
 import { clockTime } from '@/pages/taim/utils/orders'
+import { groupBills } from '@/pages/taim/utils/billGroups'
 import './Bills.scss'
 
 const PERIODS = [
@@ -38,7 +40,8 @@ function periodText(period, since) {
  * /taim/bills – every bill of today (since the last close), this week,
  * month or year, for the Manager, Chef and Host: totals on top (sales of
  * closed bills, bills, average bill, guests), All / Open / Closed, and the
- * list. A tap on an open bill you may edit (the Manager; the Host for a
+ * list – on Week, Month and Year grouped in accordion sections by day, week
+ * and month (the newest one open). A tap on an open bill you may edit (the Manager; the Host for a
  * take-out) opens it on the Order screen; any other bill shows read-only. On "Day" the Manager and Chef
  * close the day: refused while bills are open; it saves the end-of-day
  * report and locks the day's bills. If nobody does, the server closes it at
@@ -95,14 +98,16 @@ const Bills = () => {
                                 </div>
                                 {bills.data.bills.length === 0 ? (
                                     <p className="form__hint">No {status === 'ALL' ? '' : `${status.toLowerCase()} `}bills in this period.</p>
-                                ) : (
+                                ) : period === 'today' ? (
                                     <ul className="bills__list surface">
                                         {bills.data.bills.map((bill) => (
                                             <li key={bill.id}>
-                                                <BillRow bill={bill} withDate={period !== 'today'} toOrder={editable(bill)} onOpen={() => openBill(bill)} />
+                                                <BillRow bill={bill} toOrder={editable(bill)} onOpen={() => openBill(bill)} />
                                             </li>
                                         ))}
                                     </ul>
+                                ) : (
+                                    <BillGroups key={`${period}-${status}`} bills={bills.data.bills} period={period} editable={editable} onOpen={openBill} />
                                 )}
                                 {bills.data.more > 0 && <p className="form__hint">…and {bills.data.more} older bills (in the totals).</p>}
                             </section>
@@ -160,6 +165,58 @@ const Totals = ({ totals }) => (
         </div>
     </dl>
 )
+
+/**
+ * The bills in accordion sections: a section per day (Week), week (Month)
+ * or month (Year), newest first, with its bills, sales and open bills in
+ * the header. The newest section starts open; a section's rows are drawn
+ * once it's opened (a year has hundreds of bills).
+ */
+const BillGroups = ({ bills, period, editable, onOpen }) => {
+    const groups = groupBills(bills, period)
+    const [openKeys, setOpenKeys] = useState(() => new Set(groups.length ? [groups[0].key] : []))
+    const [seen, setSeen] = useState(openKeys) // opened at least once: rows drawn
+    const toggle = (key, next) => {
+        setOpenKeys((keys) => {
+            const copy = new Set(keys)
+            if (next) copy.add(key)
+            else copy.delete(key)
+            return copy
+        })
+        if (next) setSeen((keys) => new Set(keys).add(key))
+    }
+
+    return (
+        <Accordion className="bills__groups surface">
+            {groups.map((group) => (
+                <Accordion.Item
+                    key={group.key}
+                    open={openKeys.has(group.key)}
+                    onToggle={(next) => toggle(group.key, next)}
+                    title={
+                        <span className="bills__group-title d-flex flex-wrap align-items-baseline gap-0-5">
+                            <span className="bills__group-name">{group.label}</span>
+                            <span className="bills__group-count">
+                                {group.count} {group.count === 1 ? 'bill' : 'bills'} · {formatMoney(group.sales)}
+                            </span>
+                            {group.open > 0 && <span className="bills__status is-open">{group.open} open</span>}
+                        </span>
+                    }
+                >
+                    {seen.has(group.key) && (
+                        <ul className="bills__list">
+                            {group.bills.map((bill) => (
+                                <li key={bill.id}>
+                                    <BillRow bill={bill} withDate={period !== 'week'} toOrder={editable(bill)} onOpen={() => onOpen(bill)} />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </Accordion.Item>
+            ))}
+        </Accordion>
+    )
+}
 
 /**
  * One bill in the list: title, status, times, who opened it, dishes, total.
