@@ -34,4 +34,5 @@ validates again and its messages appear under the matching input, e.g.
 | `categories` | `{ id, name }[]`           | Categories to pick from. |
 | `categoryId` | `number`                   | Optional pre-picked category for a new dish. |
 | `onSave`     | `(data) => Promise`        | Saves `{ categoryId, name, price, prepMinutes, description, hidden }`; throws with `err.fields` on failure. |
-| `onDone`     | `() => void`               | Called after a successful save, and on Cancel. |
+| `onDelete`   | `() => Promise`            | Optional. Shows **Remove dish** (asks once: "Yes, remove …"). Given only in the draft menu: dishes of the menu in use stay (bills point at them). |
+| `onDone`     | `() => void`               | Called after a successful save or removal, and on Cancel. |

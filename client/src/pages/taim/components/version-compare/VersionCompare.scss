@@ -1,0 +1,66 @@
+// Two menu versions side by side – visuals only
+.version-compare {
+    p {
+        margin: 0;
+    }
+
+    &__table {
+        width: 100%;
+        border-collapse: collapse;
+        font-variant-numeric: tabular-nums;
+
+        th,
+        td {
+            padding: 0.4rem 0.5rem;
+            border-bottom: 1px solid var(--border);
+            text-align: right;
+            vertical-align: bottom;
+        }
+
+        th:first-child {
+            text-align: left;
+            font-weight: 500;
+        }
+
+        td {
+            color: var(--text-h);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .is-better {
+            color: #30a46c;
+        }
+
+        .is-worse {
+            color: #e5484d;
+        }
+
+        // Tight on a phone
+        @media (max-width: 480px) {
+            font-size: 0.8rem;
+
+            th,
+            td {
+                padding-inline: 0.15rem;
+            }
+        }
+    }
+
+    &__name {
+        display: block;
+        color: var(--text-h);
+    }
+
+    &__period {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 400;
+    }
+
+    &__heading {
+        margin: 0;
+        color: var(--text-h);
+        font-size: 1rem;
+    }
+}

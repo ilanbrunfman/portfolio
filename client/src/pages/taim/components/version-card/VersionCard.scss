@@ -1,0 +1,107 @@
+// One menu version – visuals only (layout is utility classes in the markup)
+.version-card {
+    box-sizing: border-box;
+
+    p {
+        margin: 0;
+    }
+
+    // The menu in use stands out with the accent border
+    &.is-active {
+        border-color: var(--accent-border);
+        box-shadow: inset 3px 0 0 var(--accent);
+    }
+
+    &__number {
+        color: var(--text);
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__name {
+        margin: 0;
+        color: var(--text-h);
+        font-size: 1.1rem;
+    }
+
+    &__season {
+        color: var(--text);
+        font-size: 0.85rem;
+    }
+
+    &__period {
+        color: var(--text-h);
+        font-weight: 600;
+    }
+
+    &__note {
+        font-style: italic;
+    }
+
+    // Small round tags: Current, Draft, Scheduled, Best income, Last
+    &__tag {
+        padding: 0.05rem 0.55rem;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+
+        &.is-current {
+            border-color: var(--accent-border);
+            background: var(--accent-bg);
+            color: var(--accent);
+        }
+
+        &.is-draft {
+            border-style: dashed;
+        }
+
+        &.is-best {
+            border-color: rgba(48, 164, 108, 0.5);
+            background: rgba(48, 164, 108, 0.12);
+            color: #30a46c;
+        }
+    }
+
+    // Four figures side by side, two per row on a phone
+    &__figures {
+        margin: 0;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.5rem;
+
+        @media (max-width: 480px) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        dt {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        dd {
+            margin: 0;
+            color: var(--text-h);
+            font-size: 1.05rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    // The folded change list: no frame of its own inside the card
+    &__changes {
+        flex: 1 1 16rem;
+
+        > .accordion__item {
+            border: 0;
+        }
+
+        > .accordion__item > .accordion__header {
+            padding: 0.25rem 0;
+            font-size: 0.92rem;
+        }
+    }
+}
