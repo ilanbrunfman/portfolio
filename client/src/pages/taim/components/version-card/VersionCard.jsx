@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import Accordion from '@/components/ui/accordion/Accordion'
 import Button from '@/components/ui/button/Button'
 import VersionChanges from '@/pages/taim/components/version-changes/VersionChanges'
@@ -17,9 +18,25 @@ import './VersionCard.scss'
  * @param {{ label: string, tone: string }[]} props.tags
  * @param {string} [props.basedOnName]  The version it was based on, for "Changes from …".
  * @param {() => void} [props.onCompare]  Open the compare view (with the menu in use).
+ * @param {() => Promise} [props.onUseAgain]  Make this older menu the menu in use again (asks once first).
  */
-const VersionCard = ({ version, tags, basedOnName, onCompare }) => {
+const VersionCard = ({ version, tags, basedOnName, onCompare, onUseAgain }) => {
     const { stats, changes } = version
+    const [confirming, setConfirming] = useState(false)
+    const [busy, setBusy] = useState(false)
+    const [error, setError] = useState('')
+
+    const useAgain = async () => {
+        setBusy(true)
+        setError('')
+        try {
+            await onUseAgain()
+        } catch (err) {
+            setError(err.message)
+            setBusy(false)
+            setConfirming(false)
+        }
+    }
     const people = [
         version.createdBy && `Made by ${version.createdBy.name}`,
         version.publishedBy && `published by ${version.publishedBy.name}, ${dayLabel(version.publishedAt)}`,
@@ -61,6 +78,21 @@ const VersionCard = ({ version, tags, basedOnName, onCompare }) => {
                 </p>
             )}
             {!stats && <p className="form__hint">{version.dishCount} dishes · not in use yet, so no income</p>}
+
+            {onUseAgain && (
+                <div className="version-card__use d-flex flex-wrap align-items-center gap-0-5">
+                    {confirming ? (
+                        <>
+                            <span className="form__hint mr-auto">It becomes the menu in use from now, as a new version. The current menu is archived.</span>
+                            <Button size="sm" variant="ghost" onClick={() => setConfirming(false)} disabled={busy}>Keep current</Button>
+                            <Button size="sm" onClick={useAgain} disabled={busy}>{busy ? 'Switching…' : `Yes, use ${version.name}`}</Button>
+                        </>
+                    ) : (
+                        <Button size="sm" variant="secondary" onClick={() => setConfirming(true)}>Use this menu again</Button>
+                    )}
+                    {error && <p className="form__error" role="alert">{error}</p>}
+                </div>
+            )}
 
             {(changes || onCompare) && (
                 <div className="d-flex flex-wrap align-items-start justify-between gap-0-5">

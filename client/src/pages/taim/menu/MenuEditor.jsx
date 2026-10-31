@@ -13,7 +13,7 @@ import './MenuEditor.scss'
  * /taim/menu – the Manager's and Chef's menu, in three tabs (step 3.1):
  *   In use   – the menu guests order from; only sold out changes here
  *   Draft    – the next menu: a copy to change (dishes, prices,
- *              categories), published by the Chef now or from a date
+ *              categories), published (Manager or Chef) now or from a date
  *   Versions – every menu so far: when, who, income, what changed; compare
  * (The route only renders this for roles with the editMenu right; the
  * server refuses changes from anyone else.)

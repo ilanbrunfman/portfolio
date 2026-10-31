@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useStaff } from '@/pages/taim/context/StaffContext'
 import VersionCard from '@/pages/taim/components/version-card/VersionCard'
 import VersionCompare from '@/pages/taim/components/version-compare/VersionCompare'
 import Modal from '@/components/ui/modal/Modal'
@@ -7,12 +8,14 @@ import { versionTags } from '@/pages/taim/utils/versions'
 /**
  * Menu → Versions: every menu, newest first (the draft on top), as cards
  * with tags, dates, income and changes. "Compare with current" opens two
- * menus side by side.
+ * menus side by side; "Use this menu again" (Manager, Chef) brings an older
+ * menu back as the menu in use.
  *
  * @param {object} props
  * @param {object} props.versions  useMenuVersions()
  */
 const MenuVersions = ({ versions }) => {
+    const { can } = useStaff()
     const { data, active } = versions
     const [comparing, setComparing] = useState(null) // the version compared with the one in use
 
@@ -35,6 +38,7 @@ const MenuVersions = ({ versions }) => {
                     tags={versionTags(version, data)}
                     basedOnName={nameOf(version.basedOnId)}
                     onCompare={active && version.id !== active.id ? () => setComparing(version) : undefined}
+                    onUseAgain={version.status === 'ARCHIVED' && can('publishMenu') ? () => versions.useAgain(version.id) : undefined}
                 />
             ))}
             <Modal isOpen={Boolean(pair)} onClose={() => setComparing(null)} title="Compare menus" size="lg">

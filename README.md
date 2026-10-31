@@ -132,9 +132,9 @@ PostgreSQL schema next to the bank's.
   closes it at 04:00 restaurant time.
 - **Losses:** money lost per month, by reason and by dish – returns, waste,
   and fixes (which cost nothing but are counted).
-- **Menu versions:** the Chef changes a draft copy of the menu while guests
-  keep ordering from the one in use, then publishes it now or from a date
-  (it switches by itself). Every version keeps its dishes, dates and who
+- **Menu versions:** the Chef or Manager changes a draft copy of the menu
+  while guests keep ordering from the one in use, then publishes it now or
+  from a date (it switches by itself), or picks an older menu to use again. Every version keeps its dishes, dates and who
   made it; the Versions tab shows what changed, income per day, the best
   menu so far, and compares any menu with the current one. Sold out stays
   a live switch.

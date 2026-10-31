@@ -13,6 +13,9 @@ One menu version on **Menu → Versions**:
   free ones).
 - Folded: what changed from the version it was based on (`VersionChanges`).
 - **Compare with current** (when `onCompare` is given).
+- **Use this menu again** (when `onUseAgain` is given: older menus, for
+  Manager and Chef). Asks once, then the menu comes back as a new version
+  in use from now ("Back from #2"); the current one is archived.
 
 ## Usage
 
@@ -33,3 +36,4 @@ One menu version on **Menu → Versions**:
 | `tags`        | `{ label, tone }[]` | From `versionTags()` in `utils/versions.js`. |
 | `basedOnName` | `string`     | Optional. Names the version in "N changes from …". |
 | `onCompare`   | `() => void` | Optional. Shows **Compare with current**. |
+| `onUseAgain`  | `() => Promise` | Optional. Shows **Use this menu again** with a confirm step; throws on failure. |

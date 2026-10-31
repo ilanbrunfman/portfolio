@@ -14,9 +14,9 @@ import { periodLabel, dayTimeLabel } from '@/pages/taim/utils/versions'
  *   no draft  – what a draft is, and the form to start one (a copy of the
  *               menu in use)
  *   draft     – its name, season and note (Details), what changed from the
- *               menu in use, Publish (the Chef: now or from a date) and
+ *               menu in use, Publish (now or from a date) and
  *               Discard; below, the menu itself, fully editable
- *   scheduled – when it starts; Unschedule (back to a draft, the Chef) or
+ *   scheduled – when it starts; Unschedule (back to a draft) or
  *               Discard
  *
  * @param {object} props
@@ -53,7 +53,7 @@ const DraftMenu = ({ versions }) => {
                 <h3 className="menu-editor__subheading">Start the next menu</h3>
                 <p className="form__hint">
                     A draft is a copy of the menu in use{versions.active ? ` (${versions.active.name})` : ''}. Change dishes, prices and
-                    categories there; guests keep ordering from the menu in use until the Chef publishes the draft, now or from a date.
+                    categories there; guests keep ordering from the menu in use until the draft is published, now or from a date.
                 </p>
                 <VersionForm submitLabel="Start draft" onSave={versions.startDraft} />
             </div>
@@ -99,7 +99,6 @@ const DraftMenu = ({ versions }) => {
 
                 {error && <p className="form__error" role="alert">{error}</p>}
                 <div className="d-flex flex-wrap align-items-center justify-end gap-0-5">
-                    {!can('publishMenu') && <span className="form__hint mr-auto">Only the Chef publishes the menu.</span>}
                     {discardButton}
                     {scheduled && can('publishMenu') && (
                         <Button variant="secondary" onClick={() => run(() => versions.unschedule(draft.id))} disabled={busy}>Unschedule</Button>
