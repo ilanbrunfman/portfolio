@@ -20,7 +20,7 @@ const verticalOnly = ({ transform }) => ({ ...transform, x: 0 })
  * @param {object} props
  * @param {object[]} props.dishes                       The category's dishes, top first.
  * @param {(dishIds: number[]) => void} [props.onReorder] Called with the new order after a drop.
- * @param {(dish: object) => void} props.onToggle       Switch a dish on/off the menu.
+ * @param {(dish: object) => void} [props.onToggle]     Switch a dish on/off the menu; without it, no "On menu" box (read only).
  * @param {(dish: object) => void} [props.onEdit]       Open the dish's edit form.
  * @param {number|null} [props.toggling]                Id of the dish being switched (its box is disabled).
  */
@@ -115,7 +115,7 @@ const DishRow = ({ dish, onToggle, onEdit, canDrag, toggling }) => {
                 {/* Price, toggle and Edit wrap together under the name on narrow screens */}
                 <div className="dish-list__controls d-flex align-items-center gap-1">
                     <span className="dish-list__price">{formatMoney(dish.price)}</span>
-                    <Checkbox label="On menu" checked={!dish.hidden} onChange={() => onToggle(dish)} disabled={toggling} />
+                    {onToggle && <Checkbox label="On menu" checked={!dish.hidden} onChange={() => onToggle(dish)} disabled={toggling} />}
                     {onEdit && (
                         <Button size="sm" variant="ghost" onClick={() => onEdit(dish)}>
                             Edit

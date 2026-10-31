@@ -14,7 +14,7 @@ function tomorrowMorning() {
 }
 
 /**
- * Publish the draft (the Chef): now, or from a date and time (the menu
+ * Publish the draft (Manager or Chef): now, or from a date and time (the menu
  * switches by itself then). Shows what will change first. Meant to sit
  * inside a <Modal>.
  *

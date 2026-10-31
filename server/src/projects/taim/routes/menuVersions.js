@@ -5,11 +5,11 @@ import { HttpError } from '../../../shared/lib/httpError.js'
 import { idParams } from '../../../shared/schemas/common.js'
 import { allow } from '../middleware/staff.js'
 import { versionCreate, versionUpdate, versionPublish, versionCompare } from '../schemas/menu.js'
-import { VERSION_SELECT, applyDueVersion, changesBetween, createDraft, discard, publishDraft, unschedule } from '../services/menuVersions.js'
+import { VERSION_SELECT, applyDueVersion, changesBetween, createDraft, discard, publishDraft, unschedule, useAgain } from '../services/menuVersions.js'
 
 // Menu versions (step 3.1): the history of the menu and the draft of the
 // next one. Reading and drafting need editMenu (Manager, Chef); publishing
-// needs publishMenu (Chef).
+// and picking an older menu need publishMenu (Manager, Chef).
 const router = Router()
 
 const DAY = 86_400_000
@@ -142,7 +142,7 @@ router.delete('/menu/versions/:id', allow('editMenu'), validate({ params: idPara
     res.status(204).end()
 })
 
-// POST /api/taim/menu/versions/:id/publish { startsAt? } (publishMenu: Chef)
+// POST /api/taim/menu/versions/:id/publish { startsAt? } (publishMenu)
 // – the draft becomes the menu in use now, or from startsAt (scheduled)
 router.post('/menu/versions/:id/publish', allow('publishMenu'), validate({ params: idParams, body: versionPublish }), async (req, res) => {
     res.json(await publishDraft({ id: req.valid.params.id, startsAt: req.valid.body.startsAt, staffId: req.staff.id }))
@@ -153,6 +153,12 @@ router.post('/menu/versions/:id/publish', allow('publishMenu'), validate({ param
 router.post('/menu/versions/:id/unschedule', allow('publishMenu'), validate({ params: idParams }), async (req, res) => {
     await unschedule(req.valid.params.id)
     res.status(204).end()
+})
+
+// POST /api/taim/menu/versions/:id/use (publishMenu) – an older menu is the
+// menu in use again, from now (as a new version: "back from #2")
+router.post('/menu/versions/:id/use', allow('publishMenu'), validate({ params: idParams }), async (req, res) => {
+    res.json(await useAgain({ id: req.valid.params.id, staffId: req.staff.id }))
 })
 
 export default router

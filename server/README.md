@@ -284,7 +284,7 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | Right | Manager | Chef | Cook | Host | Waiter |
 |---|:-:|:-:|:-:|:-:|:-:|
 | `editMenu`: the draft menu (dishes, prices, categories); sold out on the menu in use | ✓ | ✓ | | | |
-| `publishMenu`: publish the draft, now or on a date | | ✓ | | | |
+| `publishMenu`: publish the draft (now or on a date), or use an older menu again | ✓ | ✓ | | | |
 | `setUpTables`: add, rename, seats | ✓ | | | | |
 | `seatTable`: seat, start take-out, move or undo a seating | ✓ | | | ✓ | ✓ |
 | `addDishes`: a table's dishes (add, send, move, remove) | ✓ | | | | ✓ |
@@ -318,6 +318,7 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | DELETE | `/api/taim/menu/versions/:id` | | 204, discards the draft (or a scheduled one) with its dishes (409 for others) |
 | POST | `/api/taim/menu/versions/:id/publish` | `{ startsAt? }` | The draft becomes the menu in use now (the old one is archived), or `SCHEDULED` from `startsAt` (`publishMenu`; 409 if it's not the draft or has no dishes) |
 | POST | `/api/taim/menu/versions/:id/unschedule` | | 204, a scheduled menu goes back to being the draft (`publishMenu`) |
+| POST | `/api/taim/menu/versions/:id/use` | | An older (archived) menu becomes the menu in use from now, as a new version ("Back from #2", same dishes and prices, sold out cleared); the one in use is archived; a draft stays (`publishMenu`; 409 unless archived) |
 | GET | `/api/taim/tables` | | Tables in floor order; `order` = the open order's summary (`guests`, `openedAt`, `dishCount`, `notSent`, `cameBack`, `total`) or `null` when free; `needsCleaning` after guests leave |
 | POST | `/api/taim/tables` | `{ label, seats }` | 201, added at the end of the floor (Manager; 409 if the label exists) |
 | PATCH | `/api/taim/tables/:id` | `{ label?, seats? }` | The updated table (Manager) |
@@ -358,10 +359,12 @@ transaction, so a half-saved order can't happen.
 **Menu versions.** The menu guests order from is one `ACTIVE` version.
 Changes go into a `DRAFT`: a copy of it (`POST /menu/versions`), where
 dishes, prices and categories change freely while guests keep ordering
-from the menu in use. The Chef publishes the draft now, or from a date
+from the menu in use. The Manager or the Chef publishes the draft now, or from a date
 (`SCHEDULED`: the timer that closes days switches it at that time, and
 any read of the menu does too); the version it replaces becomes
-`ARCHIVED` with the dates it ran. Sold out is the one change made on the
+`ARCHIVED` with the dates it ran. An older menu can be picked again: it
+comes back as a new version, so each version keeps one period and its
+income stays right. Sold out is the one change made on the
 menu in use: that's day to day, not a new version. Each version has its
 own rows of dishes, so an order line keeps pointing at the dish (and
 version) it was ordered from; a `dishKey` follows the same dish across

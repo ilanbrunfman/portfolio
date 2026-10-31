@@ -8,7 +8,7 @@ import { api } from '@/pages/taim/api/client'
  * at once). Actions throw on failure (err.fields per field).
  *
  * @returns {{ data: { versions: object[], bestId: number|null, lastId: number|null }|null,
- *   error: string, reload, active, draft, startDraft, updateVersion, publish, unschedule, discard, compare }}
+ *   error: string, reload, active, draft, startDraft, updateVersion, publish, unschedule, discard, useAgain, compare }}
  *   active = the version in use; draft = the DRAFT or SCHEDULED one (or null)
  */
 export function useMenuVersions() {
@@ -42,6 +42,8 @@ export function useMenuVersions() {
     )
     const unschedule = useCallback((id) => call(`/menu/versions/${id}/unschedule`, { method: 'POST' }), [call])
     const discard = useCallback((id) => call(`/menu/versions/${id}`, { method: 'DELETE' }), [call])
+    /** An older menu becomes the menu in use again, from now */
+    const useAgain = useCallback((id) => call(`/menu/versions/${id}/use`, { method: 'POST' }), [call])
     /** What changed from one version to another: [{ type, name, ... }] */
     const compare = useCallback(async (from, to) => (await api(`/menu/versions/compare?from=${from}&to=${to}`)).changes, [])
 
@@ -49,5 +51,5 @@ export function useMenuVersions() {
     const active = versions.find((v) => v.status === 'ACTIVE') ?? null
     const draft = versions.find((v) => v.status === 'DRAFT' || v.status === 'SCHEDULED') ?? null
 
-    return { data, error, reload, active, draft, startDraft, updateVersion, publish, unschedule, discard, compare }
+    return { data, error, reload, active, draft, startDraft, updateVersion, publish, unschedule, discard, useAgain, compare }
 }

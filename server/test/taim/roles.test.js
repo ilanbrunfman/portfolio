@@ -60,9 +60,9 @@ describe('the rights grid', () => {
         }
     })
 
-    it('gives the manager every right except the kitchen ones and publishing the menu (the Chef does)', () => {
-        const notManager = ['advanceDish', 'fireHeld', 'publishMenu']
-        expect(RIGHTS.publishMenu).toEqual(['CHEF'])
+    it('gives the manager every right except the kitchen ones (the Manager only looks at the kitchen)', () => {
+        const notManager = ['advanceDish', 'fireHeld']
+        expect(RIGHTS.publishMenu).toEqual(['MANAGER', 'CHEF'])
         for (const [right, roles] of Object.entries(RIGHTS)) {
             if (notManager.includes(right)) expect(roles).not.toContain('MANAGER')
             else expect(roles).toContain('MANAGER')

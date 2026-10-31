@@ -83,25 +83,68 @@ export async function createDraft({ name, season, note, staffId }) {
         const draft = await tx.menuVersion.create({
             data: { number: (_max.number ?? 0) + 1, name, season, note, status: 'DRAFT', basedOnId: active?.id ?? null, createdById: staffId },
         })
-        for (const category of active?.categories ?? []) {
-            const copy = await tx.menuCategory.create({ data: { versionId: draft.id, name: category.name, position: category.position } })
-            if (category.items.length > 0) {
-                await tx.menuItem.createMany({
-                    data: category.items.map((item) => ({
-                        versionId: draft.id,
-                        categoryId: copy.id,
-                        dishKey: item.dishKey,
-                        name: item.name,
-                        description: item.description,
-                        price: item.price,
-                        prepMinutes: item.prepMinutes,
-                        position: item.position,
-                        hidden: item.hidden,
-                    })),
-                })
-            }
-        }
+        if (active) await copyMenu(tx, active.id, draft.id)
         return tx.menuVersion.findUniqueOrThrow({ where: { id: draft.id }, select: VERSION_SELECT })
+    })
+}
+
+/**
+ * Copy one version's categories and dishes into another (dishes keep their
+ * dishKey). soldOut false = every dish starts on the menu.
+ */
+async function copyMenu(tx, fromId, toId, { soldOut = true } = {}) {
+    const categories = await tx.menuCategory.findMany({ where: { versionId: fromId }, orderBy: { position: 'asc' }, include: { items: true } })
+    for (const category of categories) {
+        const copy = await tx.menuCategory.create({ data: { versionId: toId, name: category.name, position: category.position } })
+        if (category.items.length === 0) continue
+        await tx.menuItem.createMany({
+            data: category.items.map((item) => ({
+                versionId: toId,
+                categoryId: copy.id,
+                dishKey: item.dishKey,
+                name: item.name,
+                description: item.description,
+                price: item.price,
+                prepMinutes: item.prepMinutes,
+                position: item.position,
+                hidden: soldOut ? item.hidden : false,
+            })),
+        })
+    }
+}
+
+/**
+ * Use an older (archived) menu again, now: it comes back as a new version
+ * (same name, dishes and prices, "back from #2"), so every version keeps
+ * one period of its own and its income stays right. The menu in use is
+ * archived. A draft or a scheduled menu stays as it is. Sold out starts
+ * fresh.
+ */
+export async function useAgain({ id, staffId, now = new Date() }) {
+    return prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(${LOCK})`
+        const old = await tx.menuVersion.findUnique({ where: { id } })
+        if (!old) throw new HttpError(404, 'Menu version not found')
+        if (old.status !== 'ARCHIVED') throw new HttpError(409, 'Only an older menu can be used again')
+        const { _max } = await tx.menuVersion.aggregate({ _max: { number: true } })
+        await tx.menuVersion.updateMany({ where: { status: 'ACTIVE' }, data: { status: 'ARCHIVED', activeTo: now } })
+        const again = await tx.menuVersion.create({
+            data: {
+                number: (_max.number ?? 0) + 1,
+                name: old.name,
+                season: old.season,
+                note: `Back from #${old.number}`,
+                status: 'ACTIVE',
+                basedOnId: old.id,
+                createdById: staffId,
+                createdAt: now,
+                publishedById: staffId,
+                publishedAt: now,
+                activeFrom: now,
+            },
+        })
+        await copyMenu(tx, old.id, again.id, { soldOut: false })
+        return tx.menuVersion.findUniqueOrThrow({ where: { id: again.id }, select: VERSION_SELECT })
     })
 }
 

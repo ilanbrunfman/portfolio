@@ -1,6 +1,6 @@
 # PublishForm
 
-The Chef publishes the draft: **Now** (it becomes the menu in use at once)
+The Manager or the Chef publishes the draft: **Now** (it becomes the menu in use at once)
 or **From a date** (it's *scheduled* and switches by itself at that time;
 the menu in use stays until then). Lists what will change first
 (`VersionChanges`). Meant to sit inside a `Modal`.
