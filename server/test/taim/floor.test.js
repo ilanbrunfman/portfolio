@@ -11,11 +11,11 @@ beforeEach(async () => {
         prisma.diningTable.create({ data: { label: 'T1', seats: 2, position: 1 } }),
         prisma.diningTable.create({ data: { label: 'T2', seats: 4, position: 2 } }),
     ])
-    const category = await prisma.menuCategory.create({ data: { name: 'Mains', position: 1 } })
+    const category = await prisma.menuCategory.create({ data: { versionId: 1, name: 'Mains', position: 1 } })
     ;[hummus, shakshuka, schnitzel] = await Promise.all([
-        prisma.menuItem.create({ data: { categoryId: category.id, name: 'Hummus', price: 900, position: 1 } }),
-        prisma.menuItem.create({ data: { categoryId: category.id, name: 'Shakshuka', price: 1400, position: 2 } }),
-        prisma.menuItem.create({ data: { categoryId: category.id, name: 'Schnitzel', price: 1800, position: 3, hidden: true } }),
+        prisma.menuItem.create({ data: { versionId: 1, categoryId: category.id, name: 'Hummus', price: 900, position: 1 } }),
+        prisma.menuItem.create({ data: { versionId: 1, categoryId: category.id, name: 'Shakshuka', price: 1400, position: 2 } }),
+        prisma.menuItem.create({ data: { versionId: 1, categoryId: category.id, name: 'Schnitzel', price: 1800, position: 3, hidden: true } }),
     ])
 })
 
@@ -122,11 +122,19 @@ describe('adding dishes (addDishes: Manager, Waiter)', () => {
         expect(res.body.total).toBe(3200)
     })
 
-    it('keeps the old price on the bill when the menu price changes later', async () => {
+    it('keeps the old price on the bill when a new menu changes it; the old dish can no longer be added', async () => {
         const order = (await seat(host).expect(201)).body
         await addDishes(waiter, order.id, [{ menuItemId: shakshuka.id }]).expect(201)
-        await (await as('CHEF')).patch(`/api/taim/menu-items/${shakshuka.id}`).send({ price: 1500 }).expect(200)
-        await addDishes(waiter, order.id, [{ menuItemId: shakshuka.id }]).expect(201)
+        // A new menu with the new price: draft, change, publish
+        const chef = await as('CHEF')
+        const draft = (await chef.post('/api/taim/menu/versions').send({ name: 'New prices' }).expect(201)).body
+        const newShakshuka = await prisma.menuItem.findFirstOrThrow({ where: { versionId: draft.id, name: 'Shakshuka' } })
+        await chef.patch(`/api/taim/menu-items/${newShakshuka.id}`).send({ price: 1500 }).expect(200)
+        await chef.post(`/api/taim/menu/versions/${draft.id}/publish`).send({}).expect(200)
+
+        const old = await addDishes(waiter, order.id, [{ menuItemId: shakshuka.id }]).expect(409)
+        expect(old.body.error).toBe('Shakshuka is from another menu: reload the menu')
+        await addDishes(waiter, order.id, [{ menuItemId: newShakshuka.id }]).expect(201)
 
         const res = await waiter.get(`/api/taim/orders/${order.id}`).expect(200)
         expect(res.body.items.map((i) => i.price)).toEqual([1400, 1500])

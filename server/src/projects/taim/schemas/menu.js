@@ -56,3 +56,43 @@ export const dishOrder = z.object({
         .min(1, 'Send the dish ids in their new order')
         .refine((ids) => new Set(ids).size === ids.length, 'Each dish can appear only once'),
 })
+
+// ---------- versions ----------
+
+const versionFields = {
+    name: z.string({ error: 'Name is required' }).trim().min(1, 'Name is required').max(60, 'Max 60 characters'),
+    // Spring, Summer, Autumn, Winter – or anything ("Holidays"); empty = none
+    season: z
+        .string()
+        .trim()
+        .max(30, 'Max 30 characters')
+        .nullable()
+        .transform((text) => text || null),
+    note: z
+        .string()
+        .trim()
+        .max(200, 'Max 200 characters')
+        .nullable()
+        .transform((text) => text || null),
+}
+
+// POST /api/taim/menu/versions – a new draft, copied from the menu in use
+export const versionCreate = z.object({
+    name: versionFields.name,
+    season: versionFields.season.default(null),
+    note: versionFields.note.default(null),
+})
+
+// PATCH /api/taim/menu/versions/:id – name, season, note
+export const versionUpdate = z.object(versionFields).partial().refine(nothingToUpdate, 'Nothing to update')
+
+// POST /api/taim/menu/versions/:id/publish – now, or from a date
+export const versionPublish = z.object({
+    startsAt: z.coerce.date({ error: 'Start must be a date' }).nullable().default(null),
+})
+
+// GET /api/taim/menu/versions/compare?from=&to=
+export const versionCompare = z.object({
+    from: z.coerce.number({ error: 'Pick a version' }).int().positive('Pick a version'),
+    to: z.coerce.number({ error: 'Pick a version' }).int().positive('Pick a version'),
+})

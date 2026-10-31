@@ -10,10 +10,10 @@ beforeEach(async () => {
     await resetTaim()
     ;[waiter, cook, host] = await Promise.all(['WAITER', 'COOK', 'HOST'].map(as))
     table = await prisma.diningTable.create({ data: { label: 'T5', seats: 4, position: 1 } })
-    const category = await prisma.menuCategory.create({ data: { name: 'Mains', position: 1 } })
+    const category = await prisma.menuCategory.create({ data: { versionId: 1, name: 'Mains', position: 1 } })
     ;[shakshuka, hummus] = await Promise.all([
-        prisma.menuItem.create({ data: { categoryId: category.id, name: 'Shakshuka', price: 1400, position: 1, prepMinutes: 12 } }),
-        prisma.menuItem.create({ data: { categoryId: category.id, name: 'Hummus', price: 900, position: 2 } }),
+        prisma.menuItem.create({ data: { versionId: 1, categoryId: category.id, name: 'Shakshuka', price: 1400, position: 1, prepMinutes: 12 } }),
+        prisma.menuItem.create({ data: { versionId: 1, categoryId: category.id, name: 'Hummus', price: 900, position: 2 } }),
     ])
 })
 

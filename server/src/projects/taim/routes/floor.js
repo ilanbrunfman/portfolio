@@ -6,6 +6,7 @@ import { idParams } from '../../../shared/schemas/common.js'
 import { allow, allowDishChanges } from '../middleware/staff.js'
 import { tableCreate, tableUpdate, tablesCombine, orderCreate, orderUpdate, orderItemsAdd, orderItemUpdate, orderSend, orderListQuery, orderItemParams, cameBack, waste } from '../schemas/floor.js'
 import { ORDER_INCLUDE, billTotal, getOrder, requireOpenOrder, toOrderJson } from '../services/orders.js'
+import { activeVersion } from '../services/menuVersions.js'
 
 // The floor (tables) and orders. Everyone picked can read them; changing
 // them needs a right: setUpTables, seatTable, cleanTable, combineTables,
@@ -315,8 +316,11 @@ router.post('/orders/:id/items', validate({ params: idParams, body: orderItemsAd
     const { id } = req.valid.params
     const { items } = req.valid.body
 
+    // A scheduled menu whose start has come is switched in first
+    await activeVersion()
     const order = await prisma.$transaction(async (tx) => {
         const current = await requireOpenOrder(id, tx)
+        const live = await activeVersion(tx)
 
         for (const { seat } of items) checkSeat(current, seat, 'items')
         if (current.type === 'TAKEOUT' && items.some((item) => item.toGo)) {
@@ -329,6 +333,9 @@ router.post('/orders/:id/items', validate({ params: idParams, body: orderItemsAd
 
         const missing = ids.find((dishId) => !byId.has(dishId))
         if (missing) throw new HttpError(400, 'Validation failed', { fields: { items: 'A dish is not on the menu' } })
+        // Only dishes of the menu in use (an old screen may still show the last menu)
+        const old = dishes.find((dish) => dish.versionId !== live.id)
+        if (old) throw new HttpError(409, `${old.name} is from another menu: reload the menu`)
         const soldOut = dishes.find((dish) => dish.hidden)
         if (soldOut) throw new HttpError(409, `${soldOut.name} is sold out`)
 
@@ -468,8 +475,9 @@ router.post('/orders/:id/items/:itemId/came-back', allow('markCameBack'), valida
         let instead = null
         if (remake) instead = { ...item.menuItem, id: item.menuItemId, price: item.price }
         if (replaceWithId) {
-            instead = await tx.menuItem.findUnique({ where: { id: replaceWithId }, select: { id: true, name: true, hidden: true, price: true } })
+            instead = await tx.menuItem.findUnique({ where: { id: replaceWithId }, select: { id: true, name: true, hidden: true, price: true, versionId: true } })
             if (!instead) throw new HttpError(400, 'Validation failed', { fields: { replaceWithId: 'That dish is not on the menu' } })
+            if (instead.versionId !== (await activeVersion(tx)).id) throw new HttpError(409, `${instead.name} is from another menu: reload the menu`)
         }
         if (instead?.hidden) throw new HttpError(409, `${instead.name} is sold out: choose something else from the menu`)
 
