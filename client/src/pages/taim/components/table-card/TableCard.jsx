@@ -61,6 +61,10 @@ const TableCard = ({ table, now, onClick, disabled = false, selected }) => {
                         {order.dishCount} {order.dishCount === 1 ? 'dish' : 'dishes'} · {formatMoney(order.total)}
                     </span>
                     <KitchenProgress order={order} now={now} />
+                    {order.allergies > 0 && (
+                        // Step 5.4: an allergy is noted on the bill
+                        <span className="table-card__allergy">Allergy</span>
+                    )}
                     {order.cameBack > 0 && (
                         <span className="table-card__alert">
                             {order.cameBack} came back

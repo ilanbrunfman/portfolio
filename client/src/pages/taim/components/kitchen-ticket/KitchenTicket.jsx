@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Button from '@/components/ui/button/Button'
 import { minutesSince } from '@/pages/taim/hooks/useNow'
 import { clockTime, seatLabel, timing, reasonLabel } from '@/pages/taim/utils/orders'
+import { allergenText, allergyWho, allergyWhat } from '@/pages/taim/utils/allergens'
 import './KitchenTicket.scss'
 
 // A ticket nobody started for this long turns amber
@@ -22,20 +23,27 @@ const WAIT_ALERT_MINUTES = 5
  * A remake (a dish made again, free, because it came back) has a red
  * REMAKE tag on the ticket and "came back: Cold" on the dish; the server
  * lists those tickets first.
+ * Step 5.4: a ticket with allergies (its seats', or the whole table's) has
+ * a red ALLERGY box; Start and Served wait until a cook taps "Seen" (a
+ * change to the allergies asks again). A dish that clashes says so.
  *
  * @param {object} props
  * @param {object} props.ticket          { orderId, title, type, round, firedAt, startedAt, startedBy, dishes: [{ id, name, seat, toGo, startedAt, prepMinutes }] }
  * @param {number} props.now             Current time (ms), so the minutes keep counting.
  * @param {(dishId: number) => Promise} [props.onServe]  Mark a dish served (Manager, Chef, Cook).
  * @param {() => Promise} [props.onStart]                Start the ticket (Chef, Cook).
+ * @param {() => Promise} [props.onAllergySeen]          The kitchen saw the allergies (Chef, Cook).
  * @param {(dishId: number) => Promise} [props.onRedo]   Made wrong: the plate is waste, the dish starts again (Chef, Cook).
  */
-const KitchenTicket = ({ ticket, now, onServe, onStart, onRedo }) => {
+const KitchenTicket = ({ ticket, now, onServe, onStart, onAllergySeen, onRedo }) => {
     const [busy, setBusy] = useState(null) // dish id, 'all', 'start' or 'redo-<id>'
     const [redoing, setRedoing] = useState(null) // the dish whose Redo asks to confirm
     const [error, setError] = useState('')
     const sinceSent = minutesSince(ticket.firedAt, now)
     const started = Boolean(ticket.startedAt)
+    // Allergies on it, not seen yet: Start and Served wait for "Seen"
+    const allergies = ticket.allergies ?? []
+    const mustSee = allergies.length > 0 && !ticket.allergySeen
     // A dish's prep time counts from its own start (or the ticket's)
     const cooking = (dish) => minutesSince(dish.startedAt ?? ticket.startedAt, now)
     const states = ticket.dishes.map((dish) => (started ? timing(cooking(dish), dish.prepMinutes) : 'ok'))
@@ -82,6 +90,26 @@ const KitchenTicket = ({ ticket, now, onServe, onStart, onRedo }) => {
                 <span className="kitchen-ticket__elapsed">{sinceSent} min</span>
             </header>
 
+            {allergies.length > 0 && (
+                <div className={`kitchen-ticket__allergy d-flex flex-column gap-0-5 ${mustSee ? 'is-unseen' : ''}`} role={mustSee ? 'alert' : undefined}>
+                    <strong className="kitchen-ticket__allergy-title">Allergy</strong>
+                    {allergies.map((row) => (
+                        <span key={row.seat ?? 'whole'}>
+                            <strong>{allergyWho(row, ticket.type)}:</strong> {allergyWhat(row)}
+                        </span>
+                    ))}
+                    {mustSee ? (
+                        onAllergySeen && (
+                            <Button size="sm" className="kitchen-ticket__seen" onClick={() => run('seen', onAllergySeen)} disabled={busy !== null}>
+                                {busy === 'seen' ? '…' : 'Seen'}
+                            </Button>
+                        )
+                    ) : (
+                        <span className="kitchen-ticket__seen-by">Seen {clockTime(ticket.allergySeen.at)}{ticket.allergySeen.by ? ` · ${ticket.allergySeen.by}` : ''}</span>
+                    )}
+                </div>
+            )}
+
             <div className="kitchen-ticket__start d-flex align-items-center justify-between gap-0-5">
                 {started ? (
                     <span className="kitchen-ticket__started">
@@ -91,7 +119,7 @@ const KitchenTicket = ({ ticket, now, onServe, onStart, onRedo }) => {
                     <>
                         <span className="kitchen-ticket__waiting">Waiting {sinceSent} min</span>
                         {onStart && (
-                            <Button size="sm" onClick={() => run('start', onStart)} disabled={busy !== null}>
+                            <Button size="sm" onClick={() => run('start', onStart)} disabled={busy !== null || mustSee} title={mustSee ? 'Tap Seen on the allergy first' : undefined}>
                                 {busy === 'start' ? 'Starting…' : 'Start'}
                             </Button>
                         )}
@@ -110,6 +138,7 @@ const KitchenTicket = ({ ticket, now, onServe, onStart, onRedo }) => {
                                 {ticket.type === 'TABLE' && <span className="kitchen-ticket__seat">{seatLabel(dish.seat)}</span>}
                                 {dish.toGo && !allToGo && <span className="kitchen-ticket__to-go">To go</span>}
                             </span>
+                            {dish.clash?.length > 0 && <span className="kitchen-ticket__clash">Contains {allergenText(dish.clash)}: make it without</span>}
                             {dish.fix && (
                                 <span className="kitchen-ticket__fix-line">
                                     Fix · {reasonLabel(dish.fix.reason)}{dish.fix.note ? `: "${dish.fix.note}"` : ''}
@@ -129,7 +158,7 @@ const KitchenTicket = ({ ticket, now, onServe, onStart, onRedo }) => {
                         </span>
                         <span className="d-flex flex-column align-items-end gap-0-5">
                             {onServe && (
-                                <Button size="sm" variant="secondary" onClick={() => serve(dish.id, [dish.id])} disabled={busy !== null}>
+                                <Button size="sm" variant="secondary" onClick={() => serve(dish.id, [dish.id])} disabled={busy !== null || mustSee}>
                                     {busy === dish.id ? '…' : 'Served'}
                                 </Button>
                             )}
@@ -151,7 +180,7 @@ const KitchenTicket = ({ ticket, now, onServe, onStart, onRedo }) => {
 
             {onServe && ticket.dishes.length > 1 && (
                 <div className="kitchen-ticket__foot d-flex justify-end">
-                    <Button size="sm" variant="ghost" onClick={() => serve('all', ticket.dishes.map((d) => d.id))} disabled={busy !== null}>
+                    <Button size="sm" variant="ghost" onClick={() => serve('all', ticket.dishes.map((d) => d.id))} disabled={busy !== null || mustSee}>
                         {busy === 'all' ? 'Serving…' : `Serve all ${ticket.dishes.length}`}
                     </Button>
                 </div>

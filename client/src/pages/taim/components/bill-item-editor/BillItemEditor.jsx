@@ -5,7 +5,8 @@ import Button from '@/components/ui/button/Button'
 import Input from '@/components/ui/form/input/Input'
 import CameBackForm from '@/pages/taim/components/came-back-form/CameBackForm'
 import { formatMoney } from '@/pages/taim/utils/money'
-import { valueFromSeat, clockTime, reasonLabel } from '@/pages/taim/utils/orders'
+import { valueFromSeat, seatFromValue, clockTime, reasonLabel } from '@/pages/taim/utils/orders'
+import { allergenText, clashOf } from '@/pages/taim/utils/allergens'
 import './BillItemEditor.scss'
 
 /** "Sent 20:05 (Lior) · started 20:07 (Yossi) · served 20:19 (Avi)" – as far as it got */
@@ -31,7 +32,8 @@ function timeline(item) {
  * @param {object} props
  * @param {object} props.item                           A dish on the order ({ name, price, seat, status, toGo }).
  * @param {{ value: string, label: string }[]} props.seats  Seat choices ([] for a take-out).
- * @param {({ seat: string, toGo: boolean }) => Promise} props.onSave  Save the seat value and to go; throws on failure.
+ * @param {({ seat: string, toGo: boolean, allergyConfirmed: boolean }) => Promise} props.onSave  Save the seat value and to go; throws on failure.
+ * @param {object[]} [props.allergies]                  The bill's allergies (step 5.4): moving the dish to a seat it clashes with asks to confirm.
  * @param {() => Promise} props.onRemove                Remove the dish; throws on failure.
  * @param {(data: object) => Promise} [props.onCameBack]  Record that it came back (markCameBack): { reason, note, remake, replaceWithId, sendNow }.
  * @param {(data: { reason, note, remake }) => Promise} [props.onWaste]  Record waste: CANCELLED or DROPPED.
@@ -39,7 +41,7 @@ function timeline(item) {
  * @param {() => Promise} [props.onUndoCameBack]        Undo a came back marked by mistake (markCameBack).
  * @param {() => void} props.onDone                     Called after saving/removing, and on Close.
  */
-const BillItemEditor = ({ item, seats, menu = [], onSave, onRemove, onCameBack, onUndoCameBack, onWaste, onDone }) => {
+const BillItemEditor = ({ item, seats, menu = [], allergies = [], onSave, onRemove, onCameBack, onUndoCameBack, onWaste, onDone }) => {
     const [cameBack, setCameBack] = useState(false) // the came-back form is open
     const [dropping, setDropping] = useState(false) // the dropped / spilled form is open
     const [remakeDropped, setRemakeDropped] = useState(true)
@@ -54,6 +56,9 @@ const BillItemEditor = ({ item, seats, menu = [], onSave, onRemove, onCameBack, 
     // The kitchen already started it: cancelling it wastes food
     const cooking = item.status === 'PREPARING' && Boolean(item.startedAt)
     const changed = seat !== valueFromSeat(item.seat) || toGo !== Boolean(item.toGo)
+    // Another seat whose allergy it clashes with: the waiter confirms (step 5.4)
+    const movedClash = seats.length > 0 && seat !== valueFromSeat(item.seat) ? clashOf(item.allergens, allergies, seatFromValue(seat)) : []
+    const [allergyOk, setAllergyOk] = useState(false)
 
     const run = async (action) => {
         setBusy(true)
@@ -95,6 +100,12 @@ const BillItemEditor = ({ item, seats, menu = [], onSave, onRemove, onCameBack, 
                 {item.remakeOfId ? 'Free remake (on the house)' : formatMoney(item.price)} · {{ NEW: 'not sent to the kitchen yet', PREPARING: 'in the kitchen', SENT_OUT: 'served', CAME_BACK: 'came back' }[item.status]}
             </p>
             {item.firedAt && <p className="form__hint">{timeline(item)}</p>}
+            {item.clash?.length > 0 && (
+                <p className="bill-item-editor__allergy">
+                    Allergy: contains {allergenText(item.clash)}{item.allergyConfirmed ? ' · added with the waiter\'s OK' : ''}
+                    {item.allergySeenBy ? ` · kitchen saw it (${item.allergySeenBy})` : ''}
+                </p>
+            )}
             {returned && item.returned && (
                 <p className={`bill-item-editor__returned ${item.status === 'WASTED' ? 'is-waste' : ''}`}>
                     {item.status === 'WASTED' ? 'Waste' : 'Came back'}: {reasonLabel(item.returned.reason)}
@@ -112,6 +123,12 @@ const BillItemEditor = ({ item, seats, menu = [], onSave, onRemove, onCameBack, 
             {!returned && seats.length > 0 && <RadioGroup label="For" options={seats} value={seat} onChange={setSeat} direction="row" />}
             {!returned && seats.length > 0 && (
                 <Checkbox label="To go" checked={toGo} onChange={(e) => setToGo(e.target.checked)} />
+            )}
+            {movedClash.length > 0 && (
+                <div className="bill-item-editor__allergy d-flex flex-column gap-0-5" role="alert">
+                    <span>{seat === 'shared' ? 'Someone at the table is' : `Seat ${seat} is`} allergic to {allergenText(movedClash)}.</span>
+                    <Checkbox label="The kitchen will adapt it / the guest knows" checked={allergyOk} onChange={(e) => setAllergyOk(e.target.checked)} />
+                </div>
             )}
 
             {item.status === 'SENT_OUT' && (onCameBack || onWaste) && (
@@ -161,7 +178,7 @@ const BillItemEditor = ({ item, seats, menu = [], onSave, onRemove, onCameBack, 
             <div className="d-flex flex-wrap justify-end gap-0-5">
                 <Button variant="ghost" onClick={onDone} disabled={busy}>Close</Button>
                 {seats.length > 0 && !returned && (
-                    <Button onClick={() => run(() => onSave({ seat, toGo }))} disabled={busy || !changed}>
+                    <Button onClick={() => run(() => onSave({ seat, toGo, allergyConfirmed: movedClash.length > 0 && allergyOk }))} disabled={busy || !changed || (movedClash.length > 0 && !allergyOk)}>
                         Save
                     </Button>
                 )}

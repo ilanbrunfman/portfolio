@@ -5,6 +5,7 @@ import Icon from '@/components/ui/icon/Icon'
 import Button from '@/components/ui/button/Button'
 import Checkbox from '@/components/ui/form/checkbox/Checkbox'
 import { formatMoney } from '@/pages/taim/utils/money'
+import { allergenText } from '@/pages/taim/utils/allergens'
 import './DishList.scss'
 
 // Rows only move up and down
@@ -111,6 +112,7 @@ const DishRow = ({ dish, onToggle, onEdit, canDrag, toggling }) => {
                     </span>
                     {dish.description && <span className="form__hint">{dish.description}</span>}
                     {dish.prepMinutes && <span className="dish-list__prep">Prep {dish.prepMinutes} min</span>}
+                    {dish.allergens?.length > 0 && <span className="dish-list__allergens">Contains {allergenText(dish.allergens)}</span>}
                 </div>
                 {/* Price, toggle and Edit wrap together under the name on narrow screens */}
                 <div className="dish-list__controls d-flex align-items-center gap-1">

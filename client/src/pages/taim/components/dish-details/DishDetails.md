@@ -39,6 +39,11 @@ button. Server errors (e.g. it was just marked sold out) show in the popup.
 |----------|---------------------------------------|-------------|
 | `dish`   | `object`                              | `{ name, price, description, hidden }`. |
 | `seats`  | `{ value, label }[]`                  | Seat choices; `[]` for a take-out. |
+| `allergies` | `{ seat, allergens }[]`          | Optional. The bill's allergies (step 5.4): a clash at a picked seat shows a red warning, and Add needs "The kitchen will adapt it / the guest knows" (sent as `allergyConfirmed`). |
 | `seat`   | `string`                              | Pre-picked seat value (`'1'` … `'shared'`). |
 | `onAdd`  | `({ seats, quantity, toGo }) => Promise` | `seats`: `['1', '3']`, `['shared']`, or `[]` on a take-out; `toGo`: to take home. Adds to the bill; throws on failure. |
 | `onDone` | `() => void`                          | Called after adding, and on Close. |
+
+## Allergies (step 5.4)
+
+The popup lists what the dish contains ("Contains gluten, sesame"). When that clashes with an allergy at a picked seat (or anyone's, for Shared; the guest's, on a take-out), a red box names who and what, and Add stays disabled until the waiter ticks the confirmation.

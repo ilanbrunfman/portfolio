@@ -85,6 +85,38 @@
         &.is-sold-out {
             opacity: 0.5;
         }
+
+        // Clashes with an allergy at the picked seat (step 5.4)
+        &.is-clash {
+            border-color: rgba(229, 72, 77, 0.7);
+        }
+    }
+
+    &__dish-clash {
+        color: #e5484d;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    // The bill's allergies, above the menu: red chips, a tap edits one
+    &__allergy {
+        padding: 0.25rem 0.65rem;
+        border: 1px solid rgba(229, 72, 77, 0.6);
+        border-radius: 999px;
+        background: rgba(229, 72, 77, 0.1);
+        color: var(--text-h);
+        font: inherit;
+        font-size: 0.85rem;
+        cursor: pointer;
+
+        strong {
+            color: #e5484d;
+        }
+
+        &:focus-visible {
+            outline: 2px solid #e5484d;
+            outline-offset: 2px;
+        }
     }
 
     &__dish-name {

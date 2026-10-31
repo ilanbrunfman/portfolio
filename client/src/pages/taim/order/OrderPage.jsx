@@ -8,12 +8,14 @@ import SeatingActions from '@/pages/taim/components/seating-actions/SeatingActio
 import DishDetails from '@/pages/taim/components/dish-details/DishDetails'
 import BillItemEditor from '@/pages/taim/components/bill-item-editor/BillItemEditor'
 import SendDialog from '@/pages/taim/components/send-dialog/SendDialog'
+import AllergyForm from '@/pages/taim/components/allergy-form/AllergyForm'
 import Modal from '@/components/ui/modal/Modal'
 import { seatOptions, seatFromValue } from '@/pages/taim/utils/orders'
 import Tabs from '@/components/ui/tabs/Tabs'
 import RadioGroup from '@/components/ui/form/radio/RadioGroup'
 import Button from '@/components/ui/button/Button'
 import { formatMoney } from '@/pages/taim/utils/money'
+import { allergenText, allergyWho, allergyWhat, clashOf } from '@/pages/taim/utils/allergens'
 import './Order.scss'
 
 /**
@@ -29,18 +31,22 @@ import './Order.scss'
  * (the starter went earlier, the mains added now should wait). A tap on a dish on the bill opens its
  * editor: another seat (any time), or remove (until the kitchen sends it
  * out). Closing the bill is a separate, smaller button at the end.
+ * Step 5.4: "Allergies" notes a guest's allergy (a seat, or the whole
+ * table / take-out); they show in red above the menu, a dish that clashes
+ * with the picked seat says so on its button, and adding it asks to confirm.
  */
 const OrderPage = () => {
     const orderId = Number(useParams().orderId)
     const navigate = useNavigate()
     const { can, canEditDishes } = useStaff()
-    const { order, error, addDish, updateDish, cameBack, undoCameBack, waste, removeDish, send, hold, close, update, undo } = useOrder(orderId)
+    const { order, error, addDish, noteAllergy, updateDish, cameBack, undoCameBack, waste, removeDish, send, hold, close, update, undo } = useOrder(orderId)
     const menu = useMenu()
     const [category, setCategory] = useState(null) // null = the first one
     const [seat, setSeat] = useState('1') // '1', '2'… or 'shared'
     const [details, setDetails] = useState(null) // the dish whose details are open
     const [editing, setEditing] = useState(null) // the bill line being edited
     const [choosing, setChoosing] = useState(false) // the send dialog is open
+    const [allergyFor, setAllergyFor] = useState(undefined) // the allergy form: a seat (null = whole), or undefined = closed
     const [message, setMessage] = useState('')
 
     if (error && !order) {
@@ -62,12 +68,14 @@ const OrderPage = () => {
     // The picked seat, unless guests were reduced below it
     const seatValue = atTable && seat !== 'shared' && Number(seat) > order.guests ? '1' : seat
     const seats = seatOptions(order)
+    // The seat the menu buttons check for clashes (null = shared / take-out)
+    const pickedSeat = atTable && seatValue !== 'shared' ? Number(seatValue) : null
 
     // From the details popup; errors are shown there
-    const handleAdd = async (dish, { seats: values, quantity, toGo }) => {
+    const handleAdd = async (dish, { seats: values, quantity, toGo, allergyConfirmed }) => {
         const forSeats = atTable ? values.map(seatFromValue) : [null]
         try {
-            await addDish(dish.id, forSeats, quantity, toGo)
+            await addDish(dish.id, forSeats, quantity, toGo, allergyConfirmed)
         } catch (err) {
             menu.reload() // e.g. it was just marked sold out
             throw err
@@ -118,6 +126,16 @@ const OrderPage = () => {
             <div className="order-page__layout d-flex flex-wrap align-items-start gap-2">
                 {isOpen && canEdit && (
                     <section className="order-page__menu d-flex flex-column gap-1" aria-label="Menu">
+                        <div className="order-page__allergies d-flex flex-wrap align-items-center gap-0-5">
+                            {order.allergies.map((row) => (
+                                <button key={row.seat ?? 'whole'} type="button" className="order-page__allergy" onClick={() => setAllergyFor(row.seat)} aria-label={`Allergy, ${allergyWho(row, order.type)}: ${allergyWhat(row)}. Edit`}>
+                                    <strong>{allergyWho(row, order.type)}</strong> {allergyWhat(row)}
+                                </button>
+                            ))}
+                            <Button size="sm" variant="ghost" icon="IconPlus" onClick={() => setAllergyFor(pickedSeat)}>
+                                {order.allergies.length > 0 ? 'Allergy' : 'Allergies'}
+                            </Button>
+                        </div>
                         {atTable && (
                             <RadioGroup
                                 label="For"
@@ -138,21 +156,26 @@ const OrderPage = () => {
                                 <ul className="order-page__dishes">
                                     {categories
                                         .find((c) => String(c.id) === id)
-                                        ?.items.map((dish) => (
-                                            <li key={dish.id}>
-                                                <button
-                                                    type="button"
-                                                    className={`order-page__dish d-flex flex-column justify-between gap-0-5 ${dish.hidden ? 'is-sold-out' : ''}`}
-                                                    onClick={() => setDetails(dish)}
-                                                    aria-label={`${dish.name}, ${dish.hidden ? 'sold out' : formatMoney(dish.price)}. Details`}
-                                                >
-                                                    <span className="order-page__dish-name">{dish.name}</span>
-                                                    <span className="order-page__dish-price">
-                                                        {dish.hidden ? 'Sold out' : formatMoney(dish.price)}
-                                                    </span>
-                                                </button>
-                                            </li>
-                                        ))}
+                                        ?.items.map((dish) => {
+                                            // Clashes with an allergy at the picked seat (or anyone's, for Shared)
+                                            const clash = clashOf(dish.allergens, order.allergies, pickedSeat)
+                                            return (
+                                                <li key={dish.id}>
+                                                    <button
+                                                        type="button"
+                                                        className={`order-page__dish d-flex flex-column justify-between gap-0-5 ${dish.hidden ? 'is-sold-out' : ''} ${clash.length ? 'is-clash' : ''}`}
+                                                        onClick={() => setDetails(dish)}
+                                                        aria-label={`${dish.name}, ${dish.hidden ? 'sold out' : formatMoney(dish.price)}${clash.length ? `, contains ${allergenText(clash)}: allergy` : ''}. Details`}
+                                                    >
+                                                        <span className="order-page__dish-name">{dish.name}</span>
+                                                        {clash.length > 0 && <span className="order-page__dish-clash">Allergy: {allergenText(clash)}</span>}
+                                                        <span className="order-page__dish-price">
+                                                            {dish.hidden ? 'Sold out' : formatMoney(dish.price)}
+                                                        </span>
+                                                    </button>
+                                                </li>
+                                            )
+                                        })}
                                 </ul>
                             )}
                         </Tabs>
@@ -175,10 +198,17 @@ const OrderPage = () => {
                     <DishDetails
                         dish={details}
                         seats={seats}
+                        allergies={order.allergies}
                         seat={seatValue}
                         onAdd={(choice) => handleAdd(details, choice)}
                         onDone={() => setDetails(null)}
                     />
+                )}
+            </Modal>
+
+            <Modal isOpen={allergyFor !== undefined} onClose={() => setAllergyFor(undefined)} title="Allergies" size="sm">
+                {allergyFor !== undefined && (
+                    <AllergyForm order={order} seat={allergyFor} onSave={noteAllergy} onDone={() => setAllergyFor(undefined)} />
                 )}
             </Modal>
 
@@ -193,7 +223,8 @@ const OrderPage = () => {
                     <BillItemEditor
                         item={editing}
                         seats={seats}
-                        onSave={({ seat: value, toGo }) => updateDish(editing.id, { seat: seatFromValue(value), toGo })}
+                        allergies={order.allergies}
+                        onSave={({ seat: value, toGo, allergyConfirmed }) => updateDish(editing.id, { seat: seatFromValue(value), toGo, allergyConfirmed })}
                         onRemove={() => removeDish(editing.id)}
                         onCameBack={can('markCameBack') ? (data) => cameBack(editing.id, data) : undefined}
                         onUndoCameBack={can('markCameBack') ? () => undoCameBack(editing.id) : undefined}

@@ -3,6 +3,7 @@ import Button from '@/components/ui/button/Button'
 import { formatMoney } from '@/pages/taim/utils/money'
 import { useNow, minutesSince } from '@/pages/taim/hooks/useNow'
 import { orderTitle, groupByRound, seatLabel, clockTime, reasonLabel } from '@/pages/taim/utils/orders'
+import { allergenText, allergyWho, allergyWhat } from '@/pages/taim/utils/allergens'
 import './Ticket.scss'
 
 const STATUS = {
@@ -36,6 +37,8 @@ const statusText = (item, now) => {
  * ones on hold, and "Close bill" → a green "Pay · $40.00"
  * to take the payment (refused while dishes haven't been sent). Used on the
  * Order screen and in the Floor's bill dialog.
+ * Step 5.4: the bill's allergies show in red under its title, and a dish
+ * that clashes with one has a red "Allergy" tag.
  *
  * @param {object} props
  * @param {object} props.order                          An order from the API (items, total, …).
@@ -80,6 +83,16 @@ const Ticket = ({ order, onEditItem, onSend, onFire, onClose, className = '' }) 
                 )}
             </header>
 
+            {order.allergies?.length > 0 && (
+                <ul className="ticket__allergies" aria-label="Allergies">
+                    {order.allergies.map((row) => (
+                        <li key={row.seat ?? 'whole'}>
+                            <strong>Allergy · {allergyWho(row, order.type)}:</strong> {allergyWhat(row)}
+                        </li>
+                    ))}
+                </ul>
+            )}
+
             {error && <p className="form__error" role="alert">{error}</p>}
 
             {order.items.length === 0 ? (
@@ -103,6 +116,7 @@ const Ticket = ({ order, onEditItem, onSend, onFire, onClose, className = '' }) 
                                                 {item.name}
                                                 {order.type === 'TABLE' && <span className="ticket__seat-tag">{seatLabel(item.seat)}</span>}
                                                 {item.toGo && <span className="ticket__to-go">To go</span>}
+                                                {item.clash?.length > 0 && <span className="ticket__allergy-tag" title={`Contains ${allergenText(item.clash)}`}>Allergy: {allergenText(item.clash)}</span>}
                                                 {/* Sent back to be fixed: "Fixing" while in the kitchen, then "Fixed" */}
                                                 {item.fixes?.length > 0 && (
                                                     <span className="ticket__fix">{item.status === 'PREPARING' ? 'Fixing' : 'Fixed'}</span>

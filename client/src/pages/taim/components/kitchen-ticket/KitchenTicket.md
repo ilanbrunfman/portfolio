@@ -46,4 +46,5 @@ The colours come from `timing(elapsedMinutes, prepMinutes)` in `utils/orders.js`
 | `now`     | `number`                   | Current time in ms, so minutes keep counting. |
 | `onServe` | `(dishId) => Promise`      | Optional. Mark a dish served; throws on failure. |
 | `onStart` | `() => Promise`            | Optional. Start the ticket; throws on failure. |
+| `onAllergySeen` | `() => Promise`      | Optional (step 5.4). "Seen" on the ticket's red ALLERGY box; Start and Served stay disabled until it's tapped (or again after the allergies change). A dish that clashes says "Contains sesame: make it without". |
 | `onRedo`  | `(dishId) => Promise`      | Optional. Made wrong: waste the plate, start again. |

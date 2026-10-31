@@ -60,6 +60,7 @@ from `orderTitle(order)` in `utils/orders.js`.
 | Prop        | Type                         | Description |
 |-------------|------------------------------|-------------|
 | `order`     | `object`                     | An order from the API (`items`, `total`, `openedBy`, …). |
+| (`order.allergies`) | | Step 5.4: shown in red under the title ("Allergy · Seat 2: tree nuts (severe)"); a dish that clashes has a red "Allergy: …" tag. |
 | `onEditItem` | `(item) => void`            | Optional. Makes each dish line tappable. |
 | `onSend`    | `() => Promise \| void`      | Optional. Send the dishes not sent yet (or open the dialog to hold some). |
 | `onFire`    | `() => Promise`              | Optional. Send the dishes on hold. |

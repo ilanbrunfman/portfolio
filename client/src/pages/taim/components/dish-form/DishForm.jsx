@@ -5,6 +5,7 @@ import RadioGroup from '@/components/ui/form/radio/RadioGroup'
 import Checkbox from '@/components/ui/form/checkbox/Checkbox'
 import Button from '@/components/ui/button/Button'
 import { centsToInput, parseMoney } from '@/pages/taim/utils/money'
+import { ALLERGENS } from '@/pages/taim/utils/allergens'
 
 /**
  * Add or edit a dish. Meant to sit inside a <Modal>.
@@ -25,6 +26,9 @@ const DishForm = ({ dish, categories, categoryId, onSave, onDelete, onDone }) =>
     const [prep, setPrep] = useState(dish?.prepMinutes ? String(dish.prepMinutes) : '')
     const [description, setDescription] = useState(dish?.description ?? '')
     const [onMenu, setOnMenu] = useState(dish ? !dish.hidden : true)
+    const [allergens, setAllergens] = useState(dish?.allergens ?? [])
+    const toggleAllergen = (value) =>
+        setAllergens((list) => (list.includes(value) ? list.filter((v) => v !== value) : ALLERGENS.map((a) => a.value).filter((v) => v === value || list.includes(v))))
     const [errors, setErrors] = useState({})
     const [saving, setSaving] = useState(false)
 
@@ -61,6 +65,7 @@ const DishForm = ({ dish, categories, categoryId, onSave, onDelete, onDone }) =>
                 prepMinutes,
                 description: description.trim() || null,
                 hidden: !onMenu,
+                allergens,
             })
             onDone()
         } catch (err) {
@@ -138,6 +143,21 @@ const DishForm = ({ dish, categories, categoryId, onSave, onDelete, onDone }) =>
                 rows={2}
                 maxLength={200}
             />
+
+            <fieldset className="d-flex flex-column gap-0-5">
+                <legend className="form__label">Contains (allergens)</legend>
+                <span className="form__hint">The waiter is warned when a guest at the seat is allergic to one of them.</span>
+                <div className="d-flex flex-wrap gap-1">
+                    {ALLERGENS.map((allergen) => (
+                        <Checkbox
+                            key={allergen.value}
+                            label={allergen.label}
+                            checked={allergens.includes(allergen.value)}
+                            onChange={() => toggleAllergen(allergen.value)}
+                        />
+                    ))}
+                </div>
+            </fieldset>
 
             <Checkbox
                 label="On the menu (untick when it's sold out)"

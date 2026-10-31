@@ -195,4 +195,47 @@
         padding: 0.4rem 0.75rem 0.6rem;
         border-top: 1px solid var(--border);
     }
+
+    // Step 5.4: the ticket's allergies. Red and pulsing border until a cook
+    // taps Seen; then calm, with who saw it.
+    &__allergy {
+        margin: 0 1rem 0.6rem;
+        padding: 0.6rem 0.75rem;
+        border: 1px solid rgba(229, 72, 77, 0.6);
+        border-radius: 10px;
+        background: rgba(229, 72, 77, 0.08);
+        color: var(--text-h);
+        font-size: 0.9rem;
+
+        strong {
+            color: #e5484d;
+        }
+
+        &.is-unseen {
+            border-width: 2px;
+            background: rgba(229, 72, 77, 0.16);
+        }
+    }
+
+    &__allergy-title {
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    &__seen {
+        align-self: flex-start;
+    }
+
+    &__seen-by {
+        color: var(--text);
+        font-size: 0.8rem;
+    }
+
+    // A dish that clashes: what to leave out
+    &__clash {
+        color: #e5484d;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
 }

@@ -31,6 +31,12 @@ export function useKitchen() {
         reload()
     }, [reload])
 
+    /** The kitchen saw the allergies on a ticket (step 5.4): then it can start */
+    const allergySeen = useCallback(async (orderId, round) => {
+        await api(`/orders/${orderId}/rounds/${round}/allergy-seen`, { method: 'POST' })
+        reload()
+    }, [reload])
+
     /** The dish is out of the kitchen */
     const serve = useCallback(async (dishId) => {
         await api(`/order-items/${dishId}/serve`, { method: 'POST' })
@@ -55,5 +61,5 @@ export function useKitchen() {
         reload()
     }, [reload])
 
-    return { data, error, reload, start, serve, unserve, redo, fire }
+    return { data, error, reload, start, allergySeen, serve, unserve, redo, fire }
 }

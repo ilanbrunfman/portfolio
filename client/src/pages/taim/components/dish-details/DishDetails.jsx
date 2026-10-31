@@ -3,6 +3,7 @@ import RadioGroup from '@/components/ui/form/radio/RadioGroup'
 import Checkbox from '@/components/ui/form/checkbox/Checkbox'
 import Button from '@/components/ui/button/Button'
 import { formatMoney } from '@/pages/taim/utils/money'
+import { allergenText, clashOf } from '@/pages/taim/utils/allergens'
 import './DishDetails.scss'
 
 const MAX_QUANTITY = 10
@@ -21,15 +22,19 @@ function forText(picked) {
  * Shared (for the whole table) is a radio: picking it clears the seats, and
  * ticking a seat clears Shared. "How many" is per seat. Meant to sit inside
  * a <Modal>. A sold-out dish can still be read about, not added.
+ * Step 5.4: it lists what the dish contains; when that clashes with an
+ * allergy at a picked seat (or anyone's, for Shared), a red warning says
+ * who, and Add waits for "The kitchen will adapt it / the guest knows".
  *
  * @param {object} props
  * @param {object} props.dish                          { name, price, description, hidden }
  * @param {{ value: string, label: string }[]} props.seats  Seat choices, Shared last ([] for a take-out).
  * @param {string} [props.seat]                         The pre-picked seat value ('1' … 'shared').
- * @param {({ seats: string[], quantity: number, toGo: boolean }) => Promise} props.onAdd  seats = ['1', '3'] or ['shared'] ([] on a take-out); toGo = the guests take it home. Throws on failure.
+ * @param {{ seat: number|null, allergens: string[] }[]} [props.allergies]  The bill's allergies.
+ * @param {({ seats: string[], quantity: number, toGo: boolean, allergyConfirmed: boolean }) => Promise} props.onAdd  seats = ['1', '3'] or ['shared'] ([] on a take-out); toGo = the guests take it home. Throws on failure.
  * @param {() => void} props.onDone                     Called after adding, and on Close.
  */
-const DishDetails = ({ dish, seats, seat: initialSeat = seats[0]?.value ?? 'shared', onAdd, onDone }) => {
+const DishDetails = ({ dish, seats, allergies = [], seat: initialSeat = seats[0]?.value ?? 'shared', onAdd, onDone }) => {
     const [picked, setPicked] = useState(seats.length > 0 ? [initialSeat] : [])
     const [quantity, setQuantity] = useState(1)
     const [toGo, setToGo] = useState(false)
@@ -40,6 +45,11 @@ const DishDetails = ({ dish, seats, seat: initialSeat = seats[0]?.value ?? 'shar
     const atTable = seats.length > 0
     // One dish per seat (Shared or a take-out: one)
     const count = quantity * Math.max(1, picked.length)
+    // Who it clashes with: [{ who: 'Seat 2', clash: ['TREE_NUTS'] }]
+    const clashes = (atTable ? picked : ['shared'])
+        .map((value) => ({ who: value === 'shared' ? (atTable ? 'someone at the table' : 'the guest') : `Seat ${value}`, clash: clashOf(dish.allergens, allergies, value === 'shared' ? null : Number(value)) }))
+        .filter((row) => row.clash.length > 0)
+    const [confirmed, setConfirmed] = useState(false)
 
     /** Tick / untick a seat (in seat order); Shared goes */
     const toggleSeat = (value) => {
@@ -56,7 +66,7 @@ const DishDetails = ({ dish, seats, seat: initialSeat = seats[0]?.value ?? 'shar
         setAdding(true)
         setError('')
         try {
-            await onAdd({ seats: picked, quantity, toGo: atTable && toGo })
+            await onAdd({ seats: picked, quantity, toGo: atTable && toGo, allergyConfirmed: clashes.length > 0 && confirmed })
             onDone()
         } catch (err) {
             setError(err.message)
@@ -73,6 +83,7 @@ const DishDetails = ({ dish, seats, seat: initialSeat = seats[0]?.value ?? 'shar
             <p className={dish.description ? 'dish-details__description' : 'form__hint'}>
                 {dish.description ?? 'No description yet. The Chef can add one in the Menu.'}
             </p>
+            {dish.allergens?.length > 0 && <p className="dish-details__allergens">Contains {allergenText(dish.allergens)}</p>}
 
             {error && <p className="form__error" role="alert">{error}</p>}
 
@@ -112,6 +123,16 @@ const DishDetails = ({ dish, seats, seat: initialSeat = seats[0]?.value ?? 'shar
                         />
                     )}
 
+                    {clashes.length > 0 && (
+                        <div className="dish-details__clash d-flex flex-column gap-0-5" role="alert">
+                            <strong>Allergy</strong>
+                            {clashes.map((row) => (
+                                <span key={row.who}>{row.who}: allergic to {allergenText(row.clash)}</span>
+                            ))}
+                            <Checkbox label="The kitchen will adapt it / the guest knows" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
+                        </div>
+                    )}
+
                     <div className="d-flex align-items-center gap-1">
                         <span className="form__label" id="dish-quantity-label">{picked.length > 1 ? 'How many each' : 'How many'}</span>
                         <div className="dish-details__stepper d-flex align-items-center" role="group" aria-labelledby="dish-quantity-label">
@@ -126,7 +147,7 @@ const DishDetails = ({ dish, seats, seat: initialSeat = seats[0]?.value ?? 'shar
             <div className="d-flex flex-wrap justify-end gap-0-5">
                 <Button variant="ghost" onClick={onDone} disabled={adding}>Close</Button>
                 {!dish.hidden && (
-                    <Button onClick={add} disabled={adding || (atTable && picked.length === 0)}>
+                    <Button onClick={add} disabled={adding || (atTable && picked.length === 0) || (clashes.length > 0 && !confirmed)}>
                         {adding
                             ? 'Adding…'
                             : `Add ${count > 1 ? `${count} · ` : ''}${formatMoney(dish.price * count)}${atTable && picked.length > 0 ? ` for ${forText(picked)}` : ''}${atTable && toGo ? ' · to go' : ''}`}

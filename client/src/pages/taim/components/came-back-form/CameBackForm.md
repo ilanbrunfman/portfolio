@@ -38,3 +38,7 @@ bill item editor, after tapping **Came back**):
 | `menu`     | `object[]`                               | Menu categories with dishes, for "another dish". |
 | `onSubmit` | `({ reason, note, fix, remake, replaceWithId, sendNow }) => Promise` | Records it; throws on failure. |
 | `onCancel` | `() => void`                             | Back to the editor. |
+
+## Allergy (step 5.4)
+
+With the reason *Allergy / something in it*, the note becomes **What happened (required)**: the allergy and how the guest is. The server refuses it without one.

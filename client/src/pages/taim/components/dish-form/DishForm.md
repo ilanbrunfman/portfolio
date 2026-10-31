@@ -36,3 +36,7 @@ validates again and its messages appear under the matching input, e.g.
 | `onSave`     | `(data) => Promise`        | Saves `{ categoryId, name, price, prepMinutes, description, hidden }`; throws with `err.fields` on failure. |
 | `onDelete`   | `() => Promise`            | Optional. Shows **Remove dish** (asks once: "Yes, remove …"). Given only in the draft menu: dishes of the menu in use stay (bills point at them). |
 | `onDone`     | `() => void`               | Called after a successful save or removal, and on Cancel. |
+
+## Allergens (step 5.4)
+
+**Contains (allergens)**: gluten, dairy, egg, peanuts, tree nuts, sesame, fish, shellfish, soy (sent as `allergens`). The waiter is warned when a dish clashes with a guest's allergy. Unlike prices, allergens can be fixed on the menu in use too.
