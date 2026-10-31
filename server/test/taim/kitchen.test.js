@@ -11,11 +11,11 @@ beforeEach(async () => {
         prisma.diningTable.create({ data: { label: 'T1', seats: 4, position: 1 } }),
         prisma.diningTable.create({ data: { label: 'T2', seats: 4, position: 2 } }),
     ])
-    const category = await prisma.menuCategory.create({ data: { name: 'Mains', position: 1 } })
+    const category = await prisma.menuCategory.create({ data: { versionId: 1, name: 'Mains', position: 1 } })
     ;[hummus, kebab, malabi] = await Promise.all([
-        prisma.menuItem.create({ data: { categoryId: category.id, name: 'Hummus', price: 900, position: 1, prepMinutes: 5 } }),
-        prisma.menuItem.create({ data: { categoryId: category.id, name: 'Kebab', price: 1700, position: 2, prepMinutes: 15 } }),
-        prisma.menuItem.create({ data: { categoryId: category.id, name: 'Malabi', price: 700, position: 3 } }),
+        prisma.menuItem.create({ data: { versionId: 1, categoryId: category.id, name: 'Hummus', price: 900, position: 1, prepMinutes: 5 } }),
+        prisma.menuItem.create({ data: { versionId: 1, categoryId: category.id, name: 'Kebab', price: 1700, position: 2, prepMinutes: 15 } }),
+        prisma.menuItem.create({ data: { versionId: 1, categoryId: category.id, name: 'Malabi', price: 700, position: 3 } }),
     ])
 })
 

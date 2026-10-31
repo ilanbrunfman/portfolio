@@ -10,13 +10,13 @@ beforeEach(async () => {
     ;[waiter, cook, manager] = await Promise.all(['WAITER', 'COOK', 'MANAGER'].map(as))
     table = await prisma.diningTable.create({ data: { label: 'T5', seats: 4, position: 1 } })
     const [mains, desserts] = await Promise.all([
-        prisma.menuCategory.create({ data: { name: 'Mains', position: 1 } }),
-        prisma.menuCategory.create({ data: { name: 'Desserts', position: 2 } }),
+        prisma.menuCategory.create({ data: { versionId: 1, name: 'Mains', position: 1 } }),
+        prisma.menuCategory.create({ data: { versionId: 1, name: 'Desserts', position: 2 } }),
     ])
     ;[shakshuka, kebab, malabi] = await Promise.all([
-        prisma.menuItem.create({ data: { categoryId: mains.id, name: 'Shakshuka', price: 1400, position: 1 } }),
-        prisma.menuItem.create({ data: { categoryId: mains.id, name: 'Kebab', price: 1700, position: 2 } }),
-        prisma.menuItem.create({ data: { categoryId: desserts.id, name: 'Malabi', price: 700, position: 1 } }),
+        prisma.menuItem.create({ data: { versionId: 1, categoryId: mains.id, name: 'Shakshuka', price: 1400, position: 1 } }),
+        prisma.menuItem.create({ data: { versionId: 1, categoryId: mains.id, name: 'Kebab', price: 1700, position: 2 } }),
+        prisma.menuItem.create({ data: { versionId: 1, categoryId: desserts.id, name: 'Malabi', price: 700, position: 1 } }),
     ])
 })
 

@@ -132,8 +132,14 @@ PostgreSQL schema next to the bank's.
   closes it at 04:00 restaurant time.
 - **Losses:** money lost per month, by reason and by dish – returns, waste,
   and fixes (which cost nothing but are counted).
-- **Prices are copied** when a dish is ordered, so a menu change never
-  rewrites an old bill. Money is in whole cents; totals are calculated from
+- **Menu versions:** the Chef changes a draft copy of the menu while guests
+  keep ordering from the one in use, then publishes it now or from a date
+  (it switches by itself). Every version keeps its dishes, dates and who
+  made it; the Versions tab shows what changed, income per day, the best
+  menu so far, and compares any menu with the current one. Sold out stays
+  a live switch.
+- **Prices are copied** when a dish is ordered, and each bill line keeps the
+  menu version it came from, so a menu change never rewrites an old bill. Money is in whole cents; totals are calculated from
   rows, not stored.
 
 ### Run it
@@ -141,7 +147,8 @@ PostgreSQL schema next to the bank's.
 Same setup as the bank tracker above (Docker, `npm run db:migrate`,
 `npm run db:seed`), then open the app + `/taim`. The seed gives a busy
 evening (tables dining, tickets waiting, started, on hold, to go, a remake
-and a fix) and eight weeks of history for Bills and Losses. Pick **Lior**
+and a fix), 13 weeks of history for Bills and Losses, and four menus
+(Spring, Summer, Autumn in use, a Winter draft). Pick **Lior**
 (Waiter) for the floor and orders, **Yossi** (Cook) for the kitchen, or
 **Noa** (Manager) for everything.
 

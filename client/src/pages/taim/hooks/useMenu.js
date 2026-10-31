@@ -2,7 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { api } from '@/pages/taim/api/client'
 
 /**
- * The menu (GET /api/taim/menu) plus the actions that change it. Each action
+ * A menu plus the actions that change it: the menu in use (GET
+ * /api/taim/menu, where only sold out changes) or, with a versionId, that
+ * version's menu (GET /api/taim/menu/versions/:id – the draft, where
+ * everything changes). Each action
  * waits for the server, then updates the local copy with what it returned,
  * so the screen always shows what's really saved. Actions throw on failure
  * (err.fields has per-field messages) so forms can show them.
@@ -10,21 +13,23 @@ import { api } from '@/pages/taim/api/client'
  * reorderDishes is the exception: it shows the new order straight away (so
  * a drag feels instant) and puts the old order back if the server refuses.
  *
+ * @param {number|null} [versionId]  A version's menu instead of the one in use.
  * @returns {{ categories: object[]|null, error: string, reload: () => void,
- *   createCategory, renameCategory, deleteCategory, createDish, updateDish, reorderDishes }}
+ *   createCategory, renameCategory, deleteCategory, createDish, updateDish, deleteDish, reorderDishes }}
  */
-export function useMenu() {
+export function useMenu(versionId = null) {
     const [categories, setCategories] = useState(null) // null = still loading
     const [error, setError] = useState('')
     const [attempt, setAttempt] = useState(0)
 
     useEffect(() => {
         let cancelled = false
-        api('/menu')
+        const load = versionId ? api(`/menu/versions/${versionId}`).then((version) => version.categories) : api('/menu')
+        load
             .then((data) => { if (!cancelled) { setCategories(data); setError('') } })
             .catch((err) => { if (!cancelled) setError(err.message) })
         return () => { cancelled = true }
-    }, [attempt])
+    }, [attempt, versionId])
 
     const reload = useCallback(() => setAttempt((n) => n + 1), [])
 
@@ -65,6 +70,12 @@ export function useMenu() {
         setCategories((list) => placeDish(list, dish))
     }, [])
 
+    /** Take a dish off the draft */
+    const deleteDish = useCallback(async (id) => {
+        await api(`/menu-items/${id}`, { method: 'DELETE' })
+        setCategories((list) => list.map((c) => ({ ...c, items: c.items.filter((item) => item.id !== id) })))
+    }, [])
+
     /** New order for one category's dishes (ids, top first), e.g. after a drag */
     const reorderDishes = useCallback(async (categoryId, dishIds) => {
         let before
@@ -85,5 +96,5 @@ export function useMenu() {
         }
     }, [])
 
-    return { categories, error, reload, createCategory, renameCategory, deleteCategory, createDish, updateDish, reorderDishes }
+    return { categories, error, reload, createCategory, renameCategory, deleteCategory, createDish, updateDish, deleteDish, reorderDishes }
 }

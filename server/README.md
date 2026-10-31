@@ -76,12 +76,15 @@ daily spending, and transfers (monthly savings, ATM withdrawals, credit card
 payments). It uses a fixed random seed, so every run gives the same data.
 
 **Ta'im** (`seeds/taim.js`): one staff member per role: Noa (Manager),
-Avi (Chef), Yossi (Cook), Dana (Host), Lior (Waiter); a menu of 4
-categories and 13 dishes with prep times (Schnitzel starts sold out); 8
+Avi (Chef), Yossi (Cook), Dana (Host), Lior (Waiter); four menu
+versions: the Spring menu (13 to 8 weeks ago), the Summer menu (8 to 3
+weeks ago), the
+Autumn menu in use now (4 categories, 13 dishes with prep times; Schnitzel
+starts sold out) and a Winter draft by Avi (lentil soup, dearer mint tea); 8
 tables (T1–T8). A busy evening right now: 4 tables dining and a take-out,
 with kitchen tickets waiting, started, on hold, to go, a remake (a cold
 shakshuka) and a fix (a kebab "medium, not rare"); T3 needs cleaning.
-And 8 weeks of history: closed bills every day (more Thursday to
+And 13 weeks of history: closed bills every day (more Thursday to
 Saturday), some dishes coming back (remade or not), fixed, dropped or
 redone, and each night closed as a business day through the app's own
 close-the-day code (now and then automatically at 04:00). Fixed random
@@ -154,8 +157,8 @@ src/
     taim/         Ta'im, the restaurant app
       index.js    all Ta'im routes as one router
       roles.js    who may do what: rights and screens per role
-      routes/     staff, session, menu, floor (tables and orders), kitchen
-      services/   order JSON and the bill total
+      routes/     staff, session, menu, menuVersions, floor (tables and orders), kitchen, …
+      services/   order JSON and the bill total, business days, menu versions
       schemas/    Zod schemas
       middleware/ requireStaff + allow(right)
 test/
@@ -166,7 +169,7 @@ test/
     *.test.js     one file per area (accounts, transactions, …)
   taim/
     helpers.js    resetTaim, as(role)
-    *.test.js     session, roles, menu, floor, kitchen
+    *.test.js     session, roles, menu, menuVersions, floor, kitchen, …
 ```
 
 Each project lives in its own folder under `src/projects/` and only imports
@@ -280,7 +283,8 @@ The rights live in one place, `src/projects/taim/roles.js`:
 
 | Right | Manager | Chef | Cook | Host | Waiter |
 |---|:-:|:-:|:-:|:-:|:-:|
-| `editMenu`: dishes and prices | ✓ | ✓ | | | |
+| `editMenu`: the draft menu (dishes, prices, categories); sold out on the menu in use | ✓ | ✓ | | | |
+| `publishMenu`: publish the draft, now or on a date | | ✓ | | | |
 | `setUpTables`: add, rename, seats | ✓ | | | | |
 | `seatTable`: seat, start take-out, move or undo a seating | ✓ | | | ✓ | ✓ |
 | `addDishes`: a table's dishes (add, send, move, remove) | ✓ | | | | ✓ |
@@ -298,13 +302,22 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | POST | `/api/taim/session` | `{ staffId }` | `{ staff, rights, screens }` + cookie (404 if no such person) |
 | GET | `/api/taim/session` | | The picked person: `{ staff, rights, screens }` (401 if nobody) |
 | DELETE | `/api/taim/session` | | 204, cookie cleared (switch person) |
-| GET | `/api/taim/menu` | | Categories in menu order, each with its `items` in `position` order (hidden ones marked `hidden: true`) |
-| POST | `/api/taim/categories` | `{ name }` | 201, added at the end of the menu (409 if the name exists) |
-| PATCH | `/api/taim/categories/:id` | `{ name }` | The renamed category |
-| DELETE | `/api/taim/categories/:id` | | 204, only when it has no dishes (409 otherwise) |
-| POST | `/api/taim/menu-items` | `{ categoryId, name, price, description?, prepMinutes?, hidden? }` | 201 + the dish, at the top of its category (409 if the name exists) |
-| PATCH | `/api/taim/menu-items/:id` | any of those fields | The updated dish; `{ hidden: true }` = sold out; a new `categoryId` puts it at the top there |
-| PUT | `/api/taim/categories/:id/dish-order` | `{ dishIds }`, top first | The category's dishes in their new order (400 unless the list is exactly that category's dishes) |
+| GET | `/api/taim/menu` | | The menu in use: categories in menu order, each with its `items` in `position` order (hidden ones marked `hidden: true`) |
+| POST | `/api/taim/categories` | `{ name }` | 201, added at the end of the draft's menu (409 if the name exists, or if there's no draft) |
+| PATCH | `/api/taim/categories/:id` | `{ name }` | The renamed category (a draft category; 409 otherwise) |
+| DELETE | `/api/taim/categories/:id` | | 204, a draft category with no dishes (409 otherwise) |
+| POST | `/api/taim/menu-items` | `{ categoryId, name, price, description?, prepMinutes?, hidden? }` | 201 + the dish, at the top of its draft category (409 if the name exists, or the category isn't the draft's) |
+| PATCH | `/api/taim/menu-items/:id` | any of those fields | The updated dish; `{ hidden: true }` = sold out; a new `categoryId` puts it at the top there. On the menu in use only `{ hidden }` (409 for anything else) |
+| DELETE | `/api/taim/menu-items/:id` | | 204, takes a dish off the draft (409 for the menu in use or older ones: bills point at them) |
+| PUT | `/api/taim/categories/:id/dish-order` | `{ dishIds }`, top first | The draft category's dishes in their new order (400 unless the list is exactly that category's dishes) |
+| GET | `/api/taim/menu/versions` | | Every version, newest first: status, dates, who, `dishCount`, `changes` from the version it was based on, `stats` (income, perDay, bills, averageBill, dishesSold, topDishes, returnRate) for versions that were in use; `bestId` (most income per day), `lastId` (the one before the menu in use) |
+| GET | `/api/taim/menu/versions/:id` | | One version with its categories and dishes |
+| GET | `/api/taim/menu/versions/compare` | `?from=1&to=2` | `{ changes }`: dishes added, removed and changed (field by field) between any two versions |
+| POST | `/api/taim/menu/versions` | `{ name, season?, note? }` | 201 + a new draft, a copy of the menu in use (409 if there's a draft or a scheduled menu already) |
+| PATCH | `/api/taim/menu/versions/:id` | `{ name?, season?, note? }` | The version |
+| DELETE | `/api/taim/menu/versions/:id` | | 204, discards the draft (or a scheduled one) with its dishes (409 for others) |
+| POST | `/api/taim/menu/versions/:id/publish` | `{ startsAt? }` | The draft becomes the menu in use now (the old one is archived), or `SCHEDULED` from `startsAt` (`publishMenu`; 409 if it's not the draft or has no dishes) |
+| POST | `/api/taim/menu/versions/:id/unschedule` | | 204, a scheduled menu goes back to being the draft (`publishMenu`) |
 | GET | `/api/taim/tables` | | Tables in floor order; `order` = the open order's summary (`guests`, `openedAt`, `dishCount`, `notSent`, `cameBack`, `total`) or `null` when free; `needsCleaning` after guests leave |
 | POST | `/api/taim/tables` | `{ label, seats }` | 201, added at the end of the floor (Manager; 409 if the label exists) |
 | PATCH | `/api/taim/tables/:id` | `{ label?, seats? }` | The updated table (Manager) |
@@ -317,7 +330,7 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | POST | `/api/taim/orders` | `{ type: 'TABLE', tableId, guests }` or `{ type: 'TAKEOUT', customerName, customerPhone? }` | 201 + the order (409 if the table is already seated or needs cleaning) |
 | PATCH | `/api/taim/orders/:id` | `{ tableId?, guests? }` | Fix a seating: move to another ready table and/or change guests (409 if fewer guests than a seat with dishes) |
 | DELETE | `/api/taim/orders/:id` | | 204, undo a seating or take-out; only while it has no dishes (409 otherwise) |
-| POST | `/api/taim/orders/:id/items` | `{ items: [{ menuItemId, quantity?, seat? }] }` | 201 + the order; one row per dish (`NEW`, not sent yet), price copied from the menu (409 if a dish is sold out or the bill is closed) |
+| POST | `/api/taim/orders/:id/items` | `{ items: [{ menuItemId, quantity?, seat? }] }` | 201 + the order; one row per dish (`NEW`, not sent yet), price copied from the menu (409 if a dish is sold out, from another menu version, or the bill is closed) |
 | POST | `/api/taim/orders/:id/send` | | Send every dish not sent yet to the kitchen as the order's next `round` (`NEW` → `PREPARING`, `firedAt` set); 409 if there's nothing new |
 | PATCH | `/api/taim/orders/:id/items/:itemId` | `{ seat }` (a number, or `null` = shared) | The order with the dish moved to that seat; any time while the bill is open |
 | DELETE | `/api/taim/orders/:id/items/:itemId` | | The order without that dish; while it's `NEW` or `PREPARING` (409 once sent out) |
@@ -330,8 +343,9 @@ The rights live in one place, `src/projects/taim/roles.js`:
 client can show only the screens that person may use.
 
 Everything except `/staff` and `/session` needs a picked person (401).
-Changing the menu needs `editMenu` (403 for Cook, Host, Waiter). Dishes are
-never deleted, only hidden, because orders will point to them; each dish can have a `prepMinutes` (how long the kitchen should take, 1–180,
+Changing the menu needs `editMenu` (403 for Cook, Host, Waiter). Dishes of
+a menu that was used are never deleted, only hidden, because orders point
+to them; each dish can have a `prepMinutes` (how long the kitchen should take, 1–180,
 set by the Chef; the Kitchen screen shows dishes against it); a price
 must be above 0, which the database itself also enforces (a `CHECK` rule
 added by hand to the migration).
@@ -340,6 +354,24 @@ Each dish has a `position` in its category (1 = top). Adding a dish shifts
 the others down one and takes position 1, in one transaction; saving a new
 order after a drag rewrites every position of that category in one
 transaction, so a half-saved order can't happen.
+
+**Menu versions.** The menu guests order from is one `ACTIVE` version.
+Changes go into a `DRAFT`: a copy of it (`POST /menu/versions`), where
+dishes, prices and categories change freely while guests keep ordering
+from the menu in use. The Chef publishes the draft now, or from a date
+(`SCHEDULED`: the timer that closes days switches it at that time, and
+any read of the menu does too); the version it replaces becomes
+`ARCHIVED` with the dates it ran. Sold out is the one change made on the
+menu in use: that's day to day, not a new version. Each version has its
+own rows of dishes, so an order line keeps pointing at the dish (and
+version) it was ordered from; a `dishKey` follows the same dish across
+versions, so the Versions tab can say what changed (added, removed,
+price 13 → 14). The database keeps it straight: one `ACTIVE`, one `DRAFT`
+and one `SCHEDULED` at most (partial unique indexes), dates that fit the
+status (a `CHECK`), and a dish's category must be of the same version (a
+foreign key on both columns). Income per version is what closed bills
+paid for its dishes; per day makes menus that ran for different lengths
+comparable.
 
 **Floor and orders.** A table is "taken" while it has an `OPEN` order; it
 isn't stored anywhere else. The database allows at most one open order per

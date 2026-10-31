@@ -18,29 +18,77 @@ enum StaffRole {
 // The people on the "Who are you?" screen. There are no passwords: picking
 // a person is the login, and the server checks their role on every request.
 model Staff {
-  id            Int           @id @default(autoincrement())
-  name          String
-  role          StaffRole
-  createdAt     DateTime      @default(now())
-  orders        Order[]
-  daysClosed    BusinessDay[]
-  dishesFired   OrderItem[]   @relation("DishFiredBy")
-  dishesStarted OrderItem[]   @relation("DishStartedBy")
-  dishesServed  OrderItem[]   @relation("DishServedBy")
-  returns       ItemReturn[]
+  id             Int           @id @default(autoincrement())
+  name           String
+  role           StaffRole
+  createdAt      DateTime      @default(now())
+  orders         Order[]
+  daysClosed     BusinessDay[]
+  dishesFired    OrderItem[]   @relation("DishFiredBy")
+  dishesStarted  OrderItem[]   @relation("DishStartedBy")
+  dishesServed   OrderItem[]   @relation("DishServedBy")
+  menusCreated   MenuVersion[] @relation("VersionCreatedBy")
+  menusPublished MenuVersion[] @relation("VersionPublishedBy")
+  returns        ItemReturn[]
 
   @@map("staff")
   @@schema("taim")
 }
 
-// A section of the menu: Starters, Mains, … shown in `position` order.
-// (Named MenuCategory because the bank already has a Category model.)
-model MenuCategory {
-  id       Int        @id @default(autoincrement())
-  name     String     @unique
-  position Int // 1, 2, 3… menu order
-  items    MenuItem[]
+// Step 3.1: the menu has versions. The ACTIVE one is what everyone uses;
+// the Chef edits a DRAFT (a copy of it) and publishes it – now, or on a
+// date (SCHEDULED until then); the one it replaces becomes ARCHIVED, with
+// the dates it ran. At most one of each of ACTIVE, DRAFT and SCHEDULED
+// (partial unique indexes in the migration). Each version owns its own
+// categories and dishes, so old bills keep pointing at the dishes they were
+// ordered from, and income per version is exact.
+enum MenuVersionStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  ARCHIVED
 
+  @@schema("taim")
+}
+
+model MenuVersion {
+  id            Int               @id @default(autoincrement())
+  number        Int               @unique // v1, v2, v3…
+  name          String // "Autumn 2026"
+  season        String? // Spring, Summer, Autumn, Winter, or anything ("Holidays")
+  note          String? // "new grill dishes"
+  status        MenuVersionStatus
+  basedOnId     Int? // the version this draft was copied from
+  basedOn       MenuVersion?      @relation("BasedOn", fields: [basedOnId], references: [id], onDelete: SetNull)
+  copies        MenuVersion[]     @relation("BasedOn")
+  createdById   Int? // null = the starting menu, made by the migration
+  createdBy     Staff?            @relation("VersionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt     DateTime          @default(now())
+  publishedById Int?
+  publishedBy   Staff?            @relation("VersionPublishedBy", fields: [publishedById], references: [id], onDelete: Restrict)
+  publishedAt   DateTime? // when the Chef tapped Publish
+  activeFrom    DateTime? // when it became (or becomes, if scheduled) the menu in use
+  activeTo      DateTime? // when the next one replaced it
+  categories    MenuCategory[]
+  items         MenuItem[]
+
+  @@map("menu_versions")
+  @@schema("taim")
+}
+
+// A section of the menu: Starters, Mains, … shown in `position` order, in
+// one menu version. (Named MenuCategory because the bank already has a
+// Category model.)
+model MenuCategory {
+  id        Int         @id @default(autoincrement())
+  versionId Int
+  version   MenuVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  name      String
+  position  Int // 1, 2, 3… menu order
+  items     MenuItem[]
+
+  @@unique([versionId, name])
+  @@unique([id, versionId]) // lets a dish's (categoryId, versionId) point here: same version guaranteed
   @@map("categories")
   @@schema("taim")
 }
@@ -51,10 +99,16 @@ model MenuCategory {
 // to the top and the Chef can drag them into any order.
 model MenuItem {
   id          Int          @id @default(autoincrement())
+  // Its version (the same as its category's: a composite foreign key)
+  versionId   Int
+  version     MenuVersion  @relation(fields: [versionId], references: [id], onDelete: Cascade)
   categoryId  Int
   // Restrict: a category with dishes can't be deleted
-  category    MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  name        String       @unique
+  category    MenuCategory @relation(fields: [categoryId, versionId], references: [id, versionId], onDelete: Restrict)
+  // The same dish across versions (copied into each new draft): change logs
+  // and comparisons follow it even when its name or price changes
+  dishKey     String       @default(uuid())
+  name        String
   description String?
   price       Int // cents: 1400 = 14.00
   prepMinutes Int? // how long the kitchen should take, set by the Chef; null = not set
@@ -64,7 +118,9 @@ model MenuItem {
   updatedAt   DateTime     @updatedAt
   orderItems  OrderItem[]
 
+  @@unique([versionId, name])
   @@index([categoryId, position])
+  @@index([dishKey])
   @@map("menu_items")
   @@schema("taim")
 }

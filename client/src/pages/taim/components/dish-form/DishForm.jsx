@@ -14,9 +14,11 @@ import { centsToInput, parseMoney } from '@/pages/taim/utils/money'
  * @param {object[]} props.categories          [{ id, name }] to pick from.
  * @param {number} [props.categoryId]          Pre-picked category for a new dish.
  * @param {(data: object) => Promise} props.onSave   Create/update; throws with err.fields on failure.
+ * @param {() => Promise} [props.onDelete]   Remove the dish (from the draft); asks once first.
  * @param {() => void} props.onDone            Called after saving, and on Cancel.
  */
-const DishForm = ({ dish, categories, categoryId, onSave, onDone }) => {
+const DishForm = ({ dish, categories, categoryId, onSave, onDelete, onDone }) => {
+    const [confirmDelete, setConfirmDelete] = useState(false)
     const [name, setName] = useState(dish?.name ?? '')
     const [category, setCategory] = useState(String(dish?.categoryId ?? categoryId ?? categories[0]?.id ?? ''))
     const [price, setPrice] = useState(dish ? centsToInput(dish.price) : '')
@@ -66,6 +68,18 @@ const DishForm = ({ dish, categories, categoryId, onSave, onDone }) => {
             const { _: general, ...fields } = err.fields ?? {}
             setErrors({ ...fields, form: Object.keys(fields).length ? general : (general ?? err.message) })
             setSaving(false)
+        }
+    }
+
+    const remove = async () => {
+        setSaving(true)
+        try {
+            await onDelete()
+            onDone()
+        } catch (err) {
+            setErrors({ form: err.message })
+            setSaving(false)
+            setConfirmDelete(false)
         }
     }
 
@@ -132,6 +146,11 @@ const DishForm = ({ dish, categories, categoryId, onSave, onDone }) => {
             />
 
             <div className="d-flex flex-wrap justify-end gap-0-5">
+                {dish && onDelete && (
+                    <Button variant="secondary" className="mr-auto" onClick={confirmDelete ? remove : () => setConfirmDelete(true)} disabled={saving}>
+                        {confirmDelete ? `Yes, remove ${dish.name}` : 'Remove dish'}
+                    </Button>
+                )}
                 <Button variant="ghost" onClick={onDone} disabled={saving}>Cancel</Button>
                 <Button type="submit" disabled={saving}>{saving ? 'Saving…' : dish ? 'Save dish' : 'Add dish'}</Button>
             </div>

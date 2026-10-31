@@ -1,0 +1,34 @@
+// What changed between two menus – visuals only
+.version-changes {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.92rem;
+
+    &__mark {
+        width: 1ch;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__name {
+        color: var(--text-h);
+    }
+
+    // + green, − red, ~ the accent
+    .is-added &__mark {
+        color: #30a46c;
+    }
+
+    .is-removed &__mark {
+        color: #e5484d;
+    }
+
+    .is-changed &__mark {
+        color: var(--accent);
+    }
+
+    .is-removed &__name {
+        text-decoration: line-through;
+    }
+}

@@ -1,10 +1,13 @@
 // Ta'im demo data: one staff member per role (the people on the
 // "Who are you?" screen), a small menu and 8 tables; a busy evening right
 // now (tables dining, tickets in the kitchen – waiting, started, held, to
-// go, a remake, a fix – and a take-out); and eight weeks of history (closed
+// go, a remake, a fix – and a take-out); and 13 weeks of history (closed
 // bills, dishes that came back, waste and fixes, each night closed as a
 // business day) so Bills and Losses have something to show. Prices are
 // cents. The history is random but the same on every run (fixed seed).
+// Step 3.1: four menu versions – Spring and Summer (archived), Autumn (the
+// menu in use, MENU below) and a Winter draft – and each day of history is
+// ordered from the menu that was in use that day.
 //
 // ⚠ Wipes all Ta'im rows first.
 
@@ -41,6 +44,45 @@ export const MENU = [
         { name: 'Turkish coffee', price: 400, prepMinutes: 4 },
     ]],
 ]
+
+// The menus around MENU (Autumn, in use). A dish keeps its key across
+// versions when its name stays, so the Versions tab can say what changed.
+// Summer: lighter – a watermelon salad, cheaper shakshuka and lemonana, no
+// knafeh or kebab (they came back for Autumn).
+const SUMMER = MENU.map(([category, items]) => [
+    category,
+    [
+        ...(category === 'Starters' ? [{ name: 'Watermelon salad', price: 1000, prepMinutes: 4, description: 'Watermelon, feta, mint' }] : []),
+        ...items
+            .filter((item) => item.name !== 'Knafeh' && item.name !== 'Kebab')
+            .map((item) => ({
+                ...item,
+                hidden: false,
+                price: { Shakshuka: 1300, Lemonana: 450 }[item.name] ?? item.price,
+            })),
+    ],
+])
+// Spring (before Summer): a fava bean salad instead of the watermelon one,
+// and shakshuka and sabich a little cheaper
+const SPRING = SUMMER.map(([category, items]) => [
+    category,
+    [
+        ...(category === 'Starters' ? [{ name: 'Fava bean salad', price: 950, prepMinutes: 5, description: 'Fava beans, lemon, dill' }] : []),
+        ...items
+            .filter((item) => item.name !== 'Watermelon salad')
+            .map((item) => ({ ...item, price: { Shakshuka: 1250, Sabich: 1100 }[item.name] ?? item.price })),
+    ],
+])
+// Winter (the Chef's draft): lentil soup, and mint tea goes up
+const WINTER = MENU.map(([category, items]) => [
+    category,
+    [
+        ...(category === 'Starters' ? [{ name: 'Lentil soup', price: 1100, prepMinutes: 6, description: 'Red lentils, cumin, lemon' }] : []),
+        ...items.map((item) => ({ ...item, price: item.name === 'Mint tea' ? 450 : item.price })),
+    ],
+])
+const SUMMER_DAYS_AGO = 56 // Summer started 8 weeks ago (Spring ran before it)
+const AUTUMN_DAYS_AGO = 21 // Autumn has been the menu in use for three weeks
 
 // label, seats – in floor order
 export const TABLES = [
@@ -124,7 +166,7 @@ function random(seed) {
     }
 }
 
-const HISTORY_DAYS = 56
+const HISTORY_DAYS = 91 // 13 weeks: Spring's 5 weeks, Summer's 5, Autumn's 3
 const TAKEOUT_NAMES = ['Maya', 'Omer', 'Tzlil', 'Ben', 'Chen', 'Yael', 'Itay', 'Noga', 'Amit', 'Shira']
 const RETURN_REASONS = ['COLD', 'COLD', 'TASTE', 'TASTE', 'UNDERCOOKED', 'WRONG_DISH', 'TOO_SLOW', 'OTHER']
 const RETURN_NOTES = { COLD: 'lukewarm', TASTE: 'too salty', UNDERCOOKED: 'pink inside', WRONG_DISH: 'ordered the sabich', TOO_SLOW: null, OTHER: null }
@@ -133,34 +175,72 @@ const FIX_NOTES = ['more salt', 'medium, not rare', 'extra tahini', 'warm it up'
 /** @param {import('../../src/generated/prisma/client.ts').PrismaClient} prisma */
 export async function seedTaim(prisma) {
     // Start clean: empty the tables and restart ids at 1
-    await prisma.$executeRaw`TRUNCATE TABLE taim.item_returns, taim.order_items, taim.orders, taim.business_days, taim.dining_tables, taim.menu_items, taim.categories, taim.staff RESTART IDENTITY CASCADE`
+    await prisma.$executeRaw`TRUNCATE TABLE taim.item_returns, taim.order_items, taim.orders, taim.business_days, taim.dining_tables, taim.menu_items, taim.categories, taim.menu_versions, taim.staff RESTART IDENTITY CASCADE`
 
     await prisma.staff.createMany({ data: STAFF })
+    const staffId = Object.fromEntries((await prisma.staff.findMany()).map((p) => [p.name, p.id]))
 
-    let dishCount = 0
-    for (const [index, [name, items]] of MENU.entries()) {
-        // Dishes keep the order they're listed in (position 1 = top)
-        const dishes = items.map((item, i) => ({ ...item, position: i + 1 }))
-        await prisma.menuCategory.create({ data: { name, position: index + 1, items: { create: dishes } } })
-        dishCount += items.length
-    }
+    // The three menus, on the restaurant's clock
+    const { zonedTime, restaurantToday } = await import('../../src/projects/taim/services/days.js')
+    const today = restaurantToday()
+    const daysAgo = (days, hour = 11) => zonedTime(today.year, today.month, today.day - days, hour, 0)
+    const springFrom = daysAgo(HISTORY_DAYS)
+    const summerFrom = daysAgo(SUMMER_DAYS_AGO)
+    const autumnFrom = daysAgo(AUTUMN_DAYS_AGO)
+    const keys = new Map() // dish name → dishKey, shared by every version
+    const spring = await createVersion(prisma, keys, SPRING, {
+        number: 1, name: 'Spring menu', season: 'Spring', note: 'Fresh greens and fava beans',
+        status: 'ARCHIVED', createdById: staffId.Noa, createdAt: daysAgo(HISTORY_DAYS + 5), publishedById: staffId.Avi, publishedAt: daysAgo(HISTORY_DAYS + 2),
+        activeFrom: springFrom, activeTo: summerFrom,
+    })
+    const summer = await createVersion(prisma, keys, SUMMER, {
+        number: 2, name: 'Summer menu', season: 'Summer', note: 'Light dishes for the hot months',
+        status: 'ARCHIVED', basedOnId: spring.id, createdById: staffId.Avi, createdAt: daysAgo(SUMMER_DAYS_AGO + 3), publishedById: staffId.Avi, publishedAt: daysAgo(SUMMER_DAYS_AGO + 1),
+        activeFrom: summerFrom, activeTo: autumnFrom,
+    })
+    const autumn = await createVersion(prisma, keys, MENU, {
+        number: 3, name: 'Autumn menu', season: 'Autumn', note: 'Knafeh and kebab are back',
+        status: 'ACTIVE', basedOnId: summer.id, createdById: staffId.Avi, createdAt: daysAgo(AUTUMN_DAYS_AGO + 4), publishedById: staffId.Avi, publishedAt: daysAgo(AUTUMN_DAYS_AGO + 2),
+        activeFrom: autumnFrom,
+    })
+    await createVersion(prisma, keys, WINTER, {
+        number: 4, name: 'Winter menu', season: 'Winter', note: 'Soup season', status: 'DRAFT', basedOnId: autumn.id, createdById: staffId.Avi, createdAt: daysAgo(2, 16),
+    })
+    const dishCount = MENU.reduce((sum, [, items]) => sum + items.length, 0)
 
     await prisma.diningTable.createMany({
         data: TABLES.map(([label, seats], i) => ({ label, seats, position: i + 1, needsCleaning: NEEDS_CLEANING.includes(label) })),
     })
 
-    const staffId = Object.fromEntries((await prisma.staff.findMany()).map((p) => [p.name, p.id]))
     const tables = await prisma.diningTable.findMany({ orderBy: { position: 'asc' } })
     const tableId = Object.fromEntries(tables.map((t) => [t.label, t.id]))
-    const dish = Object.fromEntries((await prisma.menuItem.findMany()).map((d) => [d.name, d]))
+    const dishesOf = async (version) => Object.fromEntries((await prisma.menuItem.findMany({ where: { versionId: version.id } })).map((d) => [d.name, d]))
+    const dish = await dishesOf(autumn)
 
-    const history = await seedHistory(prisma, { staffId, tables, dish })
+    // Each day of history from the menu in use that day
+    const history = await seedHistory(prisma, { staffId, tables, menuOn: { spring: await dishesOf(spring), summer: await dishesOf(summer), autumn: dish } })
     await seedNow(prisma, { staffId, tableId, dish })
 
     console.log(
-        `Ta'im: ${STAFF.length} staff (${STAFF.map((s) => s.name).join(', ')}), ${MENU.length} categories, ${dishCount} dishes, ${TABLES.length} tables, ` +
+        `Ta'im: ${STAFF.length} staff (${STAFF.map((s) => s.name).join(', ')}), 4 menu versions (Spring, Summer, Autumn in use, a Winter draft), ${MENU.length} categories, ${dishCount} dishes, ${TABLES.length} tables, ` +
             `${NOW.length} open orders, ${history.bills} past bills in ${history.days} closed days (${history.returns} returns, ${history.waste} waste, ${history.fixes} fixes)`
     )
+}
+
+/**
+ * One menu version with its categories and dishes (position 1 = top, in
+ * the order listed). A dish name seen in an earlier version keeps its key.
+ */
+async function createVersion(prisma, keys, menu, data) {
+    const version = await prisma.menuVersion.create({ data })
+    for (const [index, [name, items]] of menu.entries()) {
+        const dishes = items.map((item, i) => {
+            if (!keys.has(item.name)) keys.set(item.name, crypto.randomUUID())
+            return { ...item, dishKey: keys.get(item.name), position: i + 1 }
+        })
+        await prisma.menuCategory.create({ data: { versionId: version.id, name, position: index + 1, items: { create: dishes } } })
+    }
+    return version
 }
 
 /** The busy evening right now (NOW) */
@@ -225,20 +305,22 @@ async function seedNow(prisma, { staffId, tableId, dish }) {
  * midnight, or by itself at 04:00 – through the app's own closeDay, so the
  * reports are what the app would have saved.
  */
-async function seedHistory(prisma, { staffId, tables, dish }) {
+async function seedHistory(prisma, { staffId, tables, menuOn }) {
     // Hours on the restaurant's clock (TAIM_TIME_ZONE), whatever this machine's is
     const { closeDay, zonedTime, restaurantToday } = await import('../../src/projects/taim/services/days.js')
     const today = restaurantToday()
     const rand = random(20261030)
     const pick = (list) => list[Math.floor(rand() * list.length)]
-    const dishes = Object.values(dish).filter((d) => !d.hidden)
-    const mains = dishes.filter((d) => d.prepMinutes >= 8)
     const counts = { bills: 0, days: 0, returns: 0, waste: 0, fixes: 0 }
 
     for (let daysAgo = HISTORY_DAYS; daysAgo >= 1; daysAgo -= 1) {
         const at = (hour, minute = 0, nextDay = 0) => zonedTime(today.year, today.month, today.day - daysAgo + nextDay, hour, minute)
         const weekday = (today.weekday - (daysAgo % 7) + 7) % 7
         const weekend = [4, 5, 6].includes(weekday) // Thu, Fri, Sat
+        // The menu that was in use that day: Spring, then Summer, then Autumn
+        const dish = daysAgo > SUMMER_DAYS_AGO ? menuOn.spring : daysAgo > AUTUMN_DAYS_AGO ? menuOn.summer : menuOn.autumn
+        const dishes = Object.values(dish).filter((d) => !d.hidden)
+        const mains = dishes.filter((d) => d.prepMinutes >= 8)
         const bills = Math.round((weekend ? 12 : 7) + rand() * 6)
 
         for (let b = 0; b < bills; b += 1) {

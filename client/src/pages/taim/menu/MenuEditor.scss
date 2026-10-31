@@ -69,3 +69,50 @@
         padding: 0.25rem 0.75rem;
     }
 }
+
+// ---------- versions (step 3.1) ----------
+.menu-editor {
+    &__panel {
+        padding-top: 0.75rem;
+    }
+
+    // The version strip above a menu: "#2 Autumn menu · Autumn"
+    &__version {
+        box-sizing: border-box;
+    }
+
+    &__version-name {
+        color: var(--text-h);
+        font-size: 1.05rem;
+    }
+
+    &__season {
+        color: var(--text);
+        font-weight: 400;
+    }
+
+    &__note {
+        font-style: italic;
+    }
+
+    &__subheading {
+        margin: 0;
+        color: var(--text-h);
+        font-size: 1.05rem;
+    }
+
+    &__label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    // "Becomes the menu in use on …": a calm accent note
+    &__scheduled {
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        background: var(--accent-bg);
+        color: var(--text-h);
+    }
+}

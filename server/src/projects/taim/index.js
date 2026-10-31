@@ -6,6 +6,7 @@ import menuRouter from './routes/menu.js'
 import floorRouter from './routes/floor.js'
 import kitchenRouter from './routes/kitchen.js'
 import billsRouter from './routes/bills.js'
+import menuVersionsRouter from './routes/menuVersions.js'
 import lossesRouter from './routes/losses.js'
 
 // Every Ta'im route, as one router. app.js mounts it at /api/taim.
@@ -22,6 +23,8 @@ taim.use('/session', sessionRouter)
 // Everything below needs a picked person (req.staff)
 taim.use(requireStaff)
 
+// /menu/versions (before /menu's routes: same prefix)
+taim.use(menuVersionsRouter)
 // /menu, /categories, /menu-items
 taim.use(menuRouter)
 // /tables, /orders

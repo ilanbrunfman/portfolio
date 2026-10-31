@@ -36,8 +36,8 @@ describe('autoCloseDay', () => {
         await resetTaim()
         waiter = await as('WAITER')
         table = await prisma.diningTable.create({ data: { label: 'T1', seats: 4, position: 1 } })
-        const category = await prisma.menuCategory.create({ data: { name: 'Mains', position: 1 } })
-        hummus = await prisma.menuItem.create({ data: { categoryId: category.id, name: 'Hummus', price: 900, position: 1 } })
+        const category = await prisma.menuCategory.create({ data: { versionId: 1, name: 'Mains', position: 1 } })
+        hummus = await prisma.menuItem.create({ data: { versionId: 1, categoryId: category.id, name: 'Hummus', price: 900, position: 1 } })
     })
 
     /** A bill opened at `openedAt`: closed (default) or still open */

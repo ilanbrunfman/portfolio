@@ -11,13 +11,13 @@ beforeEach(async () => {
     cook = await as('COOK')
     table = await prisma.diningTable.create({ data: { label: 'T1', seats: 4, position: 1 } })
     const [starters, mains] = await Promise.all([
-        prisma.menuCategory.create({ data: { name: 'Starters', position: 1 } }),
-        prisma.menuCategory.create({ data: { name: 'Mains', position: 2 } }),
+        prisma.menuCategory.create({ data: { versionId: 1, name: 'Starters', position: 1 } }),
+        prisma.menuCategory.create({ data: { versionId: 1, name: 'Mains', position: 2 } }),
     ])
     ;[hummus, salad, kebab] = await Promise.all([
-        prisma.menuItem.create({ data: { categoryId: starters.id, name: 'Hummus', price: 900, position: 1, prepMinutes: 5 } }),
-        prisma.menuItem.create({ data: { categoryId: starters.id, name: 'Salad', price: 800, position: 2 } }),
-        prisma.menuItem.create({ data: { categoryId: mains.id, name: 'Kebab', price: 1700, position: 1, prepMinutes: 15 } }),
+        prisma.menuItem.create({ data: { versionId: 1, categoryId: starters.id, name: 'Hummus', price: 900, position: 1, prepMinutes: 5 } }),
+        prisma.menuItem.create({ data: { versionId: 1, categoryId: starters.id, name: 'Salad', price: 800, position: 2 } }),
+        prisma.menuItem.create({ data: { versionId: 1, categoryId: mains.id, name: 'Kebab', price: 1700, position: 1, prepMinutes: 15 } }),
     ])
 })
 

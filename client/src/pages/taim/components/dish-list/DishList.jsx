@@ -14,12 +14,14 @@ const verticalOnly = ({ transform }) => ({ ...transform, x: 0 })
  * One category's dishes, in order, as rows you can drag to reorder (mouse,
  * touch or keyboard, using the grip handle). Each row: name and
  * description, price, "On menu", Edit.
+ * Without onReorder there's no grip, without onEdit no Edit (the menu in
+ * use: only "On menu" changes there).
  *
  * @param {object} props
  * @param {object[]} props.dishes                       The category's dishes, top first.
- * @param {(dishIds: number[]) => void} props.onReorder Called with the new order after a drop.
+ * @param {(dishIds: number[]) => void} [props.onReorder] Called with the new order after a drop.
  * @param {(dish: object) => void} props.onToggle       Switch a dish on/off the menu.
- * @param {(dish: object) => void} props.onEdit         Open the dish's edit form.
+ * @param {(dish: object) => void} [props.onEdit]       Open the dish's edit form.
  * @param {number|null} [props.toggling]                Id of the dish being switched (its box is disabled).
  */
 const DishList = ({ dishes, onReorder, onToggle, onEdit, toggling = null }) => {
@@ -67,6 +69,7 @@ const DishList = ({ dishes, onReorder, onToggle, onEdit, toggling = null }) => {
                             dish={dish}
                             onToggle={onToggle}
                             onEdit={onEdit}
+                            canDrag={Boolean(onReorder)}
                             toggling={toggling === dish.id}
                         />
                     ))}
@@ -77,8 +80,8 @@ const DishList = ({ dishes, onReorder, onToggle, onEdit, toggling = null }) => {
 }
 
 /** One draggable row; only the grip handle starts a drag */
-const DishRow = ({ dish, onToggle, onEdit, toggling }) => {
-    const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: dish.id })
+const DishRow = ({ dish, onToggle, onEdit, canDrag, toggling }) => {
+    const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id: dish.id, disabled: !canDrag })
     const style = { transform: CSS.Transform.toString(transform), transition }
 
     return (
@@ -87,16 +90,18 @@ const DishRow = ({ dish, onToggle, onEdit, toggling }) => {
             style={style}
             className={`dish-list__row d-flex align-items-start gap-1 ${dish.hidden ? 'is-sold-out' : ''} ${isDragging ? 'is-dragging' : ''}`}
         >
-            <button
-                type="button"
-                ref={setActivatorNodeRef}
-                className="dish-list__handle"
-                aria-label={`Reorder ${dish.name}`}
-                {...attributes}
-                {...listeners}
-            >
-                <Icon name="IconDotsSixVertical" size={18} />
-            </button>
+            {canDrag && (
+                <button
+                    type="button"
+                    ref={setActivatorNodeRef}
+                    className="dish-list__handle"
+                    aria-label={`Reorder ${dish.name}`}
+                    {...attributes}
+                    {...listeners}
+                >
+                    <Icon name="IconDotsSixVertical" size={18} />
+                </button>
+            )}
 
             <div className="dish-list__body d-flex flex-wrap align-items-start gap-1">
                 <div className="dish-list__text d-flex flex-column">
@@ -111,9 +116,11 @@ const DishRow = ({ dish, onToggle, onEdit, toggling }) => {
                 <div className="dish-list__controls d-flex align-items-center gap-1">
                     <span className="dish-list__price">{formatMoney(dish.price)}</span>
                     <Checkbox label="On menu" checked={!dish.hidden} onChange={() => onToggle(dish)} disabled={toggling} />
-                    <Button size="sm" variant="ghost" onClick={() => onEdit(dish)}>
-                        Edit
-                    </Button>
+                    {onEdit && (
+                        <Button size="sm" variant="ghost" onClick={() => onEdit(dish)}>
+                            Edit
+                        </Button>
+                    )}
                 </div>
             </div>
         </li>

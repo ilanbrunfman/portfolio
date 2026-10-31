@@ -39,7 +39,7 @@ new order straight away, and puts the old one back if the server refuses.
 | Prop        | Type                      | Description |
 |-------------|---------------------------|-------------|
 | `dishes`    | `object[]`                | The category's dishes, top first. |
-| `onReorder` | `(dishIds: number[]) => void` | Called after a drop that changed the order. |
+| `onReorder` | `(dishIds: number[]) => void` | Optional. Called after a drop that changed the order. Without it there's no grip (the menu in use: dishes don't move there). |
 | `onToggle`  | `(dish) => void`          | Switch the dish on/off the menu. |
-| `onEdit`    | `(dish) => void`          | Open the dish's edit form. |
+| `onEdit`    | `(dish) => void`          | Optional. Open the dish's edit form; without it there's no Edit (the menu in use: only *On menu* changes). |
 | `toggling`  | `number \| null`          | Id of the dish being switched; its checkbox is disabled. |
