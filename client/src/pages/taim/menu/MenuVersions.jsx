@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useStaff } from '@/pages/taim/context/StaffContext'
 import VersionCard from '@/pages/taim/components/version-card/VersionCard'
 import VersionCompare from '@/pages/taim/components/version-compare/VersionCompare'
-import VersionMenu from '@/pages/taim/components/version-menu/VersionMenu'
+import { useMenu } from '@/pages/taim/hooks/useMenu'
+import MenuBoard from './MenuBoard'
 import Modal from '@/components/ui/modal/Modal'
 import { versionTags } from '@/pages/taim/utils/versions'
 
@@ -46,13 +47,19 @@ const MenuVersions = ({ versions }) => {
                 />
             ))}
             <Modal isOpen={Boolean(viewing)} onClose={() => setViewing(null)} title={viewing ? `#${viewing.number} ${viewing.name}` : ''}>
-                {viewing && <VersionMenu versionId={viewing.id} />}
+                {viewing && <VersionDishes versionId={viewing.id} />}
             </Modal>
             <Modal isOpen={Boolean(pair)} onClose={() => setComparing(null)} title="Compare menus" size="lg">
                 {pair && <VersionCompare older={pair[0]} newer={pair[1]} loadChanges={versions.compare} />}
             </Modal>
         </div>
     )
+}
+
+/** A version's dishes in the same accordion as the menu in use, read only */
+const VersionDishes = ({ versionId }) => {
+    const menu = useMenu(versionId)
+    return <MenuBoard menu={menu} readOnly />
 }
 
 export default MenuVersions

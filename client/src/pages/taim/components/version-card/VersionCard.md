@@ -12,7 +12,7 @@ One menu version on **Menu → Versions**:
   bills paid for its dishes (not dishes that came back or were wasted, nor
   free ones).
 - Folded: what changed from the version it was based on (`VersionChanges`).
-- **View dishes** (when `onView` is given): the version's dishes, read only.
+- **View dishes** (when `onView` is given): the version's dishes in the same accordion as the menu in use, read only.
 - **Compare with current** (when `onCompare` is given).
 - **Use this menu again** (when `onUseAgain` is given: older menus, for
   Manager and Chef). Asks once, then the menu comes back as a new version

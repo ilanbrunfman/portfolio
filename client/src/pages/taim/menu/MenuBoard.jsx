@@ -13,13 +13,15 @@ import './MenuEditor.scss'
  *   editable (the draft) – + Category, + Dish, Rename, Edit and Remove
  *     dish, drag a dish by its grip to reorder (see DishList)
  *   not editable (the menu in use) – only "On menu" (sold out) changes
+ *   readOnly (an older menu, in Versions → View dishes) – nothing changes
  *
  * @param {object} props
  * @param {object} props.menu          useMenu() (or useMenu(draftId)).
  * @param {boolean} [props.editable]
+ * @param {boolean} [props.readOnly]    Look only (an older menu): no "On menu" switch either.
  * @param {() => void} [props.onChanged]  After any saved change (e.g. reload what changed).
  */
-const MenuBoard = ({ menu, editable = false, onChanged }) => {
+const MenuBoard = ({ menu, editable = false, readOnly = false, onChanged }) => {
     const { categories } = menu
     // What the modal shows: { kind: 'dish' | 'category', item?, categoryId? } or null
     const [editing, setEditing] = useState(null)
@@ -136,7 +138,7 @@ const MenuBoard = ({ menu, editable = false, onChanged }) => {
                                     <DishList
                                         dishes={category.items}
                                         onReorder={editable ? (dishIds) => reorder(category.id, dishIds) : undefined}
-                                        onToggle={toggleOnMenu}
+                                        onToggle={readOnly ? undefined : toggleOnMenu}
                                         onEdit={editable ? (dish) => setEditing({ kind: 'dish', item: dish }) : undefined}
                                         toggling={toggling}
                                     />
