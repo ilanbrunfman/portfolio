@@ -90,6 +90,23 @@ export function restaurantToday(now = new Date(), timeZone = TIME_ZONE) {
 }
 
 /**
+ * Which restaurant date a closed day belongs to, from when it closed: the
+ * date on the restaurant's clock, or the day before when it closed after
+ * midnight but by the end of the day (04:00). "2026-10-30"
+ *   closed Fri 23:51 → Fri · closed Sat 01:10 → Fri · closed automatically Sat 04:00 → Fri
+ */
+export function businessDate(closedAt, at = DAY_ENDS_AT, timeZone = TIME_ZONE) {
+    const local = new Date(closedAt.getTime() + zoneOffset(closedAt, timeZone)) // wall clock, read as UTC
+    const [hour, minute] = at.split(':').map(Number)
+    const minutes = local.getUTCHours() * 60 + local.getUTCMinutes()
+    if (minutes <= hour * 60 + minute) local.setUTCDate(local.getUTCDate() - 1)
+    return local.toISOString().slice(0, 10)
+}
+
+/** A closed day for the API: its report plus `date` (businessDate) */
+export const toDayJson = (day) => ({ ...day, date: businessDate(day.closedAt) })
+
+/**
  * Close the business day: save its report and lock its bills.
  *   closedById  who tapped "Close the day"; null = closed automatically
  *   before      automatic close: only bills opened before this time (the

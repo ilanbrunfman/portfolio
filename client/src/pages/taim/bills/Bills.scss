@@ -148,16 +148,68 @@
         white-space: nowrap;
     }
 
+    // Week / Month / Year: a section per day, week or month (shared Accordion)
+    &__groups {
+        box-sizing: border-box;
+        padding-block: 0.25rem;
+
+        > .accordion__item:first-child {
+            border-top: 0;
+        }
+
+        > .accordion__item > .accordion__header {
+            padding: 0.85rem 1rem;
+            line-height: 1.3;
+
+            &:hover {
+                background: transparent;
+            }
+        }
+
+        .accordion__title {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        // The bill rows sit a little in from the section header
+        .bills__list {
+            padding-inline: 1.25rem 1rem;
+            padding-bottom: 0.5rem;
+        }
+    }
+
+    &__group-name {
+        color: var(--text-h);
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    &__group-count {
+        color: var(--text);
+        font-size: 0.85rem;
+        font-weight: 400;
+        font-variant-numeric: tabular-nums;
+    }
+
+    // Closed days inside a section: one report after another, a line between
     &__days {
         list-style: none;
         margin: 0;
-        padding: 0;
-        display: grid;
-        gap: 0.75rem;
+        padding: 0 1rem 0.75rem 1.25rem;
 
         > li {
             box-sizing: border-box;
+            padding-block: 0.75rem;
         }
+
+        > li + li {
+            border-top: 1px solid var(--border);
+        }
+    }
+
+    // Bills | Closed days, under the totals
+    &__view > .tabs__panel {
+        padding-top: 0.75rem;
     }
 
     // The bill in the dialog has no card of its own

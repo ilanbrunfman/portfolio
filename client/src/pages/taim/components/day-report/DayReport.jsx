@@ -1,5 +1,6 @@
 import { formatMoney } from '@/pages/taim/utils/money'
 import { clockTime } from '@/pages/taim/utils/orders'
+import { dateOfDay } from '@/pages/taim/utils/billGroups'
 import './DayReport.scss'
 
 /** "Fri 30 Oct" */
@@ -17,14 +18,15 @@ const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateStrin
  * @param {object} props.day  A BusinessDay from the API.
  */
 const DayReport = ({ day }) => (
-    <article className="day-report d-flex flex-column gap-0-5" aria-label={`Day of ${dayName(day.openedAt)}`}>
+    <article className="day-report d-flex flex-column gap-0-5" aria-label={`Day of ${dayName(dateOfDay(day))}`}>
         <header className="d-flex flex-wrap justify-between align-items-baseline gap-0-5">
-            {/* Named after the day it started: Thursday's night closed at 04:00 Friday is Thursday */}
-            <strong className="day-report__title">{dayName(day.openedAt)}</strong>
+            {/* Named after its date (from the server): Friday's night closed at 01:00 or 04:00 Saturday is Friday */}
+            <strong className="day-report__title">{dayName(dateOfDay(day))}</strong>
+            {/* When it was closed (the day before's close isn't shown: it isn't this day's start) */}
             <span className="form__hint">
-                {clockTime(day.openedAt)} → {sameDay(day.openedAt, day.closedAt) ? '' : `${dayName(day.closedAt)} `}
-                {clockTime(day.closedAt)} ·{' '}
-                {day.closedBy ? `closed by ${day.closedBy.name}` : 'closed automatically'}
+                Closed {sameDay(dateOfDay(day), day.closedAt) ? '' : `${dayName(day.closedAt)} `}
+                {clockTime(day.closedAt)}
+                {day.closedBy ? ` by ${day.closedBy.name}` : ' automatically'}
             </span>
         </header>
         <dl className="day-report__figures">

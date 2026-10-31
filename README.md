@@ -127,7 +127,7 @@ PostgreSQL schema next to the bank's.
   give another dish instead (a dessert on us), free. Waste is recorded too:
   cancelled after cooking started, dropped, or made wrong (*Redo*).
 - **Bills and end of day:** totals and every bill by day, week, month or
-  year. The manager or chef closes the day (refused while bills are open),
+  year (a week grouped by day, a month by week, a year by month). The manager or chef closes the day (refused while bills are open),
   which saves a report and locks its bills; if nobody does, the server
   closes it at 04:00 restaurant time.
 - **Losses:** money lost per month, by reason and by dish – returns, waste,
