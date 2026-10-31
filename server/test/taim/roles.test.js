@@ -5,6 +5,7 @@ import supertest from 'supertest'
 import { requireStaff, allow } from '../../src/projects/taim/middleware/staff.js'
 import { errorHandler } from '../../src/shared/middleware/errors.js'
 import { RIGHTS, ROLES } from '../../src/projects/taim/roles.js'
+import { createSession } from '../../src/projects/taim/services/sessions.js'
 import { resetTaim, prisma } from './helpers.js'
 
 beforeEach(resetTaim)
@@ -21,7 +22,8 @@ const request = supertest(guarded)
 /** Send the request as the staff member with this role */
 async function asRole(role) {
     const staff = await prisma.staff.findFirstOrThrow({ where: { role } })
-    return request.get('/api/taim/edit-menu').set('Cookie', `taim_staff=${staff.id}`)
+    const { token } = await createSession(staff.id) // logged in (step 8.1: a real session)
+    return request.get('/api/taim/edit-menu').set('Cookie', `taim_session=${token}`)
 }
 
 describe('allow(right)', () => {
@@ -62,6 +64,7 @@ describe('the rights grid', () => {
 
     it('gives the manager every right except the kitchen ones (the Manager only looks at the kitchen)', () => {
         const notManager = ['advanceDish', 'fireHeld']
+        expect(RIGHTS.manageStaff).toEqual(['MANAGER'])
         expect(RIGHTS.publishMenu).toEqual(['MANAGER', 'CHEF'])
         for (const [right, roles] of Object.entries(RIGHTS)) {
             if (notManager.includes(right)) expect(roles).not.toContain('MANAGER')

@@ -3,7 +3,7 @@ import { prisma } from '../../../shared/db.js'
 import { validate } from '../../../shared/middleware/validate.js'
 import { requireAuth } from '../middleware/auth.js'
 import { HttpError } from '../../../shared/lib/httpError.js'
-import { hashPassword, verifyPassword } from '../lib/password.js'
+import { hashPassword, verifyPassword } from '../../../shared/lib/password.js'
 import { credentials } from '../schemas/auth.js'
 import { SESSION_COOKIE, cookieOptions, createSession, deleteSession, toUserJson } from '../services/auth.js'
 

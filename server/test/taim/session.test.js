@@ -1,39 +1,68 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import supertest from 'supertest'
-import { anonymous, resetTaim, as, app, prisma } from './helpers.js'
+import { anonymous, resetTaim, as, app, prisma, pinOf } from './helpers.js'
 
 beforeEach(resetTaim)
 
 describe('GET /api/taim/staff', () => {
-    it('lists everyone to pick from, manager first, without logging in', async () => {
+    it('lists the people working here, manager first, with their demo PINs, without logging in', async () => {
         const res = await anonymous.get('/api/taim/staff').expect(200)
         expect(res.body.map((s) => s.role)).toEqual(['MANAGER', 'CHEF', 'COOK', 'HOST', 'WAITER'])
-        expect(res.body[0]).toEqual({ id: expect.any(Number), name: 'Noa', role: 'MANAGER' })
+        expect(res.body[0]).toEqual({ id: expect.any(Number), name: 'Noa', role: 'MANAGER', demoPin: '1111' })
+        expect(JSON.stringify(res.body)).not.toMatch(/pinHash|scrypt/)
+    })
+
+    it('leaves out someone who left', async () => {
+        await prisma.staff.updateMany({ where: { name: 'Lior' }, data: { active: false } })
+        const res = await anonymous.get('/api/taim/staff').expect(200)
+        expect(res.body.map((s) => s.name)).not.toContain('Lior')
     })
 })
 
-describe('POST /api/taim/session (pick who you are)', () => {
-    it('remembers the person in an httpOnly cookie for the Ta\'im API only', async () => {
-        const avi = await prisma.staff.findFirstOrThrow({ where: { name: 'Avi' } })
-        const res = await anonymous.post('/api/taim/session').send({ staffId: avi.id }).expect(200)
+describe('POST /api/taim/session (name + PIN, step 8.1)', () => {
+    const avi = () => prisma.staff.findFirstOrThrow({ where: { name: 'Avi' } })
+    let aviId
+    beforeEach(async () => { aviId = (await avi()).id })
+    const login = (pin, agent = anonymous) => agent.post('/api/taim/session').send({ staffId: aviId, pin })
 
-        expect(res.body.staff).toEqual({ id: avi.id, name: 'Avi', role: 'CHEF' })
+    it('the right PIN starts a session: a random token in an httpOnly cookie for the Ta\'im API only', async () => {
+        const res = await login(pinOf('Avi')).expect(200)
+        expect(res.body.staff).toEqual({ id: expect.any(Number), name: 'Avi', role: 'CHEF' })
         const cookie = res.headers['set-cookie'].join(';')
-        expect(cookie).toMatch(/taim_staff=\d+/)
+        expect(cookie).toMatch(/taim_session=[\w-]{40,}/)
         expect(cookie).toMatch(/Path=\/api\/taim/)
         expect(cookie).toMatch(/HttpOnly/)
+        // The database keeps only a hash of the token
+        const [session] = await prisma.staffSession.findMany()
+        expect(cookie).not.toContain(session.id)
     })
 
-    it('answers 404 for someone who does not exist', async () => {
-        const res = await anonymous.post('/api/taim/session').send({ staffId: 999 }).expect(404)
-        expect(res.body.error).toBe('Staff member not found')
+    it('a wrong PIN says how many tries are left; the 5th locks them for a minute, even with the right PIN', async () => {
+        const first = await login('0000').expect(401)
+        expect(first.body.error).toBe('Wrong PIN: 4 tries left')
+        for (let i = 0; i < 3; i += 1) await login('0000').expect(401)
+        const locked = await login('0000').expect(429)
+        expect(locked.body.error).toBe('Too many wrong PINs: try again in 60 s')
+        await login(pinOf('Avi')).expect(429)
+        // A minute later the right PIN works, and the count starts again
+        await prisma.staff.update({ where: { id: (await avi()).id }, data: { lockedUntil: new Date(Date.now() - 1000) } })
+        await login(pinOf('Avi')).expect(200)
+        expect((await avi()).failedPins).toBe(0)
     })
 
-    it('answers 400 with a field message when staffId is missing or wrong', async () => {
+    it('someone who left, or has no PIN yet, cannot log in; 404 for nobody', async () => {
+        const id = (await avi()).id
+        await prisma.staff.update({ where: { id }, data: { pinHash: null } })
+        expect((await login('2222').expect(409)).body.error).toBe('Avi has no PIN yet: ask the Manager to set one')
+        await prisma.staff.update({ where: { id }, data: { active: false } })
+        expect((await login('2222').expect(403)).body.error).toBe("Avi doesn't work here any more")
+        await anonymous.post('/api/taim/session').send({ staffId: 999, pin: '1234' }).expect(404)
+    })
+
+    it('answers 400 with field messages for a missing person or a PIN that is not 4 digits', async () => {
         const missing = await anonymous.post('/api/taim/session').send({}).expect(400)
-        expect(missing.body.fields).toEqual({ staffId: 'Pick a staff member' })
-        await anonymous.post('/api/taim/session').send({ staffId: 'abc' }).expect(400)
-        await anonymous.post('/api/taim/session').send({ staffId: -1 }).expect(400)
+        expect(missing.body.fields).toEqual({ staffId: 'Pick a staff member', pin: 'Type the 4-digit PIN' })
+        for (const pin of ['123', '12345', 'abcd', 1234]) await login(pin).expect(400)
     })
 })
 
@@ -43,9 +72,15 @@ describe('GET /api/taim/session', () => {
         expect(res.body.error).toBe('Pick who you are first')
     })
 
-    it('answers 401 for a cookie that is not a real staff member', async () => {
-        await anonymous.get('/api/taim/session').set('Cookie', 'taim_staff=999').expect(401)
-        await anonymous.get('/api/taim/session').set('Cookie', 'taim_staff=abc').expect(401)
+    it('answers 401 for a made-up or old cookie, an expired session, and someone who left', async () => {
+        await anonymous.get('/api/taim/session').set('Cookie', 'taim_session=made-up').expect(401)
+        await anonymous.get('/api/taim/session').set('Cookie', 'taim_staff=1').expect(401) // the old one (before PINs)
+        const cook = await as('COOK')
+        await prisma.staffSession.updateMany({ data: { expiresAt: new Date(Date.now() - 1000) } })
+        await cook.get('/api/taim/session').expect(401)
+        const host = await as('HOST')
+        await prisma.staff.updateMany({ where: { role: 'HOST' }, data: { active: false } })
+        await host.get('/api/taim/session').expect(401)
     })
 
     it('returns the person with their rights and screens', async () => {
@@ -75,18 +110,19 @@ describe('GET /api/taim/session', () => {
     it('gives the manager every screen and every right except the kitchen ones (view only there)', async () => {
         const manager = await as('MANAGER')
         const res = await manager.get('/api/taim/session').expect(200)
-        expect(res.body.screens).toEqual(['floor', 'order', 'kitchen', 'menu', 'bills', 'losses'])
-        expect(res.body.rights).toHaveLength(13)
+        expect(res.body.screens).toEqual(['floor', 'order', 'kitchen', 'menu', 'bills', 'losses', 'staff'])
+        expect(res.body.rights).toHaveLength(14)
         expect(res.body.rights).not.toContain('advanceDish')
         expect(res.body.rights).not.toContain('fireHeld')
     })
 })
 
 describe('DELETE /api/taim/session (switch person)', () => {
-    it('forgets who was picked', async () => {
+    it('ends this device\'s session', async () => {
         const host = await as('HOST')
         await host.delete('/api/taim/session').expect(204)
         await host.get('/api/taim/session').expect(401)
+        expect(await prisma.staffSession.count()).toBe(0)
     })
 })
 

@@ -1,7 +1,8 @@
 import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto'
 import { promisify } from 'node:util'
 
-// Password hashing with Node's built-in scrypt (no extra library).
+// Password (and PIN) hashing with Node's built-in scrypt (no extra library).
+// Shared: the bank hashes passwords, Ta'im hashes staff PINs.
 // Stored format: "scrypt$<salt>$<hash>" (base64url). The random salt makes
 // the same password hash differently for every user; scrypt is deliberately
 // slow, so guessing passwords from a leaked database is expensive.
