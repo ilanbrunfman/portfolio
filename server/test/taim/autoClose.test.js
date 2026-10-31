@@ -92,6 +92,17 @@ describe('autoCloseDay', () => {
     })
 })
 
+describe('businessDate: which date a closed day belongs to', () => {
+    it('is the closing date, or the day before when it closed after midnight but by 04:00', async () => {
+        const { businessDate } = await import('../../src/projects/taim/services/days.js')
+        const at = (iso) => businessDate(new Date(iso), '04:00', 'Asia/Jerusalem')
+        expect(at('2026-10-30T20:51:00Z')).toBe('2026-10-30') // Fri 23:51
+        expect(at('2026-10-30T23:10:00Z')).toBe('2026-10-30') // Sat 01:10
+        expect(at('2026-10-31T02:00:00Z')).toBe('2026-10-30') // Sat 04:00, closed automatically
+        expect(at('2026-10-31T02:01:00Z')).toBe('2026-10-31') // Sat 04:01
+    })
+})
+
 describe('zonedTime / restaurantToday: the restaurant clock', () => {
     it('turns a wall-clock time into the right instant, in winter and summer', async () => {
         const { zonedTime, restaurantToday } = await import('../../src/projects/taim/services/days.js')

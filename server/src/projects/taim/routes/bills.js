@@ -4,7 +4,7 @@ import { validate } from '../../../shared/middleware/validate.js'
 import { allow } from '../middleware/staff.js'
 import { billsQuery } from '../schemas/bills.js'
 import { TITLE_SELECT, billTotal, titleOf } from '../services/orders.js'
-import { DAY_SELECT, autoCloseStatus, closeDay, totalsOf } from '../services/days.js'
+import { DAY_SELECT, autoCloseStatus, closeDay, toDayJson, totalsOf } from '../services/days.js'
 
 // Reviewing bills (reviewBills: Manager, Chef, Host) and closing the day
 // (closeDay: Manager, Chef; or automatically at the set time).
@@ -46,7 +46,8 @@ const toBillJson = ({ items, table, customerName, ...bill }) => ({
 //           day was never closed)
 //   totals: bills, open, closed, tables / take-outs, guests, sales, average bill
 //   bills:  newest first, at most 3000 (`more` = how many weren't listed)
-//   days:   the days closed in the period, newest first (their saved reports)
+//   days:   the days closed in the period, newest first (their saved reports,
+//           each with `date`: the restaurant date it belongs to)
 //   autoClose (today only): { at: "04:00", due, waiting } – due = the set
 //           time passed and the day isn't closed; waiting = open bills
 //           holding it back
@@ -75,7 +76,7 @@ router.get('/bills', allow('reviewBills'), validate({ query: billsQuery }), asyn
         totals: totalsOf(all),
         bills: listed.slice(0, LIST_LIMIT).map(toBillJson),
         more: Math.max(0, listed.length - LIST_LIMIT),
-        days,
+        days: days.map(toDayJson),
         ...(autoClose && { autoClose: { at: autoClose.at, due: autoClose.due, waiting: autoClose.waiting } }),
     })
 })
@@ -85,7 +86,7 @@ router.get('/bills', allow('reviewBills'), validate({ query: billsQuery }), asyn
 // nothing to close. If nobody does it, the server closes the day at the set
 // time (services/days.js, autoClose.js).
 router.post('/days/close', allow('closeDay'), async (req, res) => {
-    res.status(201).json(await closeDay({ closedById: req.staff.id }))
+    res.status(201).json(toDayJson(await closeDay({ closedById: req.staff.id })))
 })
 
 export default router

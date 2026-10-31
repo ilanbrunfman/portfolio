@@ -92,6 +92,7 @@ describe('POST /api/taim/days/close', () => {
         await bill({ takeout: 'Maya', dishes: [kebab] })
 
         const day = (await chef.post('/api/taim/days/close').expect(201)).body
+        expect(day.date).toMatch(/^\d{4}-\d{2}-\d{2}$/) // the restaurant date it belongs to
         expect(day).toMatchObject({ billCount: 2, tableBills: 1, takeoutBills: 1, guests: 3, sales: 4300, cameBack: 0, cameBackValue: 0, closedBy: { name: expect.any(String) } })
         expect(await prisma.order.count({ where: { businessDayId: day.id } })).toBe(2)
 
