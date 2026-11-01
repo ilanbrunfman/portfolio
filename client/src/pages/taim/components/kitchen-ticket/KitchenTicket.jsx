@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Button from '@/components/ui/button/Button'
+import LiveTimer from '@/pages/taim/components/live-timer/LiveTimer'
 import { minutesSince } from '@/pages/taim/hooks/useNow'
 import { clockTime, seatLabel, timing, reasonLabel } from '@/pages/taim/utils/orders'
 import { allergenText, allergyWho, allergyWhat } from '@/pages/taim/utils/allergens'
@@ -26,6 +27,9 @@ const WAIT_ALERT_MINUTES = 5
  * Step 5.4: a ticket with allergies (its seats', or the whole table's) has
  * a red ALLERGY box; Start and Served wait until a cook taps "Seen" (a
  * change to the allergies asks again). A dish that clashes says so.
+ * 5.5: the minutes since it was sent roll up once a minute (LiveTimer), and
+ * each started dish with a prep time has a thin bar filling toward it –
+ * amber near the end, red when late – so the late dish stands out.
  *
  * @param {object} props
  * @param {object} props.ticket          { orderId, title, type, round, firedAt, startedAt, startedBy, dishes: [{ id, name, seat, toGo, startedAt, prepMinutes }] }
@@ -87,7 +91,9 @@ const KitchenTicket = ({ ticket, now, onServe, onStart, onAllergySeen, onRedo })
                         {ticket.type === 'TABLE' ? `Round ${ticket.round} · ` : ''}sent {clockTime(ticket.firedAt)}
                     </span>
                 </span>
-                <span className="kitchen-ticket__elapsed">{sinceSent} min</span>
+                <span className="kitchen-ticket__elapsed">
+                    <LiveTimer since={ticket.firedAt} kind="minutes" size="inherit" label="Since it was sent" />
+                </span>
             </header>
 
             {allergies.length > 0 && (
@@ -155,6 +161,12 @@ const KitchenTicket = ({ ticket, now, onServe, onStart, onAllergySeen, onRedo })
                                     : dish.prepMinutes ? `${cooking(dish)} of ${dish.prepMinutes} min` : `${cooking(dish)} min · no prep time`}
                                 {states[i] === 'late' && <span className="kitchen-ticket__late">Late</span>}
                             </span>
+                            {/* How far along its prep time it is (started dishes with a prep time) */}
+                            {started && dish.prepMinutes && (
+                                <span className={`kitchen-ticket__bar is-${states[i]}`} aria-hidden="true">
+                                    <span style={{ width: `${Math.min(100, (cooking(dish) / dish.prepMinutes) * 100)}%` }} />
+                                </span>
+                            )}
                         </span>
                         <span className="d-flex flex-column align-items-end gap-0-5">
                             {onServe && (

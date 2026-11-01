@@ -238,4 +238,38 @@
         font-size: 0.8rem;
         font-weight: 700;
     }
+
+    // 5.5: a thin bar under a started dish, filling toward its prep time
+    &__bar {
+        display: block;
+        width: 100%;
+        max-width: 220px;
+        height: 4px;
+        margin-top: 0.3rem;
+        border-radius: 999px;
+        background: var(--border);
+        overflow: hidden;
+
+        > span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: #22a06b;
+            transition: width 0.6s ease, background 0.3s ease;
+        }
+
+        &.is-soon > span {
+            background: #d69e2e;
+        }
+
+        &.is-late > span {
+            background: #e5484d;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            > span {
+                transition: none;
+            }
+        }
+    }
 }

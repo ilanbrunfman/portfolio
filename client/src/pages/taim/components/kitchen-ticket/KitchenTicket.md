@@ -48,3 +48,11 @@ The colours come from `timing(elapsedMinutes, prepMinutes)` in `utils/orders.js`
 | `onStart` | `() => Promise`            | Optional. Start the ticket; throws on failure. |
 | `onAllergySeen` | `() => Promise`      | Optional (step 5.4). "Seen" on the ticket's red ALLERGY box; Start and Served stay disabled until it's tapped (or again after the allergies change). A dish that clashes says "Contains sesame: make it without". |
 | `onRedo`  | `(dishId) => Promise`      | Optional. Made wrong: waste the plate, start again. |
+
+## Live minutes and prep bars (5.5)
+
+The ticket's minutes since it was sent are a `LiveTimer` (`kind="minutes"`):
+the number rolls up once a minute. Each started dish with a prep time has a
+thin bar under it that fills toward its prep time: green, amber from 80%,
+red when late (the same thresholds as the dish's colour and LATE tag).
+Calm on purpose: no per-dish seconds counters.
