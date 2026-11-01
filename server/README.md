@@ -78,7 +78,8 @@ payments). It uses a fixed random seed, so every run gives the same data.
 **Ta'im** (`seeds/taim.js`): one staff member per role, each with a demo
 PIN, phone, hourly rate and start date: Noa (Manager, 1111), Avi (Chef,
 2222), Yossi (Cook, 3333), Dana (Host, 4444), Lior (Waiter, 5555), and
-Tamar, a waiter who left; four menu
+Tamar, a waiter who left; two weeks of clock-ins with breaks (a forgotten
+clock-out, an entry Noa fixed, everyone on tonight); four menu
 versions: the Spring menu (13 to 8 weeks ago), the Summer menu (8 to 3
 weeks ago), the
 Autumn menu in use now (4 categories, 13 dishes with prep times; Schnitzel
@@ -303,6 +304,7 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | `cleanTable`: mark a table clean | ✓ | | | ✓ | ✓ |
 | `combineTables`: combine or split tables | ✓ | | | ✓ | |
 | `manageStaff`: the roster (people, roles, rates, PINs) | ✓ | | | | |
+| `manageTime`: who's on now, everyone's timesheets, fix anyone's entries | ✓ | | | ✓ | |
 
 | Method | Path | Body | Returns |
 |--------|------|------|---------|
@@ -314,6 +316,12 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | POST | `/api/taim/roster` | `{ name, role, phone?, hourlyRate?, startDate?, pin }` | 201 + the person (409 if someone working here has that PIN) |
 | PATCH | `/api/taim/roster/:id` | any of those (not `pin`) + `active` | The person. `active: false` = they left: logged out everywhere. Not yourself; always one active Manager (409). Coming back clears the PIN |
 | PUT | `/api/taim/roster/:id/pin` | `{ pin }` | 204; their other sessions end, the demo PIN is gone, a lock is lifted |
+| GET | `/api/taim/clock` | | Your clock: the open entry (with breaks, worked minutes) and today's worked minutes; with `manageTime` also `onNow` (who's clocked in) |
+| POST | `/api/taim/clock/in` · `/out` · `/break-start` · `/break-end` | | Your clock; 409 when it doesn't fit (already in, not in, already on a break…). Clocking out ends a break |
+| GET | `/api/taim/timesheets` | `?from=&to=&staffId=` | Entries that started in the period, newest first, with worked and break minutes, totals and how many were forgotten. Your own, or anyone's with `manageTime` (403) |
+| PATCH | `/api/taim/time-entries/:id` | `{ clockIn, clockOut, breaks, reason }` | The fixed entry, marked edited and logged (who, why, before / after). Your own, or anyone's with `manageTime`. 400 for times out of order, in the future or breaks outside; 409 for an overlap |
+| POST | `/api/taim/time-entries` | `{ staffId?, clockIn, clockOut, breaks, reason }` | 201, an entry added by hand (forgot to clock in), logged |
+| GET | `/api/taim/time-entries/:id/edits` | | Its edit log, newest first |
 | GET | `/api/taim/menu` | | The menu in use: categories in menu order, each with its `items` in `position` order (hidden ones marked `hidden: true`) |
 | POST | `/api/taim/categories` | `{ name }` | 201, added at the end of the draft's menu (409 if the name exists, or if there's no draft) |
 | PATCH | `/api/taim/categories/:id` | `{ name }` | The renamed category (a draft category; 409 otherwise) |
@@ -369,6 +377,16 @@ Each dish has a `position` in its category (1 = top). Adding a dish shifts
 the others down one and takes position 1, in one transaction; saving a new
 order after a drag rewrites every position of that category in one
 transaction, so a half-saved order can't happen.
+
+**Time clock (step 8.2).** An entry runs from clock-in to clock-out with
+its breaks (unpaid: worked = clocked − breaks). The database keeps it
+honest: one open entry per person and one open break per entry (partial
+unique indexes), no two entries of the same person overlapping and no
+overlapping breaks (exclusion constraints on a `tsrange`, with the
+`btree_gist` extension), times in order and a reason on every edit
+(`CHECK`s). The timer that closes the day also closes entries nobody
+clocked out of by the end of the day (04:00), flagged `forgot`. Every fix
+by hand is logged in `time_edits` with its before and after.
 
 **Allergies (step 5.4).** Each dish lists its allergens (gluten, dairy,
 egg, peanuts, tree nuts, sesame, fish, shellfish, soy), set by the Chef;
