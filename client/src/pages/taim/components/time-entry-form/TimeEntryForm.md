@@ -7,9 +7,12 @@ to sit inside a `Modal`.
   (in 17:00, out 01:30). An entry still running may keep its end empty.
 - **Breaks (unpaid):** from / to each; add or remove them.
 - **Total worked** is counted as you type: clocked time minus breaks.
-- **Why the change?** is required: every change is logged with the
-  editor's name, and the entry's **Changes** (who, when, why, before →
-  after) show at the bottom.
+- **Why the change?** is optional, one pick from a dropdown (the shared `Select`):
+  Forgot to clock in · Forgot to clock out · Wrong start or end time · Break
+  not recorded · Stayed late / came in early · Other. **Other** shows an
+  optional "What happened?" field (sent as "Other: …"). Saving with no
+  reason is fine. Every change is logged with the editor's name, and the entry's **Changes** (who, when,
+  why, before → after) show at the bottom.
 - An entry closed because nobody clocked out says so, in amber.
 
 Everyone fixes their own entries; the Manager and Host anyone's (the
@@ -28,6 +31,6 @@ server checks).
 | Prop          | Type                              | Description |
 |---------------|-----------------------------------|-------------|
 | `entry`       | `object \| null`                  | From the timesheet, or `null` to add one. |
-| `onSave`      | `({ clockIn, clockOut, breaks, reason }) => Promise` | Throws with `err.fields`. |
+| `onSave`      | `({ clockIn, clockOut, breaks, reason }) => Promise` | `reason` may be `null`. Throws with `err.fields`. |
 | `loadHistory` | `(id) => Promise<object[]>`       | Optional. The entry's edits. |
 | `onDone`      | `() => void`                      | After saving, and on Cancel. |

@@ -1,18 +1,25 @@
 import { useEffect, useState } from 'react'
 import Input from '@/components/ui/form/input/Input'
+import Select from '@/components/ui/form/select/Select'
 import Button from '@/components/ui/button/Button'
 import { atTime, dateInput, duration, timeInput } from '@/pages/taim/utils/time'
 import { clockTime } from '@/pages/taim/utils/orders'
 import './TimeEntryForm.scss'
 
 const MINUTE = 60_000
+
+// Why an entry was changed: one pick; "Other" may add a few words
+const REASONS = ['Forgot to clock in', 'Forgot to clock out', 'Wrong start or end time', 'Break not recorded', 'Stayed late / came in early', 'Other']
+const OTHER = 'Other'
 const minutesBetween = (a, b) => Math.max(0, Math.round((b - a) / MINUTE))
 
 /**
  * Fix a time entry, or add one you forgot (step 8.2): the date, start and
  * end (an end earlier than the start is the next morning), the breaks
- * (unpaid), and the total worked, counted as you type. A reason is always
- * asked: every change is logged, and the entry's history shows below.
+ * (unpaid), and the total worked, counted as you type. Why the change is
+ * optional: one pick from a list ("Forgot to clock out"…), "Other" may add a
+ * few words. Every change is logged (who, before / after), and the entry's
+ * history shows below.
  * An entry still running may keep its end (and last break's end) empty.
  * Meant to sit inside a <Modal>.
  *
@@ -28,7 +35,8 @@ const TimeEntryForm = ({ entry, onSave, loadHistory, onDone }) => {
     const [start, setStart] = useState(entry ? timeInput(entry.clockIn) : '')
     const [end, setEnd] = useState(entry?.clockOut ? timeInput(entry.clockOut) : '')
     const [breaks, setBreaks] = useState(entry?.breaks.map((b) => ({ start: timeInput(b.startAt), end: b.endAt ? timeInput(b.endAt) : '' })) ?? [])
-    const [reason, setReason] = useState('')
+    const [reason, setReason] = useState('') // one of REASONS
+    const [otherText, setOtherText] = useState('') // optional, with "Other"
     const [errors, setErrors] = useState({})
     const [saving, setSaving] = useState(false)
     const [history, setHistory] = useState(null)
@@ -62,7 +70,6 @@ const TimeEntryForm = ({ entry, onSave, loadHistory, onDone }) => {
         const found = {}
         if (!start) found.clockIn = 'When did it start?'
         if (!end && !running) found.clockOut = 'When did it end?'
-        if (!reason.trim()) found.reason = 'Say why'
         if (Object.keys(found).length) return setErrors(found)
         setSaving(true)
         try {
@@ -70,7 +77,8 @@ const TimeEntryForm = ({ entry, onSave, loadHistory, onDone }) => {
                 clockIn: clockIn.toISOString(),
                 clockOut: clockOut ? clockOut.toISOString() : null,
                 breaks: breakTimes.map((b) => ({ startAt: b.startAt.toISOString(), endAt: b.endAt ? b.endAt.toISOString() : null })),
-                reason: reason.trim(),
+                // Optional: "Other: came in to cover Dana", the picked reason, or none
+                reason: reason === OTHER && otherText.trim() ? `${OTHER}: ${otherText.trim()}` : reason || null,
             })
             onDone()
         } catch (err) {
@@ -118,15 +126,24 @@ const TimeEntryForm = ({ entry, onSave, loadHistory, onDone }) => {
                 {breakMinutes > 0 && <span className="form__hint"> · {duration(breakMinutes)} of breaks</span>}
             </p>
 
-            <Input
-                label="Why the change?"
+            <Select
+                label="Why the change? (optional)"
+                placeholder="No reason given"
+                options={REASONS.map((r) => ({ value: r, label: r }))}
                 value={reason}
-                onChange={(e) => { setReason(e.target.value); setErrors((current) => ({ ...current, reason: undefined, form: undefined })) }}
+                onChange={(value) => { setReason(value); setErrors((current) => ({ ...current, reason: undefined, form: undefined })) }}
                 error={errors.reason}
-                maxLength={200}
-                placeholder={entry ? 'e.g. forgot to clock out at 23:00' : 'e.g. forgot to clock in'}
                 hint="Every change is kept, with your name."
             />
+            {reason === OTHER && (
+                <Input
+                    label="What happened? (optional)"
+                    value={otherText}
+                    onChange={(e) => setOtherText(e.target.value)}
+                    maxLength={180}
+                    placeholder="e.g. came in to cover Dana's shift"
+                />
+            )}
 
             <div className="d-flex flex-wrap justify-end gap-0-5">
                 <Button variant="ghost" onClick={onDone} disabled={saving}>Cancel</Button>
@@ -139,7 +156,7 @@ const TimeEntryForm = ({ entry, onSave, loadHistory, onDone }) => {
                     <ul>
                         {history.map((edit) => (
                             <li key={edit.id}>
-                                <strong>{edit.editedBy.name}</strong> · {new Date(edit.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} {clockTime(edit.createdAt)} · “{edit.reason}”
+                                <strong>{edit.editedBy.name}</strong> · {new Date(edit.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} {clockTime(edit.createdAt)} · {edit.reason ? `“${edit.reason}”` : 'no reason given'}
                                 <span className="form__hint">
                                     {edit.before
                                         ? ` · was ${clockTime(edit.before.clockIn)}–${edit.before.clockOut ? clockTime(edit.before.clockOut) : '…'}, now ${clockTime(edit.after.clockIn)}–${edit.after.clockOut ? clockTime(edit.after.clockOut) : '…'}`
