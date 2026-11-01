@@ -180,7 +180,7 @@ const NOW = [
 ]
 
 // A small, fixed-seed random generator (mulberry32): the same history on every run
-function random(seed) {
+export function random(seed) {
     let a = seed
     return () => {
         a = (a + 0x6d2b79f5) | 0
@@ -346,8 +346,17 @@ export async function seedClock(prisma, staffId, { tonight = true } = {}) {
 }
 
 /** The busy evening right now (NOW) */
-async function seedNow(prisma, { staffId, tableId, dish }) {
-    for (const order of NOW) {
+const seedNow = (prisma, ctx) => seedOpenOrders(prisma, NOW, ctx)
+
+/**
+ * Open orders right now, each like an entry of NOW: { where (a table label
+ * or a take-out name), guests, by, opened (minutes ago), phone?,
+ * allergies?, dishes: [[name, { seat, round, status (NEW · HELD · WAITING
+ * · COOKING · SERVED), sent (minutes ago), toGo?, cameBack?, fix?,
+ * allergyConfirmed? }]] }. Used for the busy evening and for today.
+ */
+export async function seedOpenOrders(prisma, orders, { staffId, tableId, dish }) {
+    for (const order of orders) {
         const isTable = order.where in tableId
         const created = await prisma.order.create({
             data: {
@@ -407,6 +416,82 @@ async function seedNow(prisma, { staffId, tableId, dish }) {
 }
 
 /**
+ * One closed bill: a table (or take-out) opened at `openedAt`, its dishes
+ * sent, started and served by the kitchen, paid 40–100 minutes later; now
+ * and then a dish comes back (remade or not), is fixed, dropped or redone.
+ * Used for the past days and for today (seeds/taimToday.js).
+ * @param {object} ctx  { openedAt, closeBy?, staffId (Lior, Noa, Yossi, Avi…), tables, dish (name → row), dishes, mains, rand, counts }
+ */
+export async function seedClosedBill(prisma, { openedAt, closeBy = null, staffId, tables, dish, dishes, mains, rand, counts }) {
+    const pick = (list) => list[Math.floor(rand() * list.length)]
+    const takeout = rand() < 0.2
+    const table = pick(tables)
+    const guests = takeout ? null : 1 + Math.floor(rand() * table.seats)
+    const by = rand() < 0.75 ? 'Lior' : 'Noa'
+    const items = []
+    const dishCountForBill = takeout ? 1 + Math.floor(rand() * 3) : guests + Math.floor(rand() * guests)
+    for (let i = 0; i < dishCountForBill; i += 1) {
+        const d = i < (guests ?? 1) && rand() < 0.7 ? pick(mains) : pick(dishes)
+        const firedAt = new Date(openedAt.getTime() + (3 + rand() * 5) * 60_000)
+        const startedAt = new Date(firedAt.getTime() + (1 + rand() * 4) * 60_000)
+        const sentOutAt = new Date(startedAt.getTime() + (d.prepMinutes ?? 5) * (0.8 + rand() * 0.5) * 60_000)
+        items.push({
+            menuItemId: d.id, price: d.price, seat: takeout ? null : rand() < 0.15 ? null : 1 + (i % guests),
+            status: 'SENT_OUT', round: 1, createdAt: openedAt, firedAt, firedById: staffId[by],
+            startedAt, startedById: rand() < 0.7 ? staffId.Yossi : staffId.Avi, sentOutAt, servedById: staffId.Yossi,
+        })
+    }
+    // Paid 40–100 minutes later (never after closeBy: today's bills are all closed by now)
+    const closedAt = new Date(Math.min(openedAt.getTime() + (40 + rand() * 60) * 60_000, closeBy?.getTime() ?? Infinity))
+    const order = await prisma.order.create({
+        data: {
+            type: takeout ? 'TAKEOUT' : 'TABLE', tableId: takeout ? null : table.id, guests,
+            customerName: takeout ? pick(TAKEOUT_NAMES) : null, customerPhone: takeout ? '050-555-0101' : null,
+            status: 'CLOSED', openedById: staffId[by], openedAt, closedAt,
+            items: { create: items },
+        },
+        include: { items: true },
+    })
+    counts.bills += 1
+
+    // Now and then a dish is sent back, given back or lost
+    for (const item of order.items) {
+        const roll = rand()
+        const at = new Date(item.sentOutAt.getTime() + 5 * 60_000)
+        if (roll < 0.04) {
+            const reason = pick(RETURN_REASONS)
+            await prisma.orderItem.update({ where: { id: item.id }, data: { status: 'CAME_BACK' } })
+            await prisma.itemReturn.create({ data: { orderItemId: item.id, kind: 'RETURN', reason, note: RETURN_NOTES[reason], staffId: staffId[by], createdAt: at } })
+            counts.returns += 1
+            if (rand() < 0.6) {
+                // made again (or the right dish), free
+                const instead = reason === 'WRONG_DISH' && dish.Sabich ? dish.Sabich : { id: item.menuItemId, price: item.price }
+                await prisma.orderItem.create({
+                    data: {
+                        orderId: order.id, menuItemId: instead.id, price: instead.price, seat: item.seat, status: 'SENT_OUT', round: 2, remakeOfId: item.id,
+                        createdAt: at, firedAt: at, firedById: staffId[by], startedAt: at, startedById: staffId.Avi, sentOutAt: new Date(at.getTime() + 10 * 60_000), servedById: staffId.Yossi,
+                    },
+                })
+            }
+        } else if (roll < 0.065) {
+            await prisma.itemReturn.create({ data: { orderItemId: item.id, kind: 'FIX', reason: rand() < 0.5 ? 'UNDERCOOKED' : 'TASTE', note: pick(FIX_NOTES), staffId: staffId[by], createdAt: at } })
+            counts.fixes += 1
+        } else if (roll < 0.08) {
+            // dropped or made wrong: a lost plate (WASTED) next to the one the guest got
+            const reason = rand() < 0.5 ? 'DROPPED' : 'MADE_WRONG'
+            const lost = await prisma.orderItem.create({
+                data: {
+                    orderId: order.id, menuItemId: item.menuItemId, price: item.price, seat: item.seat, status: 'WASTED', round: 1,
+                    createdAt: item.createdAt, firedAt: item.firedAt, firedById: item.firedById, startedAt: item.startedAt, startedById: item.startedById,
+                },
+            })
+            await prisma.itemReturn.create({ data: { orderItemId: lost.id, kind: 'WASTE', reason, staffId: reason === 'DROPPED' ? staffId[by] : staffId.Yossi, createdAt: at } })
+            counts.waste += 1
+        }
+    }
+}
+
+/**
  * Eight weeks of evenings: closed bills (more on Thursday to Saturday),
  * some dishes coming back (remade or not), fixed, dropped or redone, and
  * each night closed as a business day – by Noa or Avi just before
@@ -433,70 +518,7 @@ async function seedHistory(prisma, { staffId, tables, menuOn }) {
 
         for (let b = 0; b < bills; b += 1) {
             const openedAt = at(12, Math.floor(rand() * 9.5 * 60)) // 12:00 – 21:30
-            const takeout = rand() < 0.2
-            const table = pick(tables)
-            const guests = takeout ? null : 1 + Math.floor(rand() * table.seats)
-            const by = rand() < 0.75 ? 'Lior' : 'Noa'
-            const items = []
-            const dishCountForBill = takeout ? 1 + Math.floor(rand() * 3) : guests + Math.floor(rand() * guests)
-            for (let i = 0; i < dishCountForBill; i += 1) {
-                const d = i < (guests ?? 1) && rand() < 0.7 ? pick(mains) : pick(dishes)
-                const firedAt = new Date(openedAt.getTime() + (3 + rand() * 5) * 60_000)
-                const startedAt = new Date(firedAt.getTime() + (1 + rand() * 4) * 60_000)
-                const sentOutAt = new Date(startedAt.getTime() + (d.prepMinutes ?? 5) * (0.8 + rand() * 0.5) * 60_000)
-                items.push({
-                    menuItemId: d.id, price: d.price, seat: takeout ? null : rand() < 0.15 ? null : 1 + (i % guests),
-                    status: 'SENT_OUT', round: 1, createdAt: openedAt, firedAt, firedById: staffId[by],
-                    startedAt, startedById: rand() < 0.7 ? staffId.Yossi : staffId.Avi, sentOutAt, servedById: staffId.Yossi,
-                })
-            }
-            const closedAt = new Date(openedAt.getTime() + (40 + rand() * 60) * 60_000)
-            const order = await prisma.order.create({
-                data: {
-                    type: takeout ? 'TAKEOUT' : 'TABLE', tableId: takeout ? null : table.id, guests,
-                    customerName: takeout ? pick(TAKEOUT_NAMES) : null, customerPhone: takeout ? '050-555-0101' : null,
-                    status: 'CLOSED', openedById: staffId[by], openedAt, closedAt,
-                    items: { create: items },
-                },
-                include: { items: true },
-            })
-            counts.bills += 1
-
-            // Now and then a dish is sent back, given back or lost
-            for (const item of order.items) {
-                const roll = rand()
-                const at = new Date(item.sentOutAt.getTime() + 5 * 60_000)
-                if (roll < 0.04) {
-                    const reason = pick(RETURN_REASONS)
-                    await prisma.orderItem.update({ where: { id: item.id }, data: { status: 'CAME_BACK' } })
-                    await prisma.itemReturn.create({ data: { orderItemId: item.id, kind: 'RETURN', reason, note: RETURN_NOTES[reason], staffId: staffId[by], createdAt: at } })
-                    counts.returns += 1
-                    if (rand() < 0.6) {
-                        // made again (or the right dish), free
-                        const instead = reason === 'WRONG_DISH' ? dish.Sabich : { id: item.menuItemId, price: item.price }
-                        await prisma.orderItem.create({
-                            data: {
-                                orderId: order.id, menuItemId: instead.id, price: instead.price, seat: item.seat, status: 'SENT_OUT', round: 2, remakeOfId: item.id,
-                                createdAt: at, firedAt: at, firedById: staffId[by], startedAt: at, startedById: staffId.Avi, sentOutAt: new Date(at.getTime() + 10 * 60_000), servedById: staffId.Yossi,
-                            },
-                        })
-                    }
-                } else if (roll < 0.065) {
-                    await prisma.itemReturn.create({ data: { orderItemId: item.id, kind: 'FIX', reason: rand() < 0.5 ? 'UNDERCOOKED' : 'TASTE', note: pick(FIX_NOTES), staffId: staffId[by], createdAt: at } })
-                    counts.fixes += 1
-                } else if (roll < 0.08) {
-                    // dropped or made wrong: a lost plate (WASTED) next to the one the guest got
-                    const reason = rand() < 0.5 ? 'DROPPED' : 'MADE_WRONG'
-                    const lost = await prisma.orderItem.create({
-                        data: {
-                            orderId: order.id, menuItemId: item.menuItemId, price: item.price, seat: item.seat, status: 'WASTED', round: 1,
-                            createdAt: item.createdAt, firedAt: item.firedAt, firedById: item.firedById, startedAt: item.startedAt, startedById: item.startedById,
-                        },
-                    })
-                    await prisma.itemReturn.create({ data: { orderItemId: lost.id, kind: 'WASTE', reason, staffId: reason === 'DROPPED' ? staffId[by] : staffId.Yossi, createdAt: at } })
-                    counts.waste += 1
-                }
-            }
+            await seedClosedBill(prisma, { openedAt, staffId, tables, dish, dishes, mains, rand, counts })
         }
 
         // Close the night: mostly Noa or Avi before midnight; now and then nobody did and it closed itself at 04:00

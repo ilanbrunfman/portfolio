@@ -50,6 +50,7 @@ client in `src/generated/prisma/` (not committed, rebuilt on `npm install`).
 | `npm run db:generate` | Regenerate the client only |
 | `npm run db:seed` | Replace all rows with demo data, every project (**deletes existing rows**) |
 | `npm run db:seed:bank` / `db:seed:taim` | The same, for one project only (the other keeps its rows) |
+| `npm run db:today:taim` | **Adds** a random day of service for today to Ta'im (deletes nothing): bills since noon with the kitchen's work and a few returns, and tables dining now with tickets waiting, cooking or on hold. Refused when today already has bills |
 | `npm run db:reset` | Drop everything, re-run all migrations, then seed (**deletes data**) |
 | `npm run db:studio` | Open Prisma Studio, a browser UI to view/edit rows |
 
