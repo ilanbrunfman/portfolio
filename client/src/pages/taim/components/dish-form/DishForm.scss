@@ -1,0 +1,15 @@
+// The dish form – visuals only (layout is utility classes in the markup)
+.dish-form {
+    // Fieldset reset (the browser draws a frame); layout is utilities in the markup
+    &__group {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        min-width: 0;
+
+        legend {
+            padding: 0;
+            margin-bottom: 0.25rem;
+        }
+    }
+}
