@@ -10,6 +10,7 @@ export const SCREENS = [
     { id: 'bills', label: 'Bills', icon: 'IconCurrencyDollar', step: 5.1, about: 'Every bill of the day, week, month or year, with totals; close the day.' },
     { id: 'losses', label: 'Losses', icon: 'IconTable', step: 6, about: 'Money lost to dishes that came back, month by month.' },
     { id: 'staff', label: 'Staff', icon: 'IconUser', step: 8.1, about: 'Who works here: roles, phones, hourly rates and PINs.' },
+    { id: 'clock', label: 'Clock', icon: 'IconClock', step: 8.2, about: 'Clock in and out, breaks, and your timesheet.' },
 ]
 
 export const ROLE_LABELS = {
