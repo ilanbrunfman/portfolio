@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Input from '@/components/ui/form/input/Input'
 import Select from '@/components/ui/form/select/Select'
+import Checkbox from '@/components/ui/form/checkbox/Checkbox'
 import Button from '@/components/ui/button/Button'
 import { atTime, dateInput, duration, timeInput } from '@/pages/taim/utils/time'
 import { clockTime } from '@/pages/taim/utils/orders'
@@ -20,7 +21,9 @@ const minutesBetween = (a, b) => Math.max(0, Math.round((b - a) / MINUTE))
  * optional: one pick from a list ("Forgot to clock out"…), "Other" may add a
  * few words. Every change is logged (who, before / after), and the entry's
  * history shows below.
- * An entry still running may keep its end (and last break's end) empty.
+ * An entry still running may keep its end (and last break's end) empty;
+ * a new one can be added still running ("Still working": clocked in from
+ * its start, #44).
  * Meant to sit inside a <Modal>.
  *
  * @param {object} props
@@ -30,7 +33,8 @@ const minutesBetween = (a, b) => Math.max(0, Math.round((b - a) / MINUTE))
  * @param {() => void} props.onDone
  */
 const TimeEntryForm = ({ entry, onSave, loadHistory, onDone }) => {
-    const running = Boolean(entry?.open)
+    const [stillWorking, setStillWorking] = useState(false) // a new entry with no end yet
+    const running = Boolean(entry?.open) || stillWorking
     const [date, setDate] = useState(dateInput(entry?.clockIn ?? new Date()))
     const [start, setStart] = useState(entry ? timeInput(entry.clockIn) : '')
     const [end, setEnd] = useState(entry?.clockOut ? timeInput(entry.clockOut) : '')
@@ -50,7 +54,7 @@ const TimeEntryForm = ({ entry, onSave, loadHistory, onDone }) => {
 
     // The times as instants (a time before the start = the next day)
     const clockIn = start ? atTime(date, start) : null
-    const clockOut = clockIn && end ? atTime(date, end, clockIn) : null
+    const clockOut = clockIn && end && !stillWorking ? atTime(date, end, clockIn) : null
     const breakTimes = clockIn
         ? breaks
               .filter((b) => b.start && b.end !== b.start) // a break of no time is nothing to keep
@@ -98,12 +102,21 @@ const TimeEntryForm = ({ entry, onSave, loadHistory, onDone }) => {
                 <Input
                     label={running ? 'End (empty = still working)' : 'End'}
                     type="time"
-                    value={end}
+                    disabled={stillWorking}
+                    value={stillWorking ? '' : end}
                     onChange={(e) => { setEnd(e.target.value); setErrors({}) }}
                     error={errors.clockOut}
                     hint={clockIn && clockOut && dateInput(clockOut) !== date ? 'The next day' : undefined}
                 />
             </div>
+
+            {!entry && (
+                <Checkbox
+                    label="Still working (no end yet): clocked in from the start"
+                    checked={stillWorking}
+                    onChange={(e) => { setStillWorking(e.target.checked); setErrors({}) }}
+                />
+            )}
 
             <fieldset className="time-entry-form__group d-flex flex-column gap-0-5">
                 <legend className="form__label">Breaks (unpaid)</legend>

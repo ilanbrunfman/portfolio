@@ -26,9 +26,9 @@ export function useClock() {
         return () => { cancelled = true; clearTimeout(timer) }
     }, [attempt])
 
-    /** Clock in, out, start or end a break; throws with the reason */
-    const act = useCallback(async (step) => {
-        const mine = await api(`/clock/${step}`, { method: 'POST' })
+    /** Clock in, out, start or end a break; throws with the reason. body: { at } to clock in from earlier */
+    const act = useCallback(async (step, body) => {
+        const mine = await api(`/clock/${step}`, { method: 'POST', ...(body && { body }) })
         setData((current) => ({ ...current, ...mine }))
         reload() // who's on now changed too
     }, [reload])

@@ -130,4 +130,9 @@
         color: #b7791f;
         font-weight: 600;
     }
+
+    // "I started at": a short time field beside the button
+    &__late-start {
+        width: 9rem;
+    }
 }
