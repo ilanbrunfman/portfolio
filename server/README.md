@@ -319,8 +319,9 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | GET | `/api/taim/clock` | | Your clock: the open entry (with breaks, worked minutes) and today's worked minutes; with `manageTime` also `onNow` (who's clocked in) |
 | POST | `/api/taim/clock/in` · `/out` · `/break-start` · `/break-end` | | Your clock; 409 when it doesn't fit (already in, not in, already on a break…). Clocking out ends a break |
 | GET | `/api/taim/timesheets` | `?from=&to=&staffId=` | Entries that started in the period, newest first, with worked and break minutes, totals and how many were forgotten. Your own, or anyone's with `manageTime` (403) |
-| PATCH | `/api/taim/time-entries/:id` | `{ clockIn, clockOut, breaks, reason }` | The fixed entry, marked edited and logged (who, why, before / after). Your own, or anyone's with `manageTime`. 400 for times out of order, in the future or breaks outside; 409 for an overlap |
-| POST | `/api/taim/time-entries` | `{ staffId?, clockIn, clockOut, breaks, reason }` | 201, an entry added by hand (forgot to clock in), logged |
+| GET | `/api/taim/timesheets/team` | `?from=&to=` | Everyone's hours in the period (`manageTime`): one row per person (worked, breaks, entries, days, forgot, edited, on now) and the team totals |
+| PATCH | `/api/taim/time-entries/:id` | `{ clockIn, clockOut, breaks, reason? }` | The fixed entry, marked edited and logged (who, before / after, why if given). Your own, or anyone's with `manageTime`. 400 for times out of order, in the future or breaks outside; 409 for an overlap |
+| POST | `/api/taim/time-entries` | `{ staffId?, clockIn, clockOut, breaks, reason? }` | 201, an entry added by hand (forgot to clock in), logged |
 | GET | `/api/taim/time-entries/:id/edits` | | Its edit log, newest first |
 | GET | `/api/taim/menu` | | The menu in use: categories in menu order, each with its `items` in `position` order (hidden ones marked `hidden: true`) |
 | POST | `/api/taim/categories` | `{ name }` | 201, added at the end of the draft's menu (409 if the name exists, or if there's no draft) |
@@ -383,10 +384,11 @@ its breaks (unpaid: worked = clocked − breaks). The database keeps it
 honest: one open entry per person and one open break per entry (partial
 unique indexes), no two entries of the same person overlapping and no
 overlapping breaks (exclusion constraints on a `tsrange`, with the
-`btree_gist` extension), times in order and a reason on every edit
-(`CHECK`s). The timer that closes the day also closes entries nobody
+`btree_gist` extension), times in order and a reason that, when given, isn't
+empty (`CHECK`s). The timer that closes the day also closes entries nobody
 clocked out of by the end of the day (04:00), flagged `forgot`. Every fix
-by hand is logged in `time_edits` with its before and after.
+by hand is logged in `time_edits` with who, its before and after, and the
+reason if one was picked.
 
 **Allergies (step 5.4).** Each dish lists its allergens (gluten, dairy,
 egg, peanuts, tree nuts, sesame, fish, shellfish, soy), set by the Chef;
