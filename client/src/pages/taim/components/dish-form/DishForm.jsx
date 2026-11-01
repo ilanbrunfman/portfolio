@@ -6,6 +6,7 @@ import Checkbox from '@/components/ui/form/checkbox/Checkbox'
 import Button from '@/components/ui/button/Button'
 import { centsToInput, parseMoney } from '@/pages/taim/utils/money'
 import { ALLERGENS } from '@/pages/taim/utils/allergens'
+import './DishForm.scss'
 
 /**
  * Add or edit a dish. Meant to sit inside a <Modal>.
@@ -89,7 +90,7 @@ const DishForm = ({ dish, categories, categoryId, onSave, onDelete, onDone }) =>
     }
 
     return (
-        <form className="d-flex flex-column gap-1" onSubmit={handleSubmit} noValidate>
+        <form className="dish-form d-flex flex-column gap-1" onSubmit={handleSubmit} noValidate>
             {errors.form && <p className="form__error" role="alert">{errors.form}</p>}
 
             <Input
@@ -144,7 +145,7 @@ const DishForm = ({ dish, categories, categoryId, onSave, onDelete, onDone }) =>
                 maxLength={200}
             />
 
-            <fieldset className="d-flex flex-column gap-0-5">
+            <fieldset className="dish-form__group d-flex flex-column gap-0-5">
                 <legend className="form__label">Contains (allergens)</legend>
                 <span className="form__hint">The waiter is warned when a guest at the seat is allergic to one of them.</span>
                 <div className="d-flex flex-wrap gap-1">

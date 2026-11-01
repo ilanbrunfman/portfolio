@@ -1,5 +1,6 @@
-import { autoCloseDay, DAY_ENDS_AT, TIME_ZONE } from './services/days.js'
+import { autoCloseDay, lastDayEnd, DAY_ENDS_AT, TIME_ZONE } from './services/days.js'
 import { applyDueVersion } from './services/menuVersions.js'
+import { closeForgotten } from './services/timeClock.js'
 
 // Closes the business day by itself at the set time (TAIM_DAY_ENDS_AT,
 // 04:00 restaurant time) when nobody closed it by hand. A timer in the API
@@ -13,6 +14,9 @@ async function check() {
     try {
         // A scheduled menu whose start has come becomes the menu in use
         if (await applyDueVersion()) console.log('[taim] A scheduled menu is now the menu in use')
+        // Step 8.2: nobody clocked out by the end of the day → closed then, flagged
+        const forgotten = await closeForgotten(lastDayEnd())
+        if (forgotten) console.log(`[taim] Closed ${forgotten} forgotten clock-out(s) at the end of the day`)
         const outcome = await autoCloseDay()
         if (outcome.result === 'closed') {
             console.log(`[taim] Day closed automatically at ${DAY_ENDS_AT}: ${outcome.day.billCount} bills, ${outcome.day.sales} cents`)

@@ -1,0 +1,133 @@
+// The Clock tab (step 8.2) – visuals only (layout is utility classes in the markup)
+.clock {
+    width: 100%;
+    max-width: 860px;
+
+    p {
+        margin: 0;
+    }
+
+    &__section-title {
+        margin: 0;
+        color: var(--text);
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    // Your clock: a coloured edge says where you are
+    &__status {
+        box-sizing: border-box;
+        border-left: 4px solid var(--border);
+
+        &.is-on {
+            border-left-color: #22a06b;
+        }
+
+        &.is-break {
+            border-left-color: #d69e2e;
+        }
+    }
+
+    &__state {
+        color: var(--text-h);
+        font-size: 1.15rem;
+    }
+
+    &__list {
+        box-sizing: border-box;
+        list-style: none;
+        margin: 0;
+        padding: 0 1rem;
+
+        > li + li {
+            border-top: 1px solid var(--border);
+        }
+    }
+
+    &__row {
+        padding: 0.7rem 0;
+    }
+
+    // A timesheet entry: the whole row opens it
+    &__entry {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 0.7rem 0;
+        border: 0;
+        background: none;
+        color: var(--text);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+
+        &:hover .clock__name {
+            color: var(--accent);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+            border-radius: 6px;
+        }
+    }
+
+    &__name {
+        color: var(--text-h);
+    }
+
+    &__role {
+        color: var(--text);
+        font-size: 0.85rem;
+    }
+
+    &__worked {
+        color: var(--text-h);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    &__totals {
+        color: var(--text-h);
+
+        strong {
+            font-size: 1.2rem;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    &__sheet {
+        padding-top: 0.75rem;
+    }
+
+    // Running · On break · Forgot to clock out · Edited
+    &__tag {
+        padding: 0.05rem 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--text);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+
+        &.is-on {
+            border-color: rgba(34, 160, 107, 0.5);
+            color: #22a06b;
+        }
+
+        &.is-break,
+        &.is-forgot {
+            border-color: rgba(214, 158, 46, 0.6);
+            color: #b7791f;
+        }
+    }
+
+    // "Break 00:05:12" under the main timer
+    &__break {
+        color: #b7791f;
+        font-weight: 600;
+    }
+}

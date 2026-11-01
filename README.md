@@ -114,6 +114,12 @@ PostgreSQL schema next to the bank's.
 - **Staff:** the Manager keeps the roster: people, roles, phones, hourly
   rates, start dates, PINs; people who leave are marked as left (logged out,
   kept for history).
+- **Time clock:** everyone clocks in and out and takes breaks (unpaid) on the
+  Clock tab, with a live timer and their timesheet. A forgotten clock-out is
+  closed at the end of the day and flagged. Anyone fixes their own entries
+  (the Manager and Host anyone's, and see everyone's hours); every fix is
+  logged, with an optional reason. The database refuses overlapping entries
+  for the same person.
 - **Floor:** tables are green (ready), yellow (needs cleaning), grey (dining)
   or blue (all served), with what's not sent, on hold, in the kitchen or to
   go. Seat guests, combine tables for a big party, start take-outs, close

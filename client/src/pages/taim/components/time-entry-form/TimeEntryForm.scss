@@ -1,0 +1,52 @@
+// The time entry popup – visuals only (layout is utility classes in the markup)
+.time-entry-form {
+    p {
+        margin: 0;
+    }
+
+    // "Closed at the end of the day…": amber, so it's fixed
+    &__forgot {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid rgba(214, 158, 46, 0.6);
+        border-radius: 10px;
+        background: rgba(214, 158, 46, 0.1);
+        color: var(--text-h);
+    }
+
+    &__total {
+        color: var(--text-h);
+
+        strong {
+            font-size: 1.15rem;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    &__history {
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border);
+        font-size: 0.9rem;
+
+        h3 {
+            margin: 0 0 0.25rem;
+        }
+
+        ul {
+            margin: 0;
+            padding-left: 1.1rem;
+        }
+    }
+
+    // Fieldset reset (the browser draws a frame); layout is utilities in the markup
+    &__group {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        min-width: 0;
+
+        legend {
+            padding: 0;
+            margin-bottom: 0.25rem;
+        }
+    }
+}

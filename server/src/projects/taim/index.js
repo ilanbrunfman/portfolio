@@ -9,6 +9,7 @@ import billsRouter from './routes/bills.js'
 import menuVersionsRouter from './routes/menuVersions.js'
 import lossesRouter from './routes/losses.js'
 import rosterRouter from './routes/roster.js'
+import clockRouter from './routes/clock.js'
 
 // Every Ta'im route, as one router. app.js mounts it at /api/taim.
 //
@@ -38,5 +39,7 @@ taim.use(billsRouter)
 taim.use(lossesRouter)
 // /roster (step 8.1)
 taim.use(rosterRouter)
+// /clock, /timesheets, /time-entries (step 8.2)
+taim.use(clockRouter)
 
 export default taim

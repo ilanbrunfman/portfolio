@@ -22,6 +22,7 @@ export const RIGHTS = {
     reviewBills: ['MANAGER', 'CHEF', 'HOST'], // every bill of the day, week, month or year, with totals
     closeDay: ['MANAGER', 'CHEF'], // end of the day: lock its bills and save the report
     manageStaff: ['MANAGER'], // step 8.1: the roster – people, roles, rates, PINs
+    manageTime: ['MANAGER', 'HOST'], // step 8.2: who's on now, everyone's timesheets, fix anyone's entries
 }
 
 /** Screen → the roles that see it in the side nav */
@@ -33,6 +34,7 @@ export const SCREENS = {
     bills: ['MANAGER', 'CHEF', 'HOST'], // review bills; Manager and Chef close the day
     losses: ['MANAGER', 'CHEF'],
     staff: ['MANAGER'], // step 8.1: the roster
+    clock: ['MANAGER', 'CHEF', 'COOK', 'HOST', 'WAITER'], // step 8.2: everyone clocks in and out
 }
 
 const forRole = (map, role) => Object.keys(map).filter((key) => map[key].includes(role))

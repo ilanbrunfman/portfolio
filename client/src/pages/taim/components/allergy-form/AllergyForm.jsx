@@ -4,6 +4,7 @@ import Checkbox from '@/components/ui/form/checkbox/Checkbox'
 import Input from '@/components/ui/form/input/Input'
 import Button from '@/components/ui/button/Button'
 import { ALLERGENS } from '@/pages/taim/utils/allergens'
+import './AllergyForm.scss'
 
 const WHOLE = 'whole'
 const seatOf = (value) => (value === WHOLE ? null : Number(value))
@@ -55,7 +56,7 @@ const AllergyForm = ({ order, seat: initialSeat = null, onSave, onDone }) => {
 
     return (
         <form
-            className="d-flex flex-column gap-1"
+            className="allergy-form d-flex flex-column gap-1"
             onSubmit={(e) => { e.preventDefault(); save({ seat: seatOf(seat), allergens, note: note.trim() || null }) }}
             noValidate
         >
@@ -68,7 +69,7 @@ const AllergyForm = ({ order, seat: initialSeat = null, onSave, onDone }) => {
                     direction="row"
                 />
             )}
-            <fieldset className="d-flex flex-column gap-0-5">
+            <fieldset className="allergy-form__group d-flex flex-column gap-0-5">
                 <legend className="form__label">Allergic to</legend>
                 <div className="d-flex flex-wrap gap-1">
                     {ALLERGENS.map((allergen) => (
