@@ -1,0 +1,26 @@
+// The dropdown: the shared .form__input look (forms.scss), the browser's
+// arrow replaced by our chevron
+.select {
+    position: relative;
+    display: block;
+
+    &__control {
+        appearance: none;
+        padding-right: 2.4rem;
+        cursor: pointer;
+
+        // The empty "Pick…" choice reads like a placeholder
+        &.is-empty {
+            color: var(--text);
+        }
+    }
+
+    &__chevron {
+        position: absolute;
+        top: 50%;
+        right: 0.9rem;
+        color: var(--text);
+        transform: translateY(-50%) rotate(90deg);
+        pointer-events: none;
+    }
+}
