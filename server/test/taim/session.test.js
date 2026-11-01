@@ -89,14 +89,14 @@ describe('GET /api/taim/session', () => {
         expect(res.body).toEqual({
             staff: { id: expect.any(Number), name: 'Yossi', role: 'COOK' },
             rights: ['advanceDish'],
-            screens: ['kitchen'],
+            screens: ['kitchen', 'clock'],
         })
     })
 
     it('the Chef sees the floor but can change nothing on it', async () => {
         const chef = await as('CHEF')
         const res = await chef.get('/api/taim/session').expect(200)
-        expect(res.body.screens).toEqual(['floor', 'kitchen', 'menu', 'bills', 'losses'])
+        expect(res.body.screens).toEqual(['floor', 'kitchen', 'menu', 'bills', 'losses', 'clock'])
         for (const right of ['seatTable', 'cleanTable', 'combineTables', 'setUpTables', 'closeBill', 'addDishes', 'takeoutOrders']) {
             expect(res.body.rights).not.toContain(right)
         }
@@ -110,8 +110,8 @@ describe('GET /api/taim/session', () => {
     it('gives the manager every screen and every right except the kitchen ones (view only there)', async () => {
         const manager = await as('MANAGER')
         const res = await manager.get('/api/taim/session').expect(200)
-        expect(res.body.screens).toEqual(['floor', 'order', 'kitchen', 'menu', 'bills', 'losses', 'staff'])
-        expect(res.body.rights).toHaveLength(14)
+        expect(res.body.screens).toEqual(['floor', 'order', 'kitchen', 'menu', 'bills', 'losses', 'staff', 'clock'])
+        expect(res.body.rights).toHaveLength(15)
         expect(res.body.rights).not.toContain('advanceDish')
         expect(res.body.rights).not.toContain('fireHeld')
     })

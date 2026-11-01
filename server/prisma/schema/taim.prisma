@@ -35,6 +35,8 @@ model Staff {
   lockedUntil    DateTime? // 5 wrong in a row → locked for a minute
   createdAt      DateTime       @default(now())
   sessions       StaffSession[]
+  timeEntries    TimeEntry[]
+  timeEdits      TimeEdit[]
   orders         Order[]
   daysClosed     BusinessDay[]
   dishesFired    OrderItem[]    @relation("DishFiredBy")
@@ -412,5 +414,60 @@ model StaffSession {
 
   @@index([staffId])
   @@map("staff_sessions")
+  @@schema("taim")
+}
+
+// Step 8.2: the time clock. One entry per stretch of work: clocked in →
+// clocked out, with its breaks (unpaid). The database allows one open entry
+// per person and no overlapping entries (an exclusion constraint in the
+// migration), and refuses a clock-out before the clock-in.
+model TimeEntry {
+  id        Int         @id @default(autoincrement())
+  staffId   Int
+  staff     Staff       @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  clockIn   DateTime
+  clockOut  DateTime? // null = still working
+  // Nobody clocked out by the end of the day (04:00): closed then, to be fixed
+  forgot    Boolean     @default(false)
+  // Changed by hand after the fact (see edits): the Manager sees it
+  edited    Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  breaks    TimeBreak[]
+  edits     TimeEdit[]
+
+  @@index([staffId, clockIn])
+  @@map("time_entries")
+  @@schema("taim")
+}
+
+// A break inside an entry (unpaid: taken off the worked time)
+model TimeBreak {
+  id      Int       @id @default(autoincrement())
+  entryId Int
+  entry   TimeEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  startAt DateTime
+  endAt   DateTime? // null = on break now
+
+  @@index([entryId])
+  @@map("time_breaks")
+  @@schema("taim")
+}
+
+// Every change made by hand to an entry: who, why, and what it was before
+// and after (times and breaks), so a fix can always be traced
+model TimeEdit {
+  id         Int       @id @default(autoincrement())
+  entryId    Int
+  entry      TimeEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  editedById Int
+  editedBy   Staff     @relation(fields: [editedById], references: [id], onDelete: Restrict)
+  reason     String
+  before     Json? // null = the entry was added by hand
+  after      Json
+  createdAt  DateTime  @default(now())
+
+  @@index([entryId])
+  @@map("time_edits")
   @@schema("taim")
 }

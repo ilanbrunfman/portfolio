@@ -199,7 +199,7 @@ const FIX_NOTES = ['more salt', 'medium, not rare', 'extra tahini', 'warm it up'
 /** @param {import('../../src/generated/prisma/client.ts').PrismaClient} prisma */
 export async function seedTaim(prisma) {
     // Start clean: empty the tables and restart ids at 1
-    await prisma.$executeRaw`TRUNCATE TABLE taim.staff_sessions, taim.item_returns, taim.order_items, taim.orders, taim.business_days, taim.dining_tables, taim.menu_items, taim.categories, taim.menu_versions, taim.staff RESTART IDENTITY CASCADE`
+    await prisma.$executeRaw`TRUNCATE TABLE taim.time_edits, taim.time_breaks, taim.time_entries, taim.staff_sessions, taim.item_returns, taim.order_items, taim.orders, taim.business_days, taim.dining_tables, taim.menu_items, taim.categories, taim.menu_versions, taim.staff RESTART IDENTITY CASCADE`
 
     await prisma.staff.createMany({ data: await staffRows([...STAFF, ...FORMER_STAFF]) })
     const staffId = Object.fromEntries((await prisma.staff.findMany()).map((p) => [p.name, p.id]))
@@ -244,10 +244,11 @@ export async function seedTaim(prisma) {
     // Each day of history from the menu in use that day
     const history = await seedHistory(prisma, { staffId, tables, menuOn: { spring: await dishesOf(spring), summer: await dishesOf(summer), autumn: dish } })
     await seedNow(prisma, { staffId, tableId, dish })
+    const clock = await seedClock(prisma, staffId)
 
     console.log(
         `Ta'im: ${STAFF.length} staff (${STAFF.map((s) => s.name).join(', ')}), 4 menu versions (Spring, Summer, Autumn in use, a Winter draft), ${MENU.length} categories, ${dishCount} dishes, ${TABLES.length} tables, ` +
-            `${NOW.length} open orders, ${history.bills} past bills in ${history.days} closed days (${history.returns} returns, ${history.waste} waste, ${history.fixes} fixes)`
+            `${NOW.length} open orders, ${history.bills} past bills in ${history.days} closed days (${history.returns} returns, ${history.waste} waste, ${history.fixes} fixes), ${clock} time entries`
     )
 }
 
@@ -265,6 +266,79 @@ async function createVersion(prisma, keys, menu, data) {
         await prisma.menuCategory.create({ data: { versionId: version.id, name, position: index + 1, items: { create: dishes } } })
     }
     return version
+}
+
+// Step 8.2: each person's usual shift on the restaurant clock: [from, to] as
+// "HH:MM", a break (minutes, unpaid) and two days off (0 = Sunday)
+const SHIFTS = {
+    Noa: { from: '11:00', to: '19:30', breakMinutes: 30, off: [5, 6] },
+    Avi: { from: '15:00', to: '23:30', breakMinutes: 30, off: [0, 1] },
+    Yossi: { from: '16:00', to: '23:30', breakMinutes: 20, off: [1, 2] },
+    Dana: { from: '17:00', to: '22:30', breakMinutes: 15, off: [2, 3] },
+    Lior: { from: '17:00', to: '23:45', breakMinutes: 20, off: [3, 4] },
+}
+const CLOCK_DAYS = 14
+// Tonight, right now: clocked in this many minutes ago; Dana is on a break
+const ON_NOW = { Noa: 300, Avi: 190, Yossi: 150, Dana: 120, Lior: 115 }
+
+/**
+ * Two weeks of clock-ins and -outs (a few minutes early or late, a break in
+ * the middle), one forgotten clock-out closed at 04:00, one entry the
+ * Manager fixed (logged), and everyone working tonight clocked in now.
+ */
+async function seedClock(prisma, staffId) {
+    const { zonedTime, restaurantToday, DAY_ENDS_AT } = await import('../../src/projects/taim/services/days.js')
+    const today = restaurantToday()
+    const rand = random(20261101)
+    const jitter = () => Math.round((rand() - 0.5) * 16) // ± 8 minutes
+    const [endHour, endMinute] = DAY_ENDS_AT.split(':').map(Number)
+    let count = 0
+    for (const [name, shift] of Object.entries(SHIFTS)) {
+        for (let daysAgo = CLOCK_DAYS; daysAgo >= 1; daysAgo -= 1) {
+            const weekday = (today.weekday - (daysAgo % 7) + 7) % 7
+            if (shift.off.includes(weekday)) continue
+            const at = (hhmm, extra = 0) => {
+                const [h, m] = hhmm.split(':').map(Number)
+                return zonedTime(today.year, today.month, today.day - daysAgo, h, m + extra)
+            }
+            const clockIn = at(shift.from, jitter())
+            const clockOut = at(shift.to, jitter())
+            const breakStart = new Date((clockIn.getTime() + clockOut.getTime()) / 2)
+            // Lior forgot to clock out three nights ago: closed at 04:00, flagged
+            const forgot = name === 'Lior' && daysAgo === 3
+            const out = forgot ? zonedTime(today.year, today.month, today.day - daysAgo + 1, endHour, endMinute) : clockOut
+            // Seeded just after midnight, last evening *is* tonight: skip a day that runs into tonight's shift
+            if (out >= minutesAgo(ON_NOW[name] + 30)) continue
+            const entry = await prisma.timeEntry.create({
+                data: {
+                    staffId: staffId[name], clockIn, clockOut: out, forgot,
+                    breaks: { create: [{ startAt: breakStart, endAt: new Date(breakStart.getTime() + shift.breakMinutes * 60_000) }] },
+                },
+                include: { breaks: true },
+            })
+            count += 1
+            // Yossi came in an hour early for a delivery and forgot to say: Noa fixed it
+            if (name === 'Yossi' && daysAgo === 5) {
+                const earlier = new Date(clockIn.getTime() - 60 * 60_000)
+                const times = (e, clockInAt) => ({ clockIn: clockInAt, clockOut: e.clockOut, breaks: e.breaks.map((b) => ({ startAt: b.startAt, endAt: b.endAt })) })
+                await prisma.timeEntry.update({ where: { id: entry.id }, data: { clockIn: earlier, edited: true } })
+                await prisma.timeEdit.create({
+                    data: { entryId: entry.id, editedById: staffId.Noa, reason: 'Came in an hour early for the produce delivery', before: times(entry, clockIn), after: times(entry, earlier), createdAt: at('20:00') },
+                })
+            }
+        }
+    }
+    // Tonight: everyone on, Dana on a short break
+    for (const [name, minutes] of Object.entries(ON_NOW)) {
+        await prisma.timeEntry.create({
+            data: {
+                staffId: staffId[name], clockIn: minutesAgo(minutes),
+                breaks: name === 'Dana' ? { create: [{ startAt: minutesAgo(6), endAt: null }] } : undefined,
+            },
+        })
+        count += 1
+    }
+    return count
 }
 
 /** The busy evening right now (NOW) */
