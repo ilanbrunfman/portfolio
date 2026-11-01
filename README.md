@@ -129,8 +129,9 @@ PostgreSQL schema next to the bank's.
   to go or not. *Send to kitchen* asks what goes now and what waits on hold
   (mains after the starters), fired later by the waiter or the chef.
 - **Kitchen:** one ticket per round, oldest first, refreshed every 5 seconds.
-  A cook taps *Start*, each dish counts against its prep time (amber near
-  it, red when late), then *Served*. Every dish keeps who sent, started and
+  A cook taps *Start*, each dish counts against its prep time with a thin bar
+  (amber near it, red when late, and a late dish gently pulses), then
+  *Served*. The ticket's minutes roll up live. Every dish keeps who sent, started and
   served it, and when.
 - **When a guest sends a dish back:** fix the same plate (undercooked steak,
   more spice – still charged), or take it off the bill and make it again or

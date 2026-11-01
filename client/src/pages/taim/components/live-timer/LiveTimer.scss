@@ -16,6 +16,17 @@
         font-size: 1.15rem;
     }
 
+    &.is-inherit {
+        font-size: inherit;
+        color: inherit;
+    }
+
+    // "28 min": the unit after the rolling minutes
+    &__unit {
+        margin-left: 0.25em;
+        font-weight: inherit;
+    }
+
     &__part {
         display: inline-flex;
         align-items: baseline;

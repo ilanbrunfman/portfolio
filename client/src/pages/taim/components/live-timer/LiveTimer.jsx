@@ -20,23 +20,37 @@ const spoken = (seconds) => {
 }
 
 /**
- * A running timer, HH:MM:SS since `since`, ticking every second; each digit
- * rolls up when it changes, like an odometer (step 8.2: how long you've
- * been on the clock, or on a break). With "reduce motion" the digits just
- * change.
+ * A running timer since `since`; each digit rolls up when it changes, like
+ * an odometer. Two kinds:
+ *   'clock'   – HH:MM:SS, ticking every second (step 8.2: on the clock, a break)
+ *   'minutes' – "28 min", the minutes rolling once a minute (5.5: a kitchen
+ *               ticket – calm, it's read at a glance from the stove)
+ * With "reduce motion" the digits just change.
  *
  * @param {object} props
  * @param {string|Date} props.since          When it started.
- * @param {'lg'|'sm'} [props.size]
+ * @param {'lg'|'sm'|'inherit'} [props.size]  'inherit' takes the surrounding text's size.
+ * @param {'clock'|'minutes'} [props.kind]
  * @param {string} [props.label]             What it counts, for screen readers ("On the clock").
+ * @param {string} [props.className]
  */
-const LiveTimer = ({ since, size = 'lg', label = 'Time' }) => {
-    const now = useNow(1000)
+const LiveTimer = ({ since, size = 'lg', kind = 'clock', label = 'Time', className = '' }) => {
+    const now = useNow(kind === 'minutes' ? 10_000 : 1000)
     const seconds = Math.max(0, Math.floor((now - new Date(since).getTime()) / 1000))
+
+    if (kind === 'minutes') {
+        const minutes = String(Math.floor(seconds / 60))
+        return (
+            <span className={`live-timer is-${size} ${className}`} role="timer" aria-label={`${label}: ${spoken(seconds)}`}>
+                {[...minutes].map((digit, i) => <RollingDigit key={`${minutes.length}-${i}`} value={digit} />)}
+                <span className="live-timer__unit" aria-hidden="true">min</span>
+            </span>
+        )
+    }
     const parts = [Math.floor(seconds / 3600), Math.floor((seconds % 3600) / 60), seconds % 60].map((n) => String(n).padStart(2, '0'))
 
     return (
-        <span className={`live-timer is-${size}`} role="timer" aria-label={`${label}: ${spoken(seconds)}`}>
+        <span className={`live-timer is-${size} ${className}`} role="timer" aria-label={`${label}: ${spoken(seconds)}`}>
             {parts.map((part, i) => (
                 <span key={i} className="live-timer__part">
                     {i > 0 && <span className="live-timer__colon" aria-hidden="true">:</span>}

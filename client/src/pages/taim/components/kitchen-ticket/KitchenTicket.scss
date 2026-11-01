@@ -83,6 +83,19 @@
     &__dish {
         padding: 0.6rem 1rem;
         border-top: 1px solid var(--border);
+
+        // 5.6: a late dish gently breathes light red (about every 2 s) so it
+        // catches the eye; a steady tint with reduce motion
+        &.is-late {
+            animation: kitchen-late-pulse 2.2s ease-in-out infinite;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            &.is-late {
+                animation: none;
+                background: rgba(229, 72, 77, 0.14);
+            }
+        }
     }
 
     &__dish-text {
@@ -238,4 +251,43 @@
         font-size: 0.8rem;
         font-weight: 700;
     }
+
+    // 5.5: a thin bar under a started dish, filling toward its prep time
+    &__bar {
+        display: block;
+        width: 100%;
+        max-width: 220px;
+        height: 4px;
+        margin-top: 0.3rem;
+        border-radius: 999px;
+        background: var(--border);
+        overflow: hidden;
+
+        > span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: #22a06b;
+            transition: width 0.6s ease, background 0.3s ease;
+        }
+
+        &.is-soon > span {
+            background: #d69e2e;
+        }
+
+        &.is-late > span {
+            background: #e5484d;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            > span {
+                transition: none;
+            }
+        }
+    }
+}
+
+@keyframes kitchen-late-pulse {
+    0%, 100% { background: rgba(229, 72, 77, 0.04); }
+    50% { background: rgba(229, 72, 77, 0.2); }
 }
