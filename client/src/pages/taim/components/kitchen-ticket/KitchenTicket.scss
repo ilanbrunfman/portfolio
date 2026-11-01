@@ -83,6 +83,19 @@
     &__dish {
         padding: 0.6rem 1rem;
         border-top: 1px solid var(--border);
+
+        // 5.6: a late dish gently breathes light red (about every 2 s) so it
+        // catches the eye; a steady tint with reduce motion
+        &.is-late {
+            animation: kitchen-late-pulse 2.2s ease-in-out infinite;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            &.is-late {
+                animation: none;
+                background: rgba(229, 72, 77, 0.14);
+            }
+        }
     }
 
     &__dish-text {
@@ -272,4 +285,9 @@
             }
         }
     }
+}
+
+@keyframes kitchen-late-pulse {
+    0%, 100% { background: rgba(229, 72, 77, 0.04); }
+    50% { background: rgba(229, 72, 77, 0.2); }
 }

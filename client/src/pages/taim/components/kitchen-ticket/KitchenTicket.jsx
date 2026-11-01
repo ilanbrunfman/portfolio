@@ -30,6 +30,7 @@ const WAIT_ALERT_MINUTES = 5
  * 5.5: the minutes since it was sent roll up once a minute (LiveTimer), and
  * each started dish with a prep time has a thin bar filling toward it –
  * amber near the end, red when late – so the late dish stands out.
+ * 5.6: a late dish's row gently breathes light red (steady with reduce motion).
  *
  * @param {object} props
  * @param {object} props.ticket          { orderId, title, type, round, firedAt, startedAt, startedBy, dishes: [{ id, name, seat, toGo, startedAt, prepMinutes }] }

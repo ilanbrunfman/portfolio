@@ -56,3 +56,6 @@ the number rolls up once a minute. Each started dish with a prep time has a
 thin bar under it that fills toward its prep time: green, amber from 80%,
 red when late (the same thresholds as the dish's colour and LATE tag).
 Calm on purpose: no per-dish seconds counters.
+
+A late dish's row (5.6) gently breathes light red, about every 2 seconds:
+slow on purpose (no flashing); with reduce motion a steady light-red tint.
