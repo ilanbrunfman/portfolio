@@ -124,4 +124,10 @@
             color: #b7791f;
         }
     }
+
+    // "Break 00:05:12" under the main timer
+    &__break {
+        color: #b7791f;
+        font-weight: 600;
+    }
 }

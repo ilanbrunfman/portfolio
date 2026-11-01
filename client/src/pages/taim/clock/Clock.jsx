@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useClock } from '@/pages/taim/hooks/useClock'
 import { useTimesheet } from '@/pages/taim/hooks/useTimesheet'
+import { useTeamTimesheet } from '@/pages/taim/hooks/useTeamTimesheet'
+import LiveTimer from '@/pages/taim/components/live-timer/LiveTimer'
 import { useStaff } from '@/pages/taim/context/StaffContext'
-import { useNow, minutesSince } from '@/pages/taim/hooks/useNow'
 import { api } from '@/pages/taim/api/client'
 import TimeEntryForm from '@/pages/taim/components/time-entry-form/TimeEntryForm'
 import Tabs from '@/components/ui/tabs/Tabs'
@@ -27,17 +28,23 @@ const PERIODS = [
  * start, end, breaks; a reason is asked and logged) and "Entry" adds one
  * you forgot. The Manager and Host also see who's on now and anyone's
  * timesheet (and fix anyone's entries).
+ * While you're clocked in, a live timer counts how long you've been on
+ * the clock (its digits roll); on a break a second one counts the break.
+ * The Manager and Host start on "Everyone": each person's hours in the
+ * period, and the team total; a tap opens that person's timesheet.
  */
 const Clock = () => {
     const { session, can } = useStaff()
     const clock = useClock()
-    const now = useNow(30_000)
     const manages = can('manageTime')
     const [period, setPeriod] = useState('week')
-    const [personId, setPersonId] = useState(String(session.staff.id))
+    // 'all' = everyone's hours (Manager, Host); else a person's id
+    const [personId, setPersonId] = useState(manages ? 'all' : String(session.staff.id))
     const [people, setPeople] = useState([])
     const range = useMemo(() => periodRange(period), [period])
-    const sheet = useTimesheet(Number(personId), range)
+    const everyone = personId === 'all'
+    const sheet = useTimesheet(everyone ? session.staff.id : Number(personId), range)
+    const team = useTeamTimesheet(range, manages && everyone)
     const [editing, setEditing] = useState(undefined) // an entry, null = adding one, undefined = closed
     const [busy, setBusy] = useState(false)
     const [error, setError] = useState('')
@@ -53,6 +60,7 @@ const Clock = () => {
         try {
             await clock.act(step)
             sheet.reload()
+            team.reload()
         } catch (err) {
             setError(err.message)
         } finally {
@@ -66,21 +74,25 @@ const Clock = () => {
     const { entry } = clock.data
     const onBreak = entry?.onBreak
     const runningBreak = entry?.breaks.find((b) => !b.endAt)
-    const mine = Number(personId) === session.staff.id
+    const mine = !everyone && Number(personId) === session.staff.id
 
     return (
         <div className="clock d-flex flex-column gap-2">
             <h2 className="taim__heading">Clock</h2>
 
             <section className={`clock__status surface d-flex flex-wrap align-items-center justify-between gap-1 ${entry ? (onBreak ? 'is-break' : 'is-on') : 'is-off'}`} aria-label="Your clock">
-                <span className="d-flex flex-column">
+                <span className="d-flex flex-column gap-0-5">
                     <strong className="clock__state">
-                        {!entry ? 'Not clocked in' : onBreak ? `On a break since ${clockTime(runningBreak.startAt)}` : `Clocked in since ${clockTime(entry.clockIn)}`}
+                        {!entry ? 'Not clocked in' : onBreak ? `On a break since ${clockTime(runningBreak.startAt)}` : `On the clock since ${clockTime(entry.clockIn)}`}
                     </strong>
-                    <span className="form__hint">
-                        Today {duration(clock.data.todayMinutes)}
-                        {entry && onBreak && ` · break ${minutesSince(runningBreak.startAt, now)} min`}
-                    </span>
+                    {/* How long you've been on the clock, live; and the break, while on one */}
+                    {entry && <LiveTimer since={entry.clockIn} label="On the clock" />}
+                    {entry && onBreak && (
+                        <span className="clock__break d-flex align-items-baseline gap-0-5">
+                            Break <LiveTimer since={runningBreak.startAt} size="sm" label="On a break" />
+                        </span>
+                    )}
+                    <span className="form__hint">Worked today {duration(clock.data.todayMinutes)} (breaks not counted)</span>
                     {error && <span className="form__error" role="alert">{error}</span>}
                 </span>
                 <span className="d-flex flex-wrap gap-0-5">
@@ -115,13 +127,13 @@ const Clock = () => {
 
             <section className="d-flex flex-column gap-1" aria-labelledby="sheet-title">
                 <div className="d-flex flex-wrap align-items-center justify-between gap-1">
-                    <h3 id="sheet-title" className="clock__section-title">{mine ? 'Your timesheet' : `${sheet.data?.staff.name ?? ''}'s timesheet`}</h3>
-                    <Button size="sm" variant="ghost" icon="IconPlus" onClick={() => setEditing(null)}>Entry</Button>
+                    <h3 id="sheet-title" className="clock__section-title">{everyone ? "Everyone's hours" : mine ? 'Your timesheet' : `${sheet.data?.staff.name ?? ''}'s timesheet`}</h3>
+                    {!everyone && <Button size="sm" variant="ghost" icon="IconPlus" onClick={() => setEditing(null)}>Entry</Button>}
                 </div>
                 {manages && people.length > 0 && (
                     <RadioGroup
                         label="Whose"
-                        options={people.map((p) => ({ value: String(p.id), label: p.id === session.staff.id ? `${p.name} (you)` : p.name }))}
+                        options={[{ value: 'all', label: 'Everyone' }, ...people.map((p) => ({ value: String(p.id), label: p.id === session.staff.id ? `${p.name} (you)` : p.name }))]}
                         value={personId}
                         onChange={setPersonId}
                         direction="row"
@@ -129,7 +141,9 @@ const Clock = () => {
                 )}
                 <Tabs label="Period" items={PERIODS} value={period} onChange={setPeriod}>
                     {() =>
-                        sheet.error && !sheet.data ? (
+                        everyone ? (
+                            <TeamHours team={team} onPick={(id) => setPersonId(String(id))} />
+                        ) : sheet.error && !sheet.data ? (
                             <p className="form__error" role="alert">{sheet.error}</p>
                         ) : !sheet.data ? (
                             <p role="status">Loading…</p>
@@ -187,6 +201,45 @@ const Clock = () => {
                     />
                 )}
             </Modal>
+        </div>
+    )
+}
+
+/** Everyone's hours in the period: one row per person (a tap opens their timesheet) and the team total */
+const TeamHours = ({ team, onPick }) => {
+    if (team.error && !team.data) return <p className="form__error" role="alert">{team.error}</p>
+    if (!team.data) return <p role="status">Loading…</p>
+    return (
+        <div className="d-flex flex-column gap-1 clock__sheet">
+            <p className="clock__totals">
+                <strong>{duration(team.data.workedMinutes)}</strong> worked by the team
+                <span className="form__hint">
+                    {' '}· {duration(team.data.breakMinutes)} of breaks (unpaid){team.data.forgot > 0 && ` · ${team.data.forgot} forgot to clock out`}
+                </span>
+            </p>
+            <ul className="clock__list surface">
+                {team.data.people.map((row) => (
+                    <li key={row.staff.id}>
+                        <button type="button" className="clock__entry d-flex flex-wrap align-items-center justify-between gap-0-5" onClick={() => onPick(row.staff.id)} aria-label={`${row.staff.name}, ${duration(row.workedMinutes)} in ${row.days} days. Open the timesheet`}>
+                            <span className="d-flex flex-column">
+                                <span className="d-flex flex-wrap align-items-baseline gap-0-5">
+                                    <strong className="clock__name">{row.staff.name}</strong>
+                                    <span className="clock__role">{ROLE_LABELS[row.staff.role]}</span>
+                                    {row.on && <span className="clock__tag is-on">On now</span>}
+                                    {row.forgot > 0 && <span className="clock__tag is-forgot">{row.forgot} forgot</span>}
+                                    {row.edited > 0 && <span className="clock__tag">{row.edited} edited</span>}
+                                    {!row.staff.active && <span className="clock__tag">Left</span>}
+                                </span>
+                                <span className="form__hint">
+                                    {row.days} {row.days === 1 ? 'day' : 'days'} · {row.entries} {row.entries === 1 ? 'entry' : 'entries'}
+                                    {row.breakMinutes > 0 && ` · breaks ${duration(row.breakMinutes)}`}
+                                </span>
+                            </span>
+                            <span className="clock__worked">{duration(row.workedMinutes)}</span>
+                        </button>
+                    </li>
+                ))}
+            </ul>
         </div>
     )
 }

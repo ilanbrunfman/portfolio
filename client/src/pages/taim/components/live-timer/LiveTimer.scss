@@ -1,0 +1,53 @@
+// A running HH:MM:SS timer with rolling digits – visuals only
+.live-timer {
+    display: inline-flex;
+    align-items: baseline;
+    color: var(--text-h);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    letter-spacing: 0.02em;
+
+    &.is-lg {
+        font-size: clamp(2.4rem, 9vw, 3.6rem);
+    }
+
+    &.is-sm {
+        font-size: 1.15rem;
+    }
+
+    &__part {
+        display: inline-flex;
+        align-items: baseline;
+    }
+
+    &__colon {
+        padding-inline: 0.06em;
+        opacity: 0.55;
+    }
+
+    // Each digit: a 1-line window onto a column of 0–9
+    &__digit {
+        display: inline-block;
+        height: 1em;
+        overflow: hidden;
+    }
+
+    &__strip {
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+        > span {
+            display: block;
+            height: 1em;
+            text-align: center;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        &__strip {
+            transition: none;
+        }
+    }
+}
