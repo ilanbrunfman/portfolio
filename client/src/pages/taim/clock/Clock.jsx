@@ -12,7 +12,8 @@ import Modal from '@/components/ui/modal/Modal'
 import Button from '@/components/ui/button/Button'
 import { ROLE_LABELS } from '@/pages/taim/data/screens'
 import { clockTime } from '@/pages/taim/utils/orders'
-import { dayLabel, duration, periodRange } from '@/pages/taim/utils/time'
+import { atTime, dateInput, dayLabel, duration, periodRange, timeInput } from '@/pages/taim/utils/time'
+import Input from '@/components/ui/form/input/Input'
 import './Clock.scss'
 
 const PERIODS = [
@@ -48,17 +49,19 @@ const Clock = () => {
     const [editing, setEditing] = useState(undefined) // an entry, null = adding one, undefined = closed
     const [busy, setBusy] = useState(false)
     const [error, setError] = useState('')
+    const [lateStart, setLateStart] = useState(null) // "I started at…": an "HH:MM", or null = closed
 
     useEffect(() => {
         if (!manages) return
         api('/staff').then(setPeople).catch(() => {})
     }, [manages])
 
-    const act = async (step) => {
+    const act = async (step, body) => {
         setBusy(true)
         setError('')
         try {
-            await clock.act(step)
+            await clock.act(step, body)
+            setLateStart(null)
             sheet.reload()
             team.reload()
         } catch (err) {
@@ -95,8 +98,23 @@ const Clock = () => {
                     <span className="form__hint">Worked today {duration(clock.data.todayMinutes)} (breaks not counted)</span>
                     {error && <span className="form__error" role="alert">{error}</span>}
                 </span>
-                <span className="d-flex flex-wrap gap-0-5">
-                    {!entry && <Button onClick={() => act('in')} disabled={busy}>Clock in</Button>}
+                <span className="d-flex flex-wrap align-items-end gap-0-5">
+                    {/* Forgot to clock in at the start of the shift: clock in from that time (#44) */}
+                    {!entry && lateStart !== null && (
+                        <>
+                            <Input label="I started at" type="time" value={lateStart} onChange={(e) => setLateStart(e.target.value)} fieldClassName="clock__late-start" />
+                            <Button variant="ghost" onClick={() => setLateStart(null)} disabled={busy}>Cancel</Button>
+                            <Button onClick={() => act('in', { at: atTime(dateInput(new Date()), lateStart).toISOString() })} disabled={busy || !lateStart}>
+                                Clock in from {lateStart ? clockTime(atTime(dateInput(new Date()), lateStart)) : '…'}
+                            </Button>
+                        </>
+                    )}
+                    {!entry && lateStart === null && (
+                        <>
+                            <Button variant="ghost" size="sm" onClick={() => setLateStart(timeInput(new Date(Date.now() - 30 * 60_000)))} disabled={busy}>I started at…</Button>
+                            <Button onClick={() => act('in')} disabled={busy}>Clock in</Button>
+                        </>
+                    )}
                     {entry && !onBreak && <Button variant="secondary" onClick={() => act('break-start')} disabled={busy}>Start break</Button>}
                     {entry && onBreak && <Button onClick={() => act('break-end')} disabled={busy}>End break</Button>}
                     {entry && <Button variant={onBreak ? 'secondary' : 'primary'} onClick={() => act('out')} disabled={busy}>Clock out</Button>}
@@ -187,7 +205,7 @@ const Clock = () => {
                 </Tabs>
             </section>
 
-            <Modal isOpen={editing !== undefined} onClose={() => setEditing(undefined)} title={editing ? `${editing.staff.name} · ${dayLabel(editing.clockIn)}` : 'Add an entry'}>
+            <Modal isOpen={editing !== undefined} onClose={() => setEditing(undefined)} title={editing ? `${editing.staff.name} · ${dayLabel(editing.clockIn)}` : `New entry for ${mine ? 'you' : sheet.data?.staff.name ?? '…'}`}>
                 {editing !== undefined && (
                     <TimeEntryForm
                         entry={editing}

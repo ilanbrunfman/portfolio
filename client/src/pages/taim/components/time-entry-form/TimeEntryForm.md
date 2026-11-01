@@ -5,6 +5,9 @@ to sit inside a `Modal`.
 
 - **Date, Start, End:** an end earlier than the start is the next morning
   (in 17:00, out 01:30). An entry still running may keep its end empty.
+- **Still working (no end yet)** (adding only, #44): the person is clocked
+  in from the start time (they show in *Who's on now*, their timer counts
+  from then) until they clock out. Refused if they're already clocked in.
 - **Breaks (unpaid):** from / to each; add or remove them.
 - **Total worked** is counted as you type: clocked time minus breaks.
 - **Why the change?** is optional, one pick from a dropdown (the shared `Select`):

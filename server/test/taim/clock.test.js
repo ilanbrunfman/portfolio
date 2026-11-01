@@ -169,6 +169,42 @@ describe('fixing an entry', () => {
     })
 })
 
+describe('clocking someone in from a time (#44)', () => {
+    it('the Manager or Host adds a running entry for someone: they\'re on the clock from then', async () => {
+        const res = await host.post('/api/taim/time-entries').send({ staffId: yossi.id, clockIn: ago(90).toISOString(), reason: 'Forgot to clock in' }).expect(201)
+        expect(res.body).toMatchObject({ staff: { name: 'Yossi' }, open: true, clockOut: null, edited: true, workedMinutes: 90 })
+        expect((await host.get('/api/taim/clock').expect(200)).body.onNow.map((e) => e.staff.name)).toEqual(['Yossi'])
+        expect((await cook.get('/api/taim/clock').expect(200)).body.entry).toMatchObject({ open: true })
+        // …and he clocks out as usual
+        await cook.post('/api/taim/clock/out').expect(200)
+        expect((await host.get(`/api/taim/time-entries/${res.body.id}/edits`).expect(200)).body[0]).toMatchObject({ editedBy: { name: 'Dana' }, reason: 'Forgot to clock in', before: null })
+    })
+
+    it('refused when they\'re already clocked in, or the start is in the future; staff only for themselves', async () => {
+        await entry(yossi.id, 30, null)
+        expect((await host.post('/api/taim/time-entries').send({ staffId: yossi.id, clockIn: ago(90).toISOString() }).expect(409)).body.error).toBe('Yossi is already clocked in')
+        expect((await host.post('/api/taim/time-entries').send({ staffId: lior.id, clockIn: new Date(Date.now() + 600_000).toISOString() }).expect(400)).body.fields).toEqual({ clockIn: "Clock-in can't be in the future" })
+        await waiter.post('/api/taim/time-entries').send({ staffId: yossi.id, clockIn: ago(60).toISOString() }).expect(403)
+        await waiter.post('/api/taim/time-entries').send({ clockIn: ago(60).toISOString() }).expect(201) // his own
+    })
+
+    it('"I started at…": clock in yourself from earlier today – logged, so the Manager sees it', async () => {
+        const res = await waiter.post('/api/taim/clock/in').send({ at: ago(45).toISOString() }).expect(200)
+        expect(res.body.entry).toMatchObject({ open: true, edited: true })
+        expect(res.body.entry.workedMinutes).toBeGreaterThanOrEqual(44)
+        const edits = (await waiter.get(`/api/taim/time-entries/${res.body.entry.id}/edits`).expect(200)).body
+        expect(edits[0]).toMatchObject({ editedBy: { name: 'Lior' }, reason: 'Clocked in from an earlier time' })
+    })
+
+    it('not in the future, not more than 16 hours back; clocking in now is not logged', async () => {
+        expect((await waiter.post('/api/taim/clock/in').send({ at: new Date(Date.now() + 600_000).toISOString() }).expect(400)).body.fields).toEqual({ at: "Start can't be in the future" })
+        await waiter.post('/api/taim/clock/in').send({ at: ago(17 * 60).toISOString() }).expect(400)
+        const now = await waiter.post('/api/taim/clock/in').send({}).expect(200)
+        expect(now.body.entry.edited).toBe(false)
+        expect(await prisma.timeEdit.count()).toBe(0)
+    })
+})
+
 describe('a forgotten clock-out', () => {
     it('is closed at the end of the day, flagged; an entry started after it stays open; a fix clears the flag', async () => {
         const dayEnd = ago(120)

@@ -318,11 +318,11 @@ The rights live in one place, `src/projects/taim/roles.js`:
 | PATCH | `/api/taim/roster/:id` | any of those (not `pin`) + `active` | The person. `active: false` = they left: logged out everywhere. Not yourself; always one active Manager (409). Coming back clears the PIN |
 | PUT | `/api/taim/roster/:id/pin` | `{ pin }` | 204; their other sessions end, the demo PIN is gone, a lock is lifted |
 | GET | `/api/taim/clock` | | Your clock: the open entry (with breaks, worked minutes) and today's worked minutes; with `manageTime` also `onNow` (who's clocked in) |
-| POST | `/api/taim/clock/in` · `/out` · `/break-start` · `/break-end` | | Your clock; 409 when it doesn't fit (already in, not in, already on a break…). Clocking out ends a break |
+| POST | `/api/taim/clock/in` · `/out` · `/break-start` · `/break-end` | `/in`: `{ at? }` | Your clock; 409 when it doesn't fit (already in, not in, already on a break…). Clocking out ends a break. `at` = clock in from an earlier time today (up to 16 h back), logged |
 | GET | `/api/taim/timesheets` | `?from=&to=&staffId=` | Entries that started in the period, newest first, with worked and break minutes, totals and how many were forgotten. Your own, or anyone's with `manageTime` (403) |
 | GET | `/api/taim/timesheets/team` | `?from=&to=` | Everyone's hours in the period (`manageTime`): one row per person (worked, breaks, entries, days, forgot, edited, on now) and the team totals |
 | PATCH | `/api/taim/time-entries/:id` | `{ clockIn, clockOut, breaks, reason? }` | The fixed entry, marked edited and logged (who, before / after, why if given). Your own, or anyone's with `manageTime`. 400 for times out of order, in the future or breaks outside; 409 for an overlap |
-| POST | `/api/taim/time-entries` | `{ staffId?, clockIn, clockOut, breaks, reason? }` | 201, an entry added by hand (forgot to clock in), logged |
+| POST | `/api/taim/time-entries` | `{ staffId?, clockIn, clockOut?, breaks, reason? }` | 201, an entry added by hand (forgot to clock in), logged. No `clockOut` = still working: a running entry, clocked in from `clockIn` (409 if they already are) |
 | GET | `/api/taim/time-entries/:id/edits` | | Its edit log, newest first |
 | GET | `/api/taim/menu` | | The menu in use: categories in menu order, each with its `items` in `position` order (hidden ones marked `hidden: true`) |
 | POST | `/api/taim/categories` | `{ name }` | 201, added at the end of the draft's menu (409 if the name exists, or if there's no draft) |
