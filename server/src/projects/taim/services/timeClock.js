@@ -3,7 +3,7 @@ import { HttpError } from '../../../shared/lib/httpError.js'
 
 // Step 8.2: the time clock. Everyone clocks in and out (and takes breaks,
 // unpaid) on the Clock tab. Everyone fixes their own entries; the Manager
-// and Host fix anyone's. Every fix keeps who, why, and before / after.
+// and Host fix anyone's. Every fix keeps who, before / after, and why (if given).
 
 const MINUTE = 60_000
 
@@ -131,8 +131,8 @@ function checkTimes({ clockIn, clockOut, breaks }, now) {
 }
 
 /**
- * Change an entry's times and breaks by hand, with a reason: logged (who,
- * why, before / after) and marked edited. Setting a clock-out clears the
+ * Change an entry's times and breaks by hand, with an optional reason:
+ * logged (who, before / after, why) and marked edited. Setting a clock-out clears the
  * "forgot" flag. Rights are checked by the route.
  */
 export async function editEntry({ id, clockIn, clockOut, breaks, reason, editorId, now = new Date() }) {
@@ -156,7 +156,7 @@ export async function editEntry({ id, clockIn, clockOut, breaks, reason, editorI
         .catch(overlapError)
 }
 
-/** Add an entry by hand (forgot to clock in at all), with a reason: logged */
+/** Add an entry by hand (forgot to clock in at all), with an optional reason: logged */
 export async function addEntry({ staffId, clockIn, clockOut, breaks, reason, editorId, now = new Date() }) {
     const sorted = checkTimes({ clockIn, clockOut, breaks }, now)
     return prisma

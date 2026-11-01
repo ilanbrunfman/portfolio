@@ -454,15 +454,15 @@ model TimeBreak {
   @@schema("taim")
 }
 
-// Every change made by hand to an entry: who, why, and what it was before
-// and after (times and breaks), so a fix can always be traced
+// Every change made by hand to an entry: who, why (if they said), and what
+// it was before and after (times and breaks), so a fix can always be traced
 model TimeEdit {
   id         Int       @id @default(autoincrement())
   entryId    Int
   entry      TimeEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
   editedById Int
   editedBy   Staff     @relation(fields: [editedById], references: [id], onDelete: Restrict)
-  reason     String
+  reason     String? // optional: a time can be fixed without saying why
   before     Json? // null = the entry was added by hand
   after      Json
   createdAt  DateTime  @default(now())

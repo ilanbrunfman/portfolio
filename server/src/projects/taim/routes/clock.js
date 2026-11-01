@@ -3,8 +3,8 @@ import { prisma } from '../../../shared/db.js'
 import { validate } from '../../../shared/middleware/validate.js'
 import { HttpError } from '../../../shared/lib/httpError.js'
 import { idParams } from '../../../shared/schemas/common.js'
-import { permissionsFor } from '../roles.js'
-import { entryAdd, entryEdit, timesheetQuery } from '../schemas/clock.js'
+import { ROLES, permissionsFor } from '../roles.js'
+import { entryAdd, entryEdit, teamQuery, timesheetQuery } from '../schemas/clock.js'
 import { ENTRY_SELECT, addEntry, canManage, clockIn, clockOut, editEntry, endBreak, openEntry, startBreak, toEntryJson, workedMinutes } from '../services/timeClock.js'
 
 // Step 8.2: the time clock – everyone's Clock tab. Clock in / out and
@@ -62,6 +62,42 @@ router.get('/timesheets', validate({ query: timesheetQuery }), async (req, res) 
         workedMinutes: entries.reduce((sum, e) => sum + e.workedMinutes, 0),
         breakMinutes: entries.reduce((sum, e) => sum + e.breakMinutes, 0),
         forgot: entries.filter((e) => e.forgot).length,
+    })
+})
+
+// GET /api/taim/timesheets/team?from=&to= (manageTime: Manager, Host) –
+// everyone's hours in the period: one row per person working here (and
+// anyone who left but has entries in it), Manager first, plus the totals
+router.get('/timesheets/team', validate({ query: teamQuery }), async (req, res) => {
+    if (!rightsOf(req.staff).includes('manageTime')) throw new HttpError(403, "You can only see your own timesheet")
+    const { from, to } = req.valid.query
+    const now = new Date()
+    const [people, entries] = await Promise.all([
+        prisma.staff.findMany({ select: { id: true, name: true, role: true, active: true } }),
+        prisma.timeEntry.findMany({ where: { clockIn: { gte: from, lt: to } }, select: ENTRY_SELECT }),
+    ])
+    const rows = people
+        .map((person) => {
+            const mine = entries.filter((e) => e.staffId === person.id).map((e) => toEntryJson(e, now))
+            return {
+                staff: { id: person.id, name: person.name, role: person.role, active: person.active },
+                workedMinutes: mine.reduce((sum, e) => sum + e.workedMinutes, 0),
+                breakMinutes: mine.reduce((sum, e) => sum + e.breakMinutes, 0),
+                entries: mine.length,
+                // days with at least one entry
+                days: new Set(mine.map((e) => new Date(e.clockIn).toDateString())).size,
+                forgot: mine.filter((e) => e.forgot).length,
+                edited: mine.filter((e) => e.edited).length,
+                on: mine.some((e) => e.open),
+            }
+        })
+        .filter((row) => row.staff.active || row.entries > 0)
+        .sort((a, b) => ROLES.indexOf(a.staff.role) - ROLES.indexOf(b.staff.role) || a.staff.name.localeCompare(b.staff.name))
+    res.json({
+        people: rows,
+        workedMinutes: rows.reduce((sum, r) => sum + r.workedMinutes, 0),
+        breakMinutes: rows.reduce((sum, r) => sum + r.breakMinutes, 0),
+        forgot: rows.reduce((sum, r) => sum + r.forgot, 0),
     })
 })
 

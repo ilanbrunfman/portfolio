@@ -7,7 +7,8 @@ const breakTimes = z.object({
     startAt: time('Break start must be a date and time'),
     endAt: time('Break end must be a date and time').nullable().default(null),
 })
-const reason = z.string({ error: 'Say why' }).trim().min(1, 'Say why').max(200, 'Max 200 characters')
+// Optional: a time can be fixed without saying why (empty = none)
+const reason = z.string({ error: 'Reason must be text' }).trim().max(200, 'Max 200 characters').transform((text) => text || null).nullable().default(null)
 
 // PATCH /api/taim/time-entries/:id – new times for an entry, and why
 export const entryEdit = z.object({
@@ -24,6 +25,12 @@ export const entryAdd = z.object({
     clockOut: time('Clock-out must be a date and time'),
     breaks: z.array(breakTimes.extend({ endAt: time('Break end must be a date and time') }), { error: 'Breaks must be a list' }).max(10, 'Max 10 breaks').default([]),
     reason,
+})
+
+// GET /api/taim/timesheets/team?from=&to= – everyone's totals
+export const teamQuery = z.object({
+    from: z.coerce.date({ error: 'From must be a date' }),
+    to: z.coerce.date({ error: 'To must be a date' }),
 })
 
 // GET /api/taim/timesheets?from=&to=&staffId=

@@ -284,9 +284,12 @@ const ON_NOW = { Noa: 300, Avi: 190, Yossi: 150, Dana: 120, Lior: 115 }
 /**
  * Two weeks of clock-ins and -outs (a few minutes early or late, a break in
  * the middle), one forgotten clock-out closed at 04:00, one entry the
- * Manager fixed (logged), and everyone working tonight clocked in now.
+ * Manager fixed (logged), and (tonight: true) everyone working tonight
+ * clocked in now. Exported so the time entries alone can be added to a
+ * database that has its other data (tonight: false leaves nobody clocked in).
+ * @param {Record<string, number>} staffId  name → id
  */
-async function seedClock(prisma, staffId) {
+export async function seedClock(prisma, staffId, { tonight = true } = {}) {
     const { zonedTime, restaurantToday, DAY_ENDS_AT } = await import('../../src/projects/taim/services/days.js')
     const today = restaurantToday()
     const rand = random(20261101)
@@ -307,8 +310,9 @@ async function seedClock(prisma, staffId) {
             // Lior forgot to clock out three nights ago: closed at 04:00, flagged
             const forgot = name === 'Lior' && daysAgo === 3
             const out = forgot ? zonedTime(today.year, today.month, today.day - daysAgo + 1, endHour, endMinute) : clockOut
-            // Seeded just after midnight, last evening *is* tonight: skip a day that runs into tonight's shift
-            if (out >= minutesAgo(ON_NOW[name] + 30)) continue
+            // Seeded just after midnight, last evening *is* tonight: skip a day
+            // that runs into tonight's shift (or, without tonight, into now)
+            if (out >= (tonight ? minutesAgo(ON_NOW[name] + 30) : new Date())) continue
             const entry = await prisma.timeEntry.create({
                 data: {
                     staffId: staffId[name], clockIn, clockOut: out, forgot,
@@ -329,7 +333,7 @@ async function seedClock(prisma, staffId) {
         }
     }
     // Tonight: everyone on, Dana on a short break
-    for (const [name, minutes] of Object.entries(ON_NOW)) {
+    for (const [name, minutes] of Object.entries(tonight ? ON_NOW : {})) {
         await prisma.timeEntry.create({
             data: {
                 staffId: staffId[name], clockIn: minutesAgo(minutes),

@@ -84,6 +84,31 @@ describe('timesheets', () => {
     })
 })
 
+describe('everyone\'s hours (Manager, Host)', () => {
+    it('one row per person working here with worked hours, breaks, days and flags, plus the totals', async () => {
+        await entry(lior.id, 600, 120, [[400, 370]]) // 450 worked, 30 break
+        await entry(lior.id, 60, null) // working now: 60
+        await entry(yossi.id, 300, 60) // 240
+        await prisma.timeEntry.updateMany({ where: { staffId: yossi.id }, data: { forgot: true } })
+        const res = await host.get('/api/taim/timesheets/team').query(week).expect(200)
+        expect(res.body.people.map((p) => p.staff.name)).toEqual(['Noa', 'Avi', 'Yossi', 'Dana', 'Lior'])
+        const byName = Object.fromEntries(res.body.people.map((p) => [p.staff.name, p]))
+        expect(byName.Lior).toMatchObject({ workedMinutes: 510, breakMinutes: 30, entries: 2, on: true, forgot: 0 })
+        expect(byName.Yossi).toMatchObject({ workedMinutes: 240, entries: 1, days: 1, forgot: 1, on: false })
+        expect(byName.Noa).toMatchObject({ workedMinutes: 0, entries: 0, days: 0 })
+        expect(res.body).toMatchObject({ workedMinutes: 750, breakMinutes: 30, forgot: 1 })
+    })
+
+    it('someone who left shows only with entries in the period; staff get 403', async () => {
+        await prisma.staff.updateMany({ where: { name: 'Dana' }, data: { active: false } })
+        await entry(lior.id, 300, 200)
+        const manager = await as('MANAGER')
+        expect((await manager.get('/api/taim/timesheets/team').query(week).expect(200)).body.people.map((p) => p.staff.name)).not.toContain('Dana')
+        await (await as('CHEF')).get('/api/taim/timesheets/team').query(week).expect(403)
+        await waiter.get('/api/taim/timesheets/team').query(week).expect(403)
+    })
+})
+
 describe('fixing an entry', () => {
     const fix = (agent, id, body) => agent.patch(`/api/taim/time-entries/${id}`).send(body)
 
@@ -99,10 +124,17 @@ describe('fixing an entry', () => {
         expect(edits[0].before.clockOut).toBe(e.clockOut.toISOString()) // what it was before the fix
     })
 
-    it('no reason, times in the wrong order, the future or a break outside: refused', async () => {
+    it('a reason is optional: a fix without one is still logged (who, before / after)', async () => {
+        const e = await entry(lior.id, 600, 300)
+        await fix(waiter, e.id, { clockIn: ago(600).toISOString(), clockOut: ago(240).toISOString() }).expect(200)
+        await fix(waiter, e.id, { clockIn: ago(600).toISOString(), clockOut: ago(230).toISOString(), reason: '  ' }).expect(200)
+        const edits = (await waiter.get(`/api/taim/time-entries/${e.id}/edits`).expect(200)).body
+        expect(edits.map((row) => [row.reason, row.editedBy.name])).toEqual([[null, 'Lior'], [null, 'Lior']])
+    })
+
+    it('times in the wrong order, the future or a break outside: refused', async () => {
         const e = await entry(lior.id, 600, 300)
         const base = { clockIn: ago(600).toISOString(), clockOut: ago(300).toISOString(), reason: 'fix' }
-        expect((await fix(waiter, e.id, { ...base, reason: ' ' }).expect(400)).body.fields).toEqual({ reason: 'Say why' })
         expect((await fix(waiter, e.id, { ...base, clockOut: ago(700).toISOString() }).expect(400)).body.fields).toEqual({ clockOut: 'Clock-out must be after clock-in' })
         expect((await fix(waiter, e.id, { ...base, clockOut: new Date(Date.now() + 3_600_000).toISOString() }).expect(400)).body.fields).toEqual({ clockOut: "Clock-out can't be in the future" })
         expect((await fix(waiter, e.id, { ...base, breaks: [{ startAt: ago(800).toISOString(), endAt: ago(790).toISOString() }] }).expect(400)).body.fields).toEqual({ breaks: 'A break must be inside the clocked time' })
