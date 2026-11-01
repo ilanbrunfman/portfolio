@@ -1,32 +1,19 @@
 import { prisma } from '../../../shared/db.js'
 import { HttpError } from '../../../shared/lib/httpError.js'
 import { RIGHTS } from '../roles.js'
-
-/** The cookie that remembers who was picked on "Who are you?" */
-export const STAFF_COOKIE = 'taim_staff'
+import { SESSION_COOKIE, findSessionStaff } from '../services/sessions.js'
 
 /**
- * Cookie settings: not readable by page scripts, sent only to the Ta'im API.
- * It holds the staff id. There are no passwords in Ta'im (picking a person
- * is the login), so the point isn't secrecy: it's that the server, not the
- * page, decides what that person's role may do.
- */
-export const staffCookieOptions = {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/api/taim',
-}
-
-/**
- * Authentication: who are you? Loads the picked staff member onto
- * req.staff. Nobody picked (or they no longer exist) → 401.
+ * Authentication: who are you? The session cookie (step 8.1: picked your
+ * name and typed your PIN) → req.staff, and req.sessionToken for log out.
+ * No session, an expired one, or someone who left → 401.
  */
 export async function requireStaff(req, res, next) {
-    const id = Number(req.cookies?.[STAFF_COOKIE])
-    const staff = Number.isInteger(id) && id > 0 ? await prisma.staff.findUnique({ where: { id } }) : null
+    const token = req.cookies?.[SESSION_COOKIE]
+    const staff = await findSessionStaff(token)
     if (!staff) throw new HttpError(401, 'Pick who you are first')
     req.staff = staff
+    req.sessionToken = token
     next()
 }
 

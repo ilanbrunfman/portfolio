@@ -18,19 +18,32 @@ enum StaffRole {
 // The people on the "Who are you?" screen. There are no passwords: picking
 // a person is the login, and the server checks their role on every request.
 model Staff {
-  id             Int           @id @default(autoincrement())
+  id             Int            @id @default(autoincrement())
   name           String
   role           StaffRole
-  createdAt      DateTime      @default(now())
+  // Step 8.1: the roster (the Manager keeps it)
+  phone          String?
+  hourlyRate     Int? // cents per hour; pay information, Manager only
+  startDate      DateTime?      @db.Date
+  active         Boolean        @default(true) // false = left: can't log in, kept for history
+  // A personal 4-digit PIN, hashed (scrypt); null = none yet (can't log in)
+  pinHash        String?
+  // The seed's demo PIN, shown on "Who are you?" so visitors can try every
+  // role; cleared as soon as a real PIN is set
+  demoPin        String?
+  failedPins     Int            @default(0) // wrong PINs in a row
+  lockedUntil    DateTime? // 5 wrong in a row → locked for a minute
+  createdAt      DateTime       @default(now())
+  sessions       StaffSession[]
   orders         Order[]
   daysClosed     BusinessDay[]
-  dishesFired    OrderItem[]   @relation("DishFiredBy")
-  dishesStarted  OrderItem[]   @relation("DishStartedBy")
-  dishesServed   OrderItem[]   @relation("DishServedBy")
-  allergiesSeen  OrderItem[]   @relation("DishAllergySeenBy")
+  dishesFired    OrderItem[]    @relation("DishFiredBy")
+  dishesStarted  OrderItem[]    @relation("DishStartedBy")
+  dishesServed   OrderItem[]    @relation("DishServedBy")
+  allergiesSeen  OrderItem[]    @relation("DishAllergySeenBy")
   allergiesNoted SeatAllergy[]
-  menusCreated   MenuVersion[] @relation("VersionCreatedBy")
-  menusPublished MenuVersion[] @relation("VersionPublishedBy")
+  menusCreated   MenuVersion[]  @relation("VersionCreatedBy")
+  menusPublished MenuVersion[]  @relation("VersionPublishedBy")
   returns        ItemReturn[]
 
   @@map("staff")
@@ -385,5 +398,19 @@ model SeatAllergy {
 
   @@unique([orderId, seat])
   @@map("seat_allergies")
+  @@schema("taim")
+}
+
+// Step 8.1: who is logged in on a device. The cookie holds a random token;
+// the database keeps only its SHA-256 hash (like the bank's sessions).
+model StaffSession {
+  id        String   @id // SHA-256 of the cookie token
+  staffId   Int
+  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([staffId])
+  @@map("staff_sessions")
   @@schema("taim")
 }

@@ -5,8 +5,8 @@ const StaffContext = createContext(null)
 
 /**
  * Who is using Ta'im right now.
- * On load it asks GET /api/taim/session; the choice itself lives in an
- * httpOnly cookie the browser sends automatically.
+ * On load it asks GET /api/taim/session; the session (step 8.1: name +
+ * PIN) lives in an httpOnly cookie the browser sends automatically.
  *
  * session: { staff: { id, name, role }, rights: string[], screens: string[] }
  *          or null when nobody is picked yet
@@ -49,9 +49,9 @@ export const StaffProvider = ({ children }) => {
         return () => window.removeEventListener(UNAUTHORIZED_EVENT, handle)
     }, [])
 
-    /** Pick who you are */
-    const pick = useCallback(async (staffId) => {
-        setSession(await api('/session', { method: 'POST', body: { staffId } }))
+    /** Log in: who you are and your 4-digit PIN (step 8.1); throws with the reason */
+    const pick = useCallback(async (staffId, pin) => {
+        setSession(await api('/session', { method: 'POST', body: { staffId, pin } }))
     }, [])
 
     /** Switch person: forget who was picked */

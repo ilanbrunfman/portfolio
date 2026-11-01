@@ -107,9 +107,13 @@ PostgreSQL schema next to the bank's.
 
 ### What it does
 
-- **Who are you?** Pick one of five people (Manager, Chef, Cook, Host,
-  Waiter). There's no password: the role decides which screens you see, and
-  the server checks it on every request (403 if your role can't).
+- **Who are you?** Tap your name and type your 4-digit PIN (the demo
+  people's PINs are on their cards). Five wrong PINs lock that person for a
+  minute. The role decides which screens you see, and the server checks it
+  on every request (403 if your role can't).
+- **Staff:** the Manager keeps the roster: people, roles, phones, hourly
+  rates, start dates, PINs; people who leave are marked as left (logged out,
+  kept for history).
 - **Floor:** tables are green (ready), yellow (needs cleaning), grey (dining)
   or blue (all served), with what's not sent, on hold, in the kitchen or to
   go. Seat guests, combine tables for a big party, start take-outs, close
@@ -153,8 +157,8 @@ Same setup as the bank tracker above (Docker, `npm run db:migrate`,
 evening (tables dining, tickets waiting, started, on hold, to go, a remake
 and a fix), 13 weeks of history for Bills and Losses, and four menus
 (Spring, Summer, Autumn in use, a Winter draft). Pick **Lior**
-(Waiter) for the floor and orders, **Yossi** (Cook) for the kitchen, or
-**Noa** (Manager) for everything.
+(Waiter, PIN 5555) for the floor and orders, **Yossi** (Cook, 3333) for the
+kitchen, or **Noa** (Manager, 1111) for everything.
 
 ### Where things are
 

@@ -11,13 +11,32 @@
 //
 // ⚠ Wipes all Ta'im rows first.
 
+// Step 8.1: each has a 4-digit demo PIN (shown on "Who are you?" so
+// visitors can try every role), a phone, an hourly rate (cents) and a start date.
 export const STAFF = [
-    { name: 'Noa', role: 'MANAGER' },
-    { name: 'Avi', role: 'CHEF' },
-    { name: 'Yossi', role: 'COOK' },
-    { name: 'Dana', role: 'HOST' },
-    { name: 'Lior', role: 'WAITER' },
+    { name: 'Noa', role: 'MANAGER', pin: '1111', phone: '050-111-2233', hourlyRate: 6500, startDate: '2024-03-01' },
+    { name: 'Avi', role: 'CHEF', pin: '2222', phone: '052-444-1010', hourlyRate: 6000, startDate: '2024-03-01' },
+    { name: 'Yossi', role: 'COOK', pin: '3333', phone: '054-777-3030', hourlyRate: 4200, startDate: '2025-01-15' },
+    { name: 'Dana', role: 'HOST', pin: '4444', phone: '053-222-8080', hourlyRate: 3800, startDate: '2025-06-01' },
+    { name: 'Lior', role: 'WAITER', pin: '5555', phone: '058-555-4545', hourlyRate: 3600, startDate: '2025-09-10' },
 ]
+// Someone who left: on the roster as inactive, not on "Who are you?"
+const FORMER_STAFF = [{ name: 'Tamar', role: 'WAITER', phone: '050-999-1212', hourlyRate: 3500, startDate: '2024-05-01', active: false }]
+
+/**
+ * Staff rows for the database: each demo PIN hashed (once per PIN, so the
+ * tests can reuse them) and kept as demoPin; dates as dates.
+ */
+const pinHashes = new Map()
+export async function staffRows(people = STAFF) {
+    const { hashPassword } = await import('../../src/shared/lib/password.js')
+    return Promise.all(
+        people.map(async ({ pin, startDate, ...person }) => {
+            if (pin && !pinHashes.has(pin)) pinHashes.set(pin, hashPassword(pin))
+            return { ...person, startDate: startDate ? new Date(`${startDate}T00:00:00Z`) : null, pinHash: pin ? await pinHashes.get(pin) : null, demoPin: pin ?? null }
+        })
+    )
+}
 
 // Category → its dishes, in menu order, with prep times in minutes.
 // Schnitzel starts sold out (hidden). Allergens (step 5.4) as on a real menu:
@@ -180,9 +199,9 @@ const FIX_NOTES = ['more salt', 'medium, not rare', 'extra tahini', 'warm it up'
 /** @param {import('../../src/generated/prisma/client.ts').PrismaClient} prisma */
 export async function seedTaim(prisma) {
     // Start clean: empty the tables and restart ids at 1
-    await prisma.$executeRaw`TRUNCATE TABLE taim.item_returns, taim.order_items, taim.orders, taim.business_days, taim.dining_tables, taim.menu_items, taim.categories, taim.menu_versions, taim.staff RESTART IDENTITY CASCADE`
+    await prisma.$executeRaw`TRUNCATE TABLE taim.staff_sessions, taim.item_returns, taim.order_items, taim.orders, taim.business_days, taim.dining_tables, taim.menu_items, taim.categories, taim.menu_versions, taim.staff RESTART IDENTITY CASCADE`
 
-    await prisma.staff.createMany({ data: STAFF })
+    await prisma.staff.createMany({ data: await staffRows([...STAFF, ...FORMER_STAFF]) })
     const staffId = Object.fromEntries((await prisma.staff.findMany()).map((p) => [p.name, p.id]))
 
     // The three menus, on the restaurant's clock

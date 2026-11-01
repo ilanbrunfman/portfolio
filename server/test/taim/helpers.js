@@ -1,7 +1,7 @@
 import supertest from 'supertest'
 import app from '../../src/app.js'
 import { prisma } from '../../src/shared/db.js'
-import { STAFF } from '../../prisma/seeds/taim.js'
+import { STAFF, staffRows } from '../../prisma/seeds/taim.js'
 
 export { app, prisma }
 
@@ -11,11 +11,14 @@ export const anonymous = supertest(app)
 /** Empty the Ta'im tables, restart ids at 1, add the demo staff and an empty active menu version (id 1; no dishes, no tables) – call in beforeEach */
 export async function resetTaim() {
     if (!process.env.DATABASE_URL.includes('_test')) throw new Error('resetTaim() only runs on a _test database')
-    await prisma.$executeRaw`TRUNCATE TABLE taim.item_returns, taim.order_items, taim.orders, taim.business_days, taim.dining_tables, taim.menu_items, taim.categories, taim.menu_versions, taim.staff RESTART IDENTITY CASCADE`
-    await prisma.staff.createMany({ data: STAFF })
+    await prisma.$executeRaw`TRUNCATE TABLE taim.staff_sessions, taim.item_returns, taim.order_items, taim.orders, taim.business_days, taim.dining_tables, taim.menu_items, taim.categories, taim.menu_versions, taim.staff RESTART IDENTITY CASCADE`
+    await prisma.staff.createMany({ data: await staffRows() })
     // Version 1: the menu in use. Tests put their categories and dishes in it (versionId: 1)
     await prisma.menuVersion.create({ data: { number: 1, name: 'Test menu', status: 'ACTIVE', activeFrom: new Date(Date.now() - 86_400_000) } })
 }
+
+/** The demo PIN of a seed person ("Noa" → "1111") */
+export const pinOf = (name) => STAFF.find((person) => person.name === name).pin
 
 /**
  * A client that has picked the first staff member with this role.
@@ -25,6 +28,7 @@ export async function resetTaim() {
 export async function as(role) {
     const staff = await prisma.staff.findFirstOrThrow({ where: { role } })
     const agent = supertest.agent(app)
-    await agent.post('/api/taim/session').send({ staffId: staff.id }).expect(200)
+    // Log in with the seed's demo PIN (step 8.1)
+    await agent.post('/api/taim/session').send({ staffId: staff.id, pin: pinOf(staff.name) }).expect(200)
     return agent
 }

@@ -1,12 +1,18 @@
 # WhoAreYou
 
-The Ta'im "login" screen: a card per staff member (from `GET /api/taim/staff`,
-Manager first). Clicking a card calls `pick(staffId)` from `StaffContext`,
-which posts to `/api/taim/session`; the server answers with the person's
-rights and screens and sets the `taim_staff` cookie.
+The Ta'im login screen: a card per person working here (from
+`GET /api/taim/staff`, Manager first). Tapping a card opens a `PinPad`;
+the 4th digit calls `pick(staffId, pin)` from `StaffContext`, which posts
+to `/api/taim/session`. The right PIN starts a session (an httpOnly
+`taim_session` cookie with a random token; the database keeps only its
+hash) and the server answers with the person's rights and screens.
 
-There are no passwords. Picking a person is the login; what they can do is
+A wrong PIN says how many tries are left; 5 wrong in a row lock that person
+for a minute. People who left aren't listed. What each person can do is
 decided by their role, and the server checks it on every request.
+
+For portfolio visitors, the seed's people show their demo PIN on the card
+("PIN 2222") and in the pad. A PIN the Manager sets later isn't shown.
 
 ## Usage
 
@@ -16,6 +22,5 @@ decided by their role, and the server checks it on every request.
 </StaffProvider>
 ```
 
-No props. Shows "Loading…" while the list loads, and the server's message if
-loading or picking fails. While a pick is in flight every card is disabled
-and the picked one is marked `aria-busy`.
+No props. Shows "Loading…" while the list loads, and the server's message
+if loading fails; the pad shows why a PIN was refused.

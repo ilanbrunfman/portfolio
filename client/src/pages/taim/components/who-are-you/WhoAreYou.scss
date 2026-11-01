@@ -85,4 +85,12 @@
             }
         }
     }
+
+    // "PIN 2222" – the demo PIN, for portfolio visitors (step 8.1)
+    &__pin {
+        color: var(--text);
+        font-size: 0.75rem;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.06em;
+    }
 }

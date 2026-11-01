@@ -1,0 +1,83 @@
+// The roster (step 8.1) – visuals only (layout is utility classes in the markup)
+.roster {
+    width: 100%;
+    max-width: 860px;
+
+    p {
+        margin: 0;
+    }
+
+    &__list {
+        box-sizing: border-box;
+        list-style: none;
+        margin: 0;
+        padding: 0 1rem;
+
+        li + li {
+            border-top: 1px solid var(--border);
+        }
+    }
+
+    &__row {
+        padding: 0.75rem 0;
+
+        &.is-left {
+            opacity: 0.7;
+        }
+    }
+
+    &__name {
+        color: var(--text-h);
+        font-size: 1.05rem;
+    }
+
+    &__role {
+        color: var(--text);
+        font-size: 0.85rem;
+    }
+
+    // You · Demo PIN · No PIN · Locked
+    &__tag {
+        padding: 0.05rem 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--text);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+
+        &.is-warn {
+            border-color: rgba(214, 158, 46, 0.6);
+            color: #b7791f;
+        }
+
+        &.is-alert {
+            border-color: rgba(229, 72, 77, 0.6);
+            color: #e5484d;
+        }
+    }
+
+    // The folded "Left" section
+    &__left {
+        box-sizing: border-box;
+
+        > .accordion__item {
+            border-top: 0;
+        }
+
+        > .accordion__item > .accordion__header {
+            padding: 0.85rem 1rem;
+
+            &:hover {
+                background: transparent;
+            }
+        }
+    }
+
+    &__leave {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+    }
+}
