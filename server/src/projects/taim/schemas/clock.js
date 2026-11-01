@@ -18,13 +18,19 @@ export const entryEdit = z.object({
     reason,
 })
 
-// POST /api/taim/time-entries – an entry added by hand (forgot to clock in)
+// POST /api/taim/time-entries – an entry added by hand (forgot to clock in);
+// no clockOut = still working: a running entry (#44)
 export const entryAdd = z.object({
     staffId: z.number({ error: 'Pick a person' }).int('Pick a person').positive('Pick a person').optional(),
     clockIn: time('Clock-in must be a date and time'),
-    clockOut: time('Clock-out must be a date and time'),
-    breaks: z.array(breakTimes.extend({ endAt: time('Break end must be a date and time') }), { error: 'Breaks must be a list' }).max(10, 'Max 10 breaks').default([]),
+    clockOut: time('Clock-out must be a date and time').nullable().default(null),
+    breaks: z.array(breakTimes, { error: 'Breaks must be a list' }).max(10, 'Max 10 breaks').default([]),
     reason,
+})
+
+// POST /api/taim/clock/in { at? } – clock in now, or from an earlier time today (#44)
+export const clockInBody = z.object({
+    at: time('Start must be a date and time').optional(),
 })
 
 // GET /api/taim/timesheets/team?from=&to= – everyone's totals

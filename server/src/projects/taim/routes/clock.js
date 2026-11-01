@@ -4,7 +4,7 @@ import { validate } from '../../../shared/middleware/validate.js'
 import { HttpError } from '../../../shared/lib/httpError.js'
 import { idParams } from '../../../shared/schemas/common.js'
 import { ROLES, permissionsFor } from '../roles.js'
-import { entryAdd, entryEdit, teamQuery, timesheetQuery } from '../schemas/clock.js'
+import { clockInBody, entryAdd, entryEdit, teamQuery, timesheetQuery } from '../schemas/clock.js'
 import { ENTRY_SELECT, addEntry, canManage, clockIn, clockOut, editEntry, endBreak, openEntry, startBreak, toEntryJson, workedMinutes } from '../services/timeClock.js'
 
 // Step 8.2: the time clock – everyone's Clock tab. Clock in / out and
@@ -41,7 +41,11 @@ const action = (fn) => async (req, res) => {
     await fn(req.staff.id)
     res.json(await myClock(req.staff.id))
 }
-router.post('/clock/in', action(clockIn))
+// { at? }: from an earlier time today, logged (#44)
+router.post('/clock/in', validate({ body: clockInBody }), async (req, res) => {
+    await clockIn(req.staff.id, new Date(), req.valid.body.at ?? null)
+    res.json(await myClock(req.staff.id))
+})
 router.post('/clock/out', action(clockOut))
 router.post('/clock/break-start', action(startBreak))
 router.post('/clock/break-end', action(endBreak))

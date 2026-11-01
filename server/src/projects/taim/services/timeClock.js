@@ -54,8 +54,31 @@ function overlapError(err) {
     throw err
 }
 
-export async function clockIn(staffId, now = new Date()) {
-    return prisma.timeEntry.create({ data: { staffId, clockIn: now }, select: ENTRY_SELECT }).catch(overlapError)
+// How far back "I started at…" may go when clocking in (a forgotten clock-in
+// earlier in the shift; anything older is added as an entry)
+export const LATE_CLOCK_IN_HOURS = 16
+
+/**
+ * Clock in now – or from `at`, earlier (#44: forgot to clock in at 16:30).
+ * A clock-in from an earlier time is marked edited and logged, so the
+ * Manager can see it; not in the future, not more than 16 hours back.
+ */
+export async function clockIn(staffId, now = new Date(), at = null) {
+    if (!at || Math.abs(now - at) < MINUTE) {
+        return prisma.timeEntry.create({ data: { staffId, clockIn: now }, select: ENTRY_SELECT }).catch(overlapError)
+    }
+    const fail = (message) => {
+        throw new HttpError(400, 'Validation failed', { fields: { at: message } })
+    }
+    if (at > now) fail("Start can't be in the future")
+    if (now - at > LATE_CLOCK_IN_HOURS * 60 * MINUTE) fail(`Start can be up to ${LATE_CLOCK_IN_HOURS} hours back: add an entry for an earlier shift`)
+    return prisma
+        .$transaction(async (tx) => {
+            const entry = await tx.timeEntry.create({ data: { staffId, clockIn: at, edited: true }, select: ENTRY_SELECT })
+            await tx.timeEdit.create({ data: { entryId: entry.id, editedById: staffId, reason: 'Clocked in from an earlier time', before: null, after: snapshot(entry) } })
+            return entry
+        })
+        .catch(overlapError)
 }
 
 /** Clock out: an open break ends too */
@@ -156,9 +179,17 @@ export async function editEntry({ id, clockIn, clockOut, breaks, reason, editorI
         .catch(overlapError)
 }
 
-/** Add an entry by hand (forgot to clock in at all), with an optional reason: logged */
+/**
+ * Add an entry by hand (forgot to clock in at all), with an optional
+ * reason: logged. No clock-out = still working: a running entry, so the
+ * person is clocked in from then (#44) – refused if they already are.
+ */
 export async function addEntry({ staffId, clockIn, clockOut, breaks, reason, editorId, now = new Date() }) {
     const sorted = checkTimes({ clockIn, clockOut, breaks }, now)
+    if (!clockOut) {
+        const open = await openEntry(staffId)
+        if (open) throw new HttpError(409, `${open.staff.name} is already clocked in`)
+    }
     return prisma
         .$transaction(async (tx) => {
             const entry = await tx.timeEntry.create({
