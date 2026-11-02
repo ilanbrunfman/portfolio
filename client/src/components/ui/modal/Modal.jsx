@@ -13,7 +13,11 @@ const prefersReduced = () => window.matchMedia('(prefers-reduced-motion: reduce)
  *
  * Handles focus-trap, Escape, scroll-lock, backdrop click, and focus restore,
  * plus nested GSAP enter/exit animations (backdrop fade + panel rise/scale).
- * The exit plays before unmount via an internal `render` flag.
+ * The exit plays before unmount via an internal `render` flag. While it
+ * closes, the panel keeps the last title and content it had while open:
+ * callers often clear what they show the moment they close it
+ * (`{editing && <Form />}`), and the panel would otherwise empty and shrink
+ * as it fades.
  *
  * @param {{ isOpen: boolean, onClose: () => void, title?: React.ReactNode,
  *          size?: 'sm'|'md'|'lg'|'full', children: React.ReactNode }} props
@@ -23,6 +27,13 @@ const Modal = ({ isOpen, onClose, title, size = 'md', children }) => {
     const panelRef = useRef(null)
     const backdropRef = useRef(null)
     const titleId = useId()
+
+    // The last title and content shown while open, kept for the exit
+    // animation. (Setting state while rendering is React's way to remember
+    // something from an earlier render; it settles in the same pass.)
+    const [last, setLast] = useState({ title, children })
+    if (isOpen && (last.title !== title || last.children !== children)) setLast({ title, children })
+    const shown = isOpen ? { title, children } : last
 
     // Mount as soon as we open (so the enter animation has a node to play on).
     useLayoutEffect(() => {
@@ -105,19 +116,19 @@ const Modal = ({ isOpen, onClose, title, size = 'md', children }) => {
             className="modal"
             role="dialog"
             aria-modal="true"
-            aria-labelledby={title ? titleId : undefined}
+            aria-labelledby={shown.title ? titleId : undefined}
         >
             <div className="modal__backdrop" ref={backdropRef} onClick={onClose} />
 
             <div className={`modal__panel modal__panel--${size}`} ref={panelRef}>
                 <div className="modal__head">
-                    {title && <h2 id={titleId} className="modal__title">{title}</h2>}
+                    {shown.title && <h2 id={titleId} className="modal__title">{shown.title}</h2>}
                     <button type="button" className="modal__close" onClick={onClose} aria-label="Close">
                         <Icon name="IconX" size={18} />
                     </button>
                 </div>
 
-                <div className="modal__body">{children}</div>
+                <div className="modal__body">{shown.children}</div>
             </div>
         </div>
     )
